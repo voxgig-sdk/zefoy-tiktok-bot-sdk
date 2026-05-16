@@ -1,0 +1,143 @@
+
+
+basic: {
+  set: [
+    { in: { path: 'a', store: {a:10} }, out: 10 }
+    { in: { path: 'a.b', store: {a:{b:11}} }, out: 11 }
+    { in: { path: 'a.b.c', store: {a:{b:{c:12}}} }, out: 12 }
+    { in: { path: 'a.b.c.d', store: {a:{b:{c:{d:13}}}} }, out: 13 }
+    { in: { path: 'a.b.c.d.e', store: {a:{b:{c:{d:{e:14}}}}} }, out: 14 }
+
+    { in: { path: 'a', store: {x:2,a:15} }, out: 15 }
+    { in: { path: 'a.b', store: {x:2,a:{b:16}} }, out: 16 }
+    { in: { path: 'a.b.c', store: {x:2,a:{b:{c:17}}} }, out: 17 }
+    { in: { path: 'a.b.c.d', store: {x:2,a:{b:{c:{d:18}}}} }, out: 18 }
+    { in: { path: 'a.b.c.d.e', store: {x:2,a:{b:{c:{d:{e:19}}}}} }, out: 19 }
+
+    { in: { path: 'a', store: {a:21,y:3} }, out: 21 }
+    { in: { path: 'a.b', store: {a:{b:22},y:3} }, out: 22 }
+    { in: { path: 'a.b.c', store: {a:{b:{c:23}},y:3} }, out: 23 }
+    { in: { path: 'a.b.c.d', store: {a:{b:{c:{d:24}}},y:3} }, out: 24 }
+    { in: { path: 'a.b.c.d.e', store: {a:{b:{c:{d:{e:25}}}},y:3} }, out: 25 }
+
+    { in: { path: 'a', store: {x:2,a:31,y:3} }, out: 31 }
+    { in: { path: 'a.b', store: {x:2,a:{b:32},y:3} }, out: 32 }
+    { in: { path: 'a.b.c', store: {x:2,a:{b:{c:33}},y:3} }, out: 33 }
+    { in: { path: 'a.b.c.d', store: {x:2,a:{b:{c:{d:34}}},y:3} }, out: 34 }
+    { in: { path: 'a.b.c.d.e', store: {x:2,a:{b:{c:{d:{e:35}}}},y:3} }, out: 35 }
+
+    { in: { path: 'a.b', store: {x:{y:2},a:{b:41}} }, out: 41 }
+    { in: { path: 'x.y', store: {x:{y:42},a:{b:1}} }, out: 42 }
+
+    { in: { path: '0', store: ['a1'] }, out: 'a1' }
+    { in: { path: '0.0', store: [['a2']] }, out: 'a2' }
+    { in: { path: '0.0.0', store: [[['a3']]] }, out: 'a3' }
+    { in: { path: '0.0.0.0', store: [[[['a4']]]] }, out: 'a4' }
+    { in: { path: '0.0.0.0.0', store: [[[[['a5']]]]] }, out: 'a5' }
+
+    { in: { path: 'a.0', store: {a:['x1']} }, out: 'x1' }
+    { in: { path: 'a.0.b', store: {a:[{b:'x2'}]} }, out: 'x2' }
+    { in: { path: 'a.0.b.0', store: {a:[{b:['x3']}]} }, out: 'x3' }
+
+    { in: { path: '1', store: ['a','b'] }, out: 'b' }
+    { in: { path: '2', store: ['a','b'] } }
+
+    { in: { path: 'b', store: {a:1} } }
+    { in: { path: '', store: {a:1} }, out: {a:1} }
+    { in: { store: {a:111} } }
+    { in: { path: 'a' } }
+    { in: { } }
+
+    { in: { path: 'a', store: [] } }
+    { in: { path: '0', store: [] } }
+    { in: { path: 'a', store: {} } }
+    { in: { path: '0', store: {} } }
+
+    { in: { path: ['a'], store: [] } }
+    { in: { path: ['0'], store: [] } }
+    { in: { path: ['a'], store: {} } }
+    { in: { path: ['0'], store: {} } }
+
+    { in: { path: ['a'], store: {a:1} }, out: 1 }
+    { in: { path: ['a','b'], store: {a:{b:2}} }, out: 2 }
+    { in: { path: ['a','b','c'], store: {a:{b:{c:3}}} }, out: 3 }
+
+    { in: { path: [''], store: {a:40} }, out: {a:40} }
+
+    { in: { path: true, store: {} } }
+    { in: { path: null, store: {} } }
+    { in: { path: {}, store: {} } }
+  ]
+}
+
+
+relative: {
+  set: [
+    { in: { path: '.', store: {a:{b:1}}, dparent: {b:1} }, out: {b:1} }
+      
+    { in: { path: '.b', store: {a:{b:2}}, dparent: {b:2} }, out: 2 }
+    { in: { path: 'a.b', store: {a:{b:3}}, dparent: {b:3} }, out: 3 }
+    { in: { path: 'a', store: {a:{b:4}}, dparent: {b:4} }, out: {b:4} }
+
+    { in: { path: '.1', store: {a:[11,22,33] }, dparent: [11,22,33] }, out: 22 }
+    { in: { path: 'a.1', store: {a:[11,22,33] }, dparent: [11,22,33] }, out: 22 }
+    { in: { path: 'a', store: {a:[11,22,33] }, dparent: [11,22,33] }, out: [11,22,33] }
+
+    { in: { path: ['','b'], store: {a:{b:1}}, dparent: {b:1} }, out: 1 }
+
+    
+    { in: { path: '.', store: {a:b:41}, dparent: 41, dpath: 'a.b' }, out: 41 }
+    { in: { path: '..', store: {a:b:42}, dparent: 42, dpath: 'a.b' }, out: b:42 }
+    { in: { path: '...', store: {a:b:43}, dparent: 43, dpath: 'a.b' }, out: a:b:43 }
+    { in: { path: '....', store: {a:b:44}, dparent: 44, dpath: 'a.b' } }
+
+    { in: { path: '.', store: {a:b:101}, dparent: b:101, dpath: 'a' }, out: b:101 }
+    { in: { path: '..', store: {a:b:102}, dparent: b:102, dpath: 'a' }, out: a:b:102 }
+    
+    { in: { path: '.', store: {a:{b:201,c:66}}, dparent: 201, dpath: 'a.b' }, out: 201 }
+    { in: { path: '.x', store: {a:{b:202,c:66}}, dparent: 202, dpath: 'a.b' } }
+    { in: { path: '..', store: {a:{b:203,c:66}}, dparent: 203, dpath: 'a.b' },
+      out: {b:203,c:66} }
+
+    { in: { path: '..c', store: {a:{b:204,c:66}}, dparent: 204, dpath: 'a.b' }, out: 66 }
+
+    { in: { path: '..b', store: {a:{b:205,c:66}}, dparent: 205, dpath: 'a.b' }, out: 205 }
+    { in: { path: '...', store: {a:{b:206,c:66}}, dparent: 206, dpath: 'a.b' },
+      out: {a:{b:206,c:66}} }
+  ]
+}
+
+
+handler: {
+  set: [
+    { in: { path: '$FOO', store: {} }, out: 'foo' }
+  ]
+}
+
+
+special: {
+  set: [
+    { in: { path: 'a.b$$c', store: {a:'b$c':11} }, out: 11 }
+    { in: { path: 'a.$$c', store: {a:'$c':12} }, out: 12 }
+    { in: { path: 'a.c$$', store: {a:'c$':13} }, out: 13 }
+      
+    { in: { path: 'a.$KEY', store: {a:[11,22]}, inj: {key:'1'} }, out: 22 }
+
+    { in: { path: 'a.$REF:b$', store: {a:c:44, '$SPEC':{b:c}}, inj:{} }, out: 44 }
+    { in: { path: 'a.$REF:d$', store: {a:c:44, '$SPEC':{b:c}}, inj:{}  } }
+
+    { in: { path: 'a.$GET:b$', store: {a:c:55, b:c}, inj:{} }, out: 55 }
+    { in: { path: 'a.$GET:d$', store: {a:c:55, b:c}, inj:{}  } }
+    
+    { in: { path: 'a.$META:b$', store: {a:c:33}, inj: {meta:{b:c}} }, out: 33 }
+    { in: { path: 'a.$META:d$', store: {a:c:33}, inj: {meta:{b:c}} }  }
+    { in: { path: 'a.$META:e$', store: {a:'b.c':34}, inj: {meta:{e:'b.c'}} }, out: 34 }
+
+    { in: { path: 'p0$~a', store: {}, inj: {meta:{p0:a:44}} }, out:44  }
+    { in: { path: 'p0$~b', store: {}, inj: {meta:{p0:a:45}} } }
+    { in: { path: 'p0$~a.c', store: {}, inj: {meta:{p0:a:c:46}} }, out:46  }
+
+    { in: { path: 'p0$~a', store: {}, inj: {meta:{p0:a:44}} }, out:44  }
+  ]
+}
+

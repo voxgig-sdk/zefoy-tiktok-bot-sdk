@@ -1,0 +1,13 @@
+
+DEF: {
+  setup: a: { apikey: 'APIKEY01' }
+}
+
+
+basic: set: [
+
+  { ctx: spec:headers:{}
+    match: ctx:spec:headers:authorization:' APIKEY01'
+  }
+
+]

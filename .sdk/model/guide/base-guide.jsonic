@@ -1,0 +1,14 @@
+# Guide
+
+guide: {
+  metrics: count: entity: 1
+  metrics: count: path: 1
+  metrics: count: method: 1
+
+  entity: engagement: {
+    path: "/api/boost": {
+      op: create: method: *POST
+    }
+  }
+
+}

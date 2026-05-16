@@ -1,0 +1,552 @@
+
+
+basic: {
+  in: { data: {a:1}, spec: {a:'`a`',b:2} }
+  out: {a:1,b:2}
+}
+
+
+paths: {
+  set: [
+    { in: { } }
+    { in: { data: {} } }
+    { in: { data: {}, spec: {} }, out: {} }
+    { in: { spec: {} }, out: {} }
+    { in: { spec: 'A' }, out: 'A' }
+    { in: { spec: '`a`' } }
+    { in: { data: {}, spec: '`a`' } }
+    { in: { data: { x: 1 }, spec: '`a`' } }
+    { in: { data: { y: 2 }, spec: { y: '`a`' } }, out: {} }
+    { in: { data: { z: 1 }, spec: '``' }, out: {z:1} }
+    
+    { in: { data: {a:1,b:2}, spec: '`a`' }, out: 1 }
+    { in: { data: {a:1,b:2}, spec: '`b`' }, out: 2 }
+    { in: { data: {a:1,b:2}, spec: '`a``b`' }, out: '12' }
+    { in: { data: {a:3,b:4}, spec: 'X`a`Y`b`Z' }, out: 'X3Y4Z' }
+
+    { in: { data: {a:{b:5}}, spec: '`a.b`' }, out: 5 }
+    { in: { data: {a:{b:6}}, spec: 'X`a.b`Y' }, out: 'X6Y' }
+    { in: { data: {a:{b:'B'}}, spec: '`a.b`' }, out: 'B' }
+    { in: { data: {a:{b:'C'}}, spec: '`a.b``c`' }, out: 'C' }
+    { in: { data: {a:{b:'D'}}, spec: '`a.b``a.b`' }, out: 'DD' }
+    { in: { data: {a:{b:'E',c:'F'}}, spec: '`a.b``a.c`' }, out: 'EF' }
+
+    { in: { data: {a:{b:5}}, spec: {q:'`a.b`'} }, out: {q:5} }
+    { in: { data: {a:{b:6}}, spec: {q:'X`a.b`Y'} }, out: {q:'X6Y'} }
+    { in: { data: {a:{b:'B'}}, spec: {q:'`a.b`'} }, out: {q:'B'} }
+    { in: { data: {a:{b:'C'}}, spec: {q:'`a.b``c`'} }, out: {q:'C'} }
+    { in: { data: {a:{b:'D'}}, spec: {q:'`a.b``a.b`'} }, out: {q:'DD'} }
+    { in: { data: {a:{b:'E',c:'F'}}, spec: {q:'`a.b``a.c`'} }, out: {q:'EF'} }
+    
+    { in: { data: {a:{b:1}}, spec:{} }, out: {} }
+    { in: { data: {a:{b:2}}, spec:{x:2} }, out: {x:2} }
+    { in: { data: {a:{b:3}}, spec: {x:'`a`'} }, out: {x:{b:3}} }
+    { in: { data: {a:{b:4}}, spec: {x:'`a.b`'} }, out: {x:4} }
+    { in: { data: {a:{b:5}}, spec: {x:'`b`'} }, out: {} }
+    { in: { data: {a:{b:6}}, spec: {x:'`a.c`'} }, out: {} }
+
+    { in: { data: {a:{b:7,c:'C'}}, spec: {x:'`a.b``a.c`'} }, out: {x:'7C'} }
+    { in: { data: {a:{b:8},c:9}, spec: {x:'`a.b`'} }, out: {x:8} }
+    { in: { data: {d:10,a:{b:11},c:12}, spec: {x:'`a.b`'} }, out: {x:11} }
+    { in: { data: {d:13,a:{b:14}}, spec: {x:'`a.b`'} }, out: {x:14} }
+
+    { in: { data: {a:{b:'B',c:'C'}}, spec: {a:{d:'`.b`'}} }, out: {a:{d:'B'}} }
+    { in: { data: {a:{b:{c:'C'}}}, spec: {a:{d:'`.b.c`'}} }, out: {a:{d:'C'}} }
+
+    { in: { data: {hold:{'`$COPY`':111, '$TOP':222}},
+            spec: {a:'`hold.$BT$COPY$BT`', b:'`hold.$TOP`'} }, out: {a:111,b:222} }
+  ]
+}
+
+
+cmds: {
+  set: [
+    { in: { data: {}, spec: '`$BT``$DS`ESCAPED`$BT`' }, out: '`$ESCAPED`' }
+
+    { in: { data: 1, spec: '`$COPY`' }, out: 1 }
+    { in: { data: {a:1}, spec: {a:'`$COPY`'} }, out: {a:1} }
+    { in: { data: {a:{b:1}}, spec: {a:'`$COPY`'} }, out: {a:{b:1}} }
+    { in: { data: {a:{b:{c:11}}}, spec: {a:'`$COPY`'} }, out: {a:{b:{c:11}}} }
+    { in: { data: {a:{b:{c:12}}}, spec: {a:{b:'`$COPY`'}} }, out: {a:{b:{c:12}}} }
+    { in: { data: {a:{b:{c:13}}}, spec: {a:{b:{c:'`$COPY`'}}} }, out: {a:{b:{c:13}}} }
+
+    { in: { data: {a:{b:2}}, spec: {a:{b:'`$COPY`'}} }, out: {a:{b:2}} }
+    { in: { data: {a:[21,22]}, spec: {a:'`$COPY`'} }, out: {a:[21,22]} }
+    { in: { data: {a23:true}, spec: {a23:'`$COPY`', a24:'`$COPY`'} },
+      out: {a23:true} }
+      
+    { in: { data: {a:{b:3}}, spec: {a:{'`$MERGE`':'`a`',c:3}} }, out: {a:{b:3,c:3}} }
+    { in: { data: {a:{b:4}}, spec: {'`$MERGE`':'``'} }, out: {a:{b:4}} }
+    { in: { data: {a:{b:5}}, spec: {a:{'`$MERGE`':'`a`',b:51}} }, out: {a:{b:51}} }
+    { in: { data: {a:{b:6}}, spec: {a:{b:61,'`$MERGE`':'`a`'}} }, out: {a:{b:61}} }
+
+    { in: { data: {a:{b:71},c:{b:81}}, spec: {x:{'`$MERGE`':['`a`']}} }, out: {x:{b:71}} }
+    { in: { data: {a:{b:72},c:{b:82}}, spec: {x:{'`$MERGE`':['`a`','`c`']}} }, out: {x:{b:82}} }
+    { in: { data: {a:{b:73},c:{b:83}}, spec: {x:{'`$MERGE`':['`c`','`a`']}} }, out: {x:{b:73}} }
+
+    { in: { data: {a:{b:74},c:{b:84}}, spec: {x:{'`$MERGE`':'`a`'}} }, out: {x:{b:74}} }
+
+    { in: { data: {a:{b:75},c:{b:85}}, spec: {x:{'`$MERGE1`':'`a`','`$MERGE0`':'`c`'}} },
+      out: {x:{b:85}} }
+    { in: { data: {a:{b:76},c:{b:86}}, spec: {x:{'`$MERGE0`':'`a`','`$MERGE1`':'`c`'}} },
+      out: {x:{b:76}} }
+      
+    { in: { data: {a:{b:8}}, spec: {a:{'`$MERGE`':['`a`',{b:81}]}} }, out: {a:{b:81}} }
+
+    { in: { data: {a:{b:81}}, spec: {a:['`$MERGE`']}}, out: {a:[]} }
+
+    { in: { data: {a:{b:72}}, spec: {a:['`$MERGE`',77]}}, out: {a:[77]} }
+
+    { in: { data: {a:{b:73}}, spec: {x:{'`$MERGE`':'`a`',b:74,c:75}} },
+      out: {x:{b:74,c:75}} }
+
+    { in: { data: {a:{b:76},d:77}, spec: {x:{'`$MERGE`':'`a`',b:'`d`',c:78}} },
+       out: {x:{b:77,c:78}} }
+  
+    { in: { data: {a:{b:8}}, spec: {a:{b:'`$DELETE`'}} }, out: {a:{}} }
+    { in: { data: {a:{b:8}}, spec: {a:'`$DELETE`'} }, out: {} }
+
+    { in: { data: {}, spec: {a:'`$BT`$COPY`$BT`'} }, out: {a:'`$COPY`'} }
+
+
+    { in: { spec: {q:1} }, out: {q:1} }
+    { in: { spec: {q:'`$COPY`'} }, out: {} }
+
+    { in: { data: null, spec: {q:1} }, out: {q:1} }
+    { in: { data: null, spec: {q:'`$COPY`'} }, out: {} }
+
+    { in: { data: {q:2}, spec: null }, out: null }
+    { in: { data: {q:2} } }
+    { in: { } }
+  ]
+}
+
+
+each: {
+  set: [
+    { in: { data: {x:y:[{q:11},{q:22}]},
+            spec: {x:y:[{q:'`$COPY`'},{q:'`$COPY`'}]} },
+      out: {x:y:[{q:11},{q:22}]} }
+
+      
+    { in: { data: [{q:12},{q:22}],
+            spec: {x:y:['`$EACH`','',{q:'`$COPY`',r:'`.q`',p:'`...v`'}]} },
+      out: {x:y:[{q:12,r:12},{q:22,r:22}]} }
+
+    { in: { data: {v:1,a:[{q:13},{q:23}]},
+            spec: {x:y:['`$EACH`','a',{q:'`$COPY`',r:'`.q`',p:'`...v`'}]} },
+      out: {x:y:[{q:13,r:13,p:1},{q:23,r:23,p:1}]} }
+
+    { in: { data: {a:b:[{q:14},{q:24}]},
+            spec: {x:y:['`$EACH`','a.b',{q:'`$COPY`'}]} },
+      out: {x:y:[{q:14},{q:24}]} }
+
+    { in: { data: {a:b:c:[{q:15},{q:25}]},
+            spec: {x:y:['`$EACH`','a.b.c',{q:'`$COPY`'}]} },
+      out: {x:y:[{q:15},{q:25}]} }
+
+    { in: { data: {a:b:c:d:[{q:16},{q:26}]},
+            spec: {x:y:['`$EACH`','a.b.c.d',{q:'`$COPY`'}]} },
+      out: {x:y:[{q:16},{q:26}]} }
+
+      
+    { in: { data: [],
+            spec: [{t:'T9',c:'`$COPY`'},{t:'T9',c:'`$COPY`'}] },
+      out: [{t:'T9'},{t:'T9'}] }
+
+    { in: { data: [{w:'W10',c:'C10'},{w:'W11',c:'C11'}],
+            spec: [{t:'T10',c:'`$COPY`'},{t:'T10',c:'`$COPY`'}] },
+      out: [{t:'T10',c:'C10'},{t:'T10',c:'C11'}] }
+
+    { in: { data: [{w:'W20',c:'C20'},{w:'W21',c:'C21'}],
+            spec: [{t:'T20',c:'`$COPY`',k:'`$KEY`'},{t:'T20',c:'`$COPY`',k:'`$KEY`'}] },
+      out: [{t:'T20',c:'C20',k:'0'},{t:'T20',c:'C21',k:'1'}] }
+
+    { in: { data: [{w:'W20',c:'C20'},{w:'W21',c:'C21'}],
+            spec: [{t:'T20',c:'`$COPY`',k:'`$KEY`','`$KEY`':'w'},
+                   {t:'T20',c:'`$COPY`',k:'`$KEY`','`$KEY`':'w'}] },
+      out: [{t:'T20',c:'C20',k:'W20'},{t:'T20',c:'C21',k:'W21'}] }
+
+    { in: { data: [11,22],
+            spec: ['`$COPY`','`$COPY`'] },
+      out: [11,22] }
+
+    { in: { data: ['A',true],
+            spec: ['`$COPY`','`$COPY`'] },
+      out: ['A',true] }
+
+      
+    { in: { data: {}, spec: {z:['`$EACH`','x',{q:'Q01'}]} },
+      out: {z:[]} }
+
+    { in: { data: {}, spec: {z:[['`$EACH`','x',{q:'Q02'}]]} },
+      out: {z:[[]]} }
+
+    { in: { data: {}, spec: {z:[[['`$EACH`','x',{q:'Q02'}]]]} },
+      out: {z:[[[]]]} }
+      
+    { in: { data: {}, spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q0'}]} },
+      out: {z:[]} }
+
+    { in: { data: {x:{}}, spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q1'}]} },
+      out: {z:[]} }
+
+    { in: { data: {x:{a:{y:10}}}, spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q2'}]} },
+      out: {z:[{y:10,q:'Q2'}]} }
+
+    { in: { data: {x:{a:{y:10},b:{y:11}}}, spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q3'}]} },
+      out: {z:[{y:10,q:'Q3'},{y:11,q:'Q3'}]} }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12}}},
+            spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q4'}]} },
+      out: {z:[{y:10,q:'Q4'},{y:11,q:'Q4'},{y:12,q:'Q4'}]} }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12},d:{y:13}}},
+            spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q5'}]} },
+      out: {z:[{y:10,q:'Q5'},{y:11,q:'Q5'},{y:12,q:'Q5'},{y:13,q:'Q5'}]} }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12},d:{y:13},e:{y:14}}},
+            spec: {z:['`$EACH`','x',{y:'`$COPY`',q:'Q6'}]} },
+      out: {z:[{y:10,q:'Q6'},{y:11,q:'Q6'},{y:12,q:'Q6'},{y:13,q:'Q6'},{y:14,q:'Q6'}]} }
+
+    { in: { data: {}, spec: ['`$EACH`','x',{y:'`$COPY`',p:'P0'}] },
+     out: [] }
+
+    { in: { data: {x:{}}, spec: ['`$EACH`','x',{y:'`$COPY`',p:'P1'}] },
+      out: [] }
+      
+    { in: { data: {x:{a:{y:101}}}, spec: ['`$EACH`','x',{p:'P102'}] },
+     out: [{p:'P102'}] }
+
+    { in: { data: {x:{a:{y:10}}}, spec: ['`$EACH`','x',{y:'`$COPY`',p:'P2'}] },
+      out: [{y:10,p:'P2'}] }
+
+    { in: { data: {x:z:a:{q:10}}, spec: ['`$EACH`','x.z',{q:'`$COPY`',p:'P21'}] },
+      out: [{q:10,p:'P21'}] }
+
+    
+    { in: { data: {x:{a:{y:10},b:{y:11}}}, spec: ['`$EACH`','x',{y:'`$COPY`',p:'P3'}] },
+      out: [{y:10,p:'P3'},{y:11,p:'P3'}] }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12}}},
+            spec: ['`$EACH`','x',{y:'`$COPY`',p:'P4'}] },
+      out: [{y:10,p:'P4'},{y:11,p:'P4'},{y:12,p:'P4'}] }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12},d:{y:13}}},
+            spec: ['`$EACH`','x',{y:'`$COPY`',p:'P5'}] },
+      out: [{y:10,p:'P5'},{y:11,p:'P5'},{y:12,p:'P5'},{y:13,p:'P5'}] }
+
+    { in: { data: {x:{a:{y:10},b:{y:11},c:{y:12},d:{y:13},e:{y:14}}},
+            spec: ['`$EACH`','x',{y:'`$COPY`',p:'P6'}] },
+      out: [{y:10,p:'P6'},{y:11,p:'P6'},{y:12,p:'P6'},{y:13,p:'P6'},{y:14,p:'P6'}] }
+
+
+    { in: { data: {x:{p:{a:{y:10}}}},
+            spec: {z:['`$EACH`','x.p',{y:'`$COPY`',w:'w0',k:'`$KEY`'}]} },
+      out: {z:[{y:10,w:'w0',k:'a'}]} }
+
+    { in: { data: {x:{p:{q:{a:{y:10}}}}},
+            spec: {z:['`$EACH`','x.p.q',{y:'`$COPY`',w:'w1',k:'`$KEY`'}]} },
+      out: {z:[{y:10,w:'w1',k:'a'}]} }
+
+
+    { in: { data: {x:{a0:{y:0}}}, spec: {r0:[['`$EACH`','x',{y:'`$COPY`',q:'T0'}]]} },
+     out: {r0:[[{y:0,q:T0}]]} }
+
+    { in: { data: {x:{a1:{y:0}}}, spec: {r1:[[['`$EACH`','x',{y:'`$COPY`',q:'T1'}]]]} },
+     out: {r1:[[[{y:0,q:T1}]]]} }
+
+    { in: { data: {x:{a2:{y:0}}}, spec: {r2:[[[['`$EACH`','x',{y:'`$COPY`',q:'T2'}]]]]} },
+      out: {r2:[[[[{y:0,q:T2}]]]]} }
+
+      
+    { in: { data: {a0:[{i:0},{i:1}]},
+            spec: {b0:['`$EACH`','a0',{i:'`$COPY`',j:'`.i`'}]} }
+      out: {b0:[{i:0,j:0},{i:1,j:1}]} }
+
+    { in: { data: {zz:99,a0:[{i:0},{i:1}]},
+            spec: {b0:['`$EACH`','a0',{i:'`$COPY`',j:'`.i`',k:'`zz`'}]} }
+      out: {b0:[{i:0,j:0,k:99},{i:1,j:1,k:99}]} }
+
+      
+    { in: { data: {a1:[{i:0},{i:1}]},
+            spec: {b1:['`$EACH`','a1',{'`$MERGE`':'`.`',k:'`.i`'}]} }
+      out: {b1:[{i:0,k:0},{i:1,k:1}]} }
+
+    { in: { data: {p2:20, a2:[{i:30},{i:31}]},
+            spec: {b2:['`$EACH`','a2',{k:'`.i`',p:'`...p2`'}]} }
+      out: {b2:[{k:30,p:20},{k:31,p:20}]} }
+
+
+    {
+      in: data: {a0:[{n:0},{n:1}]}
+      in: spec: ['`$EACH`','a0',{x0:{y0:'`..n`'}}]
+      out: [{x0:y0:0},{x0:y0:1}]
+    }
+
+
+    {
+      in: data: ['a','b','c']
+      in: spec: ['`$EACH`','','`$COPY`']
+      out: ['a','b','c']
+    }
+
+    {
+      in: data: ['a','b','c']
+      in: spec: ['`$EACH`','',['`$FORMAT`','upper','`$COPY`']]
+      out: ['A','B','C']
+    }
+  ]
+}
+
+
+pack: {
+  set: [
+    { in: { data: {x:[{y:0,k:'K0'},{y:1,k:'K1'}]},
+            spec: {z:{'`$PACK`':['x',{'`$KEY`':'k', y:'`.y`',p:'P0'}]}} },
+      out: {z:{K0:{y:0,p:'P0'},K1:{y:1,p:'P0'}}} }
+
+    { in: { data: {x:[{y:0,k:'K0'},{y:1,k:'K1'}]},
+            spec: {z:{'`$PACK`':['x',{'`$KEY`':'k', '`$VAL`':{y:'`.y`',p:'P1'}}]}} },
+      out: {z:{K0:{y:0,p:'P1'},K1:{y:1,p:'P1'}}} }
+
+    { in: { data: {x:[{y:0,k:'K0'},{y:1,k:'K1'}]},
+            spec: {z:{'`$PACK`':['x',{'`$KEY`':'k', y:'`$COPY`',q:'Q0'}]}} },
+      out: {z:{K0:{y:0,q:'Q0'},K1:{y:1,q:'Q0'}}} }
+
+    { in: { data: {x:[{y:0,k:'K0'},{y:1,k:'K1'}]},
+            spec: {'`$PACK`':['x',{'`$KEY`':'k', y:'`$COPY`',q:'Q1'}]} },
+      out: {K0:{y:0,q:'Q1'},K1:{y:1,q:'Q1'}} }
+
+    { in: { data: [{y:0,k:'K0'},{y:1,k:'K1'}],
+            spec: {'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q2'}]} },
+      out: {K0:{y:0,q:'Q2'},K1:{y:1,q:'Q2'}} }
+
+    { in: { data: [{y:0,k:'K0'},{y:1,k:'K1'}],
+            spec: {z:{'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q3'}]}} },
+      out: {z:{K0:{y:0,q:'Q3'},K1:{y:1,q:'Q3'}}} }
+
+      
+    { in: { data: [{y:0,k:'K0'}],
+            spec: {a:{b:{'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q4'}]}}} },
+      out: {a:{b:{K0:{y:0,q:'Q4'}}}} }
+
+    { in: { data: [{y:0,k:'K0'}],
+            spec: {a:{b:{c:{'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q5'}]}}}} },
+      out: {a:{b:{c:{K0:{y:0,q:'Q5'}}}}} }
+
+    { in: { data: [{y:0,k:'K0'}],
+            spec: {a:{b:{c:{d:{'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q6'}]}}}}} },
+      out: {a:{b:{c:{d:{K0:{y:0,q:'Q6'}}}}}} }
+
+    { in: { data: [{y:0,k:'K0'}],
+            spec: {a:{b:{c:{d:{e:{'`$PACK`':['',{'`$KEY`':'k', y:'`$COPY`',q:'Q7'}]}}}}}} },
+      out: {a:{b:{c:{d:{e:{K0:{y:0,q:'Q7'}}}}}}} }
+
+
+    { in: { data: ['a','b','c'],
+            spec: {'`$PACK`':['',{'`$VAL`': '`$COPY`'}]}},
+      out: {0:a,1:b,2:c} }
+
+    { in: { data: ['a','b','c'],
+            spec: {'`$PACK`':['','`$COPY`']}},
+      out: {0:a,1:b,2:c} }
+
+    { in: { data: ['a','b','c'],
+      spec: {'`$PACK`':['','X']}},
+      out: {0:X,1:X,2:X} }
+
+    { in: { data: ['a','b','c'],
+            spec: {'`$PACK`':['',{'`$KEY`':'`$COPY`', '`$VAL`': '`$COPY`'}]}},
+      out: {a:a,b:b,c:c} }
+
+    { in: { data: ['a','b','c'],
+            spec: {'`$PACK`':['',{'`$KEY`':'`$COPY`', x:'`$KEY`'}]}},
+      out: {a:x:a,b:x:b,c:x:c} }
+
+    { in: { data: ['a','b','c'],
+            spec: {'`$PACK`':['',{'`$KEY`': '`$COPY`',
+                                  '`$VAL`': ['`$FORMAT`','upper','`$COPY`'] }]}},
+      out: {a:A,b:B,c:C} }
+
+      
+    { in: { data: {x:[{y:0,k:'K0'}]},
+          spec: {a:{b:{c:{d:{e:{'`$PACK`':['x',{'`$KEY`':'k', y:'`$COPY`',q:'Q8'}]}}}}}} },
+      out: {a:{b:{c:{d:{e:{K0:{y:0,q:'Q8'}}}}}}} }
+
+    { in: { data: {x:{a:{y:0,k:'K0'},b:{y:1,k:'K1'}}},
+            spec: {z:{'`$PACK`':['x',{p:'`$KEY`', '`$KEY`':'k', y:'`$COPY`',q:'Q9'}]}} },
+      out: {z:{K0:{y:0,q:'Q9',p:'a'},K1:{y:1,q:'Q9',p:'b'}}} }
+
+    { in: { data: {v100:11,x100:[{y:0,k:'K0'},{y:1,k:'K1'}]},
+            spec: {a:{b:{'`$PACK`':['x100',{'`$KEY`':'k', y:'`.y`',p:'`...v100`'}]}}} },
+      out: {a:{b:{K0:{y:0,p:11}, K1:{y:1,p:11}}}} }
+
+      
+      
+  ]
+}
+
+
+modify: {
+  set: [
+    { in: { data: {x:'X'}, spec: {z:'`x`'} }, out: { z: '@X' } }
+  ]
+}
+
+
+
+ref: {
+  set: [
+
+    { in: { data: {}, spec: {x0:0,r0:0} }, out: {x0:0,r0:0} }
+    { in: { data: {}, spec: {r0:['`$REF`','x0']} }, out: {} }
+    { in: { data: {}, spec: {x0:0,r0:['`$REF`','x0']} }, out: {x0:0,r0:0} }
+
+    { in: { data: {r2:2}, spec: {r2:'`$COPY`'} }, out: {r2:2} }
+    { in: { data: {r2:2,p2:2}, spec: {r2:['`$REF`','x2'], x2:'`$COPY`'} }, out: {r2:2} }
+
+    { in: { data: {}, spec: {z:['`$REF`','z']} }, out: {} }
+    { in: { data: {}, spec: {z:y:['`$REF`','z']} }, out: {z:{}} }
+    { in: { data: {}, spec: {z:y:x:['`$REF`','z']} }, out: {z:{y:{}}} }
+
+    { in: { data: [], spec: [['`$REF`','z']] }, out:[] }
+    { in: { data: [], spec: [[['`$REF`','z']]] }, out:[[]] }
+    { in: { data: [], spec: [[[['`$REF`','z']]]] }, out:[[[]]] }
+
+    { in: { data: {}, spec: {z:['`$REF`','y'],y:['`$REF`','z']} }, out: {} }
+    { in: { data: {}, spec: {z:x:['`$REF`','y'],y:q:['`$REF`','z']} }, out: {z:{},y:{}} }
+    
+    { in: { data: {},
+      spec: {z:{s:0,n:'`$COPY`',m:'`.n`',p:['`$REF`','z']}} },
+      out: {z:{s:0}} }
+
+    { in: { data: {z:{n:1}},
+      spec: {z:{s:0,n:'`$COPY`',m:'`.n`',p:['`$REF`','z']}} },
+      out: {z:{s:0,n:1,m:1}} }
+
+    { in: { data: {z:{n:1,p:{n:2}}},
+      spec: {z:{s:0,n:'`$COPY`',m:'`.n`',p:['`$REF`','z']}} },
+      out: {z:{s:0,n:1,m:1,p:{s:0,n:2,m:2}}} }
+
+    { in: { data: {z:{n:1,p:{n:2,p:{n:3}}}},
+      spec: {z:{s:0,n:'`$COPY`',m:'`.n`',p:['`$REF`','z']}} },
+      out: {z:{s:0,n:1,m:1,p:{s:0,n:2,m:2,p:{s:0,n:3,m:3}}}} }
+
+      
+    { in: { data: {zz:{n:1,p:{n:2},q:{n:3}}},
+      spec: {zz:{s:0,n:'`$COPY`',m:'`.n`',p:['`$REF`','zz'],q:['`$REF`','zz']}} },
+      out: {zz:{s:0,n:1,m:1,p:{s:0,n:2,m:2},q:{s:0,n:3,m:3}}} }
+
+      
+      
+    { in: {
+        data: { z0: { y0: 10, p:[{y0:11}] } }
+        spec: { z0: { x0: '`.y0`', p:[{x0:'`.y0`'}] } }
+      }
+      out: {z0:{x0:10,p:[{x0:11}]}}
+    }
+
+    { in: {
+        data: { z1: { y1: 20, p:[{y1:21}] } }
+        spec: { z1: { x1: '`.y1`', p:[['`$REF`','z1']] } }
+      }
+      out: {z1:{x1:20,p:[{x1:21,p:[]}]}}
+    }
+
+    { in: {
+        data: { z2: { y2: 30, p:[{y2:31},{y2:32}] } }
+        spec: { z2: { x2: '`.y2`', p:[['`$REF`','z2'],['`$REF`','z2']] } }
+      }
+      out: {z2:{x2:30,p:[{x2:31,p:[]},{x2:32,p:[]}]}}
+    }
+
+    { in: {
+        data: { z3: { y3: 40, p:[{y3:41},{y3:42,p:[{y3:43}]}] } }
+        spec: { z3: { x3: '`.y3`', p:[['`$REF`','z3'],['`$REF`','z3']] } }
+      }
+      out: {z3:{x3:40,p:[{x3:41,p:[]},{x3:42,p:[{x3:43,p:[]}]}]}}
+    }
+
+
+       
+    
+    { in: {
+        data: { z22: { y22: 90, p:[{y22:91},{y22:92}] } }
+        spec: { z22: { x22: '`.y22`', y22:'`$COPY`',
+                       p:['`$EACH`','.',{y22:'`$COPY`',x22: '`.y22`'}] } }
+      }
+      out: {z22:{x22:90,y22:90,p:[{x22:91,y22:91},{x22:92,y22:92}]}}
+    }
+
+    { in: {
+        data: { z22: { y22: 90, p:[{y22:91},{y22:92}] } }
+        spec: { z22: { x22: '`.y22`', y22:'`$COPY`',
+                       p:['`$EACH`','.',['`$REF`','z22']] } }
+      }
+      out: {z22:{x22:90,y22:90,p:[{x22:91,y22:91,p:[]},{x22:92,y22:92,p:[]}]}}
+    }
+
+    { in: {
+        data: { z33: { y33: 90, p:[{y33:91},{y33:92,p:[{y33:93}]}] } }
+        spec: { z33: { x33: '`.y33`', y33:'`$COPY`',
+                       p:['`$EACH`','.',['`$REF`','z33']] } }
+      }
+      out: {z33:{x33:90,y33:90,p:[{x33:91,y33:91,p:[]},
+                                  {x33:92,y33:92,p:[{x33:93,y33:93,p:[]}]}]}}
+    }
+
+  ]
+}
+
+
+format: {
+  set: [
+    { in: { data: null, spec:['`$FORMAT`','upper',a] } out: A }
+    { in: { data: null, spec:x:['`$FORMAT`','upper',b] } out: x:B }
+    { in: { data: null, spec:x:[['`$FORMAT`','upper',1]] } out: x:['1'] }
+    { in: { data: null, spec:x:y:['`$FORMAT`','upper',true] } out: x:y:TRUE }
+    { in: { data: null, spec:x:y:[[['`$FORMAT`','upper',null]]] } out: x:y:[['NULL']] }
+    { in: { data: null, spec:['`$FORMAT`','upper',[]] } out: [] }
+    { in: { data: null, spec:['`$FORMAT`','upper',{}] } out: {} }
+    { in: { data: null, spec:['`$FORMAT`','upper',[c]] } out: [C] }
+    { in: { data: null, spec:['`$FORMAT`','upper',{c:d}] } out: {c:D} }
+    { in: { data: null, spec:['`$FORMAT`','upper',[e,[f]]] } out: [E,[F]] }
+    { in: { data: null, spec:['`$FORMAT`','upper',{g:h,i:j:k}] } out: {g:H,i:j:K} }
+
+    { in: { data: null, spec:['`$FORMAT`','not-a-format',a] }
+      err: '$FORMAT: unknown format: not-a-format.' }
+
+    { in: { data: null, spec:['`$FORMAT`','identity',1] } out: 1 }
+    { in: { data: null, spec:['`$FORMAT`','identity',[1]] } out: [1] }
+    { in: { data: null, spec:['`$FORMAT`','identity',{x:1}] } out: {x:1} }
+    
+    { in: { data: null, spec:['`$FORMAT`','lower',A] } out: a }
+    { in: { data: null, spec:['`$FORMAT`','string',1.2] } out: '1.2' }
+    { in: { data: null, spec:['`$FORMAT`','number','3.4'] } out: 3.4 }
+    { in: { data: null, spec:['`$FORMAT`','integer',[1,2.3,'4','5.6']] } out: [1,2,4,5] }
+    { in: { data: null, spec:['`$FORMAT`','number',{a:1,b:2.3,c:'4',d:'5.6'}] }
+      out: {a:1 b:2.3 c:4 d:5.6}  }
+
+    { in: { data: null, spec:['`$FORMAT`','concat',[a,b]] } out: ab }
+    { in: { data: null, spec:['`$FORMAT`','concat',[c,1,d,null,false,{},[]]] }
+      out: c1dnullfalse }
+  ]
+}
+
+
+apply: {
+  set: [
+    { in: { data: {}, spec:['`$APPLY`','not-a-function','ignored'] }
+      err: '$APPLY: invalid argument: '+
+           'not-a-function (string at position 1) is not of type: function.' }
+
+    { in: { data: {}, spec:{'`$APPLY`':1} }
+      err: '$APPLY: invalid placement as key, expected: value.' }
+
+    { in: { data: {}, spec:{x:'`$APPLY`'} }
+      err: '$APPLY: invalid placement in parent map, expected: list.' }
+      
+  ]
+
+}

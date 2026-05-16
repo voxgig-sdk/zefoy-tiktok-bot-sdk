@@ -1,0 +1,23 @@
+
+main: kit: target: rb: {
+
+  title: Ruby
+  ext: rb
+  comment: line: "#"
+  module: name: 'zefoy-tiktok-bot'
+  srcfeature: false
+
+  deps: &: {
+    kind: *'prod' | string
+  }
+
+  deps: {
+    'voxgig-struct': { active: true, version: '0.0.10' }
+    'json': { active: true, version: '0' }
+  }
+}
+
+
+main: kit: feature: &: target: rb: deps: &: {
+  kind: *'prod' | string
+}

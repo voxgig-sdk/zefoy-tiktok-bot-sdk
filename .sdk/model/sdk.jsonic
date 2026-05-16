@@ -1,0 +1,35 @@
+
+# Model definitions.
+@"@voxgig/apidef/model/apidef.jsonic"
+@"@voxgig/sdkgen/model/sdkgen.jsonic"
+
+
+# SDK Details.
+name: 'zefoy-tiktok-bot'
+origin: 'voxgig-sdk'
+def: 'zefoy-tiktok-bot_0.1.0.json'
+
+
+# API Information
+@"api/api-info.jsonic"
+
+
+# SDK Configuration.
+@"config.jsonic"
+
+
+# SDK Entities
+@"entity/entity-index.jsonic"
+
+
+# SDK Features.
+@"feature/feature-index.jsonic"
+ 
+
+# SDK Targets.
+@"target/target-index.jsonic"
+
+
+# Operation workflows.
+@"flow/flow-index.jsonic"
+

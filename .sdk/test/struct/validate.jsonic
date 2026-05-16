@@ -1,0 +1,324 @@
+
+
+basic: {
+  set: [
+    { in: { data: 1000, spec: 1000 }, out: 1000 }
+    { in: { data: 1002, spec: 1001 }, out: 1002 }
+
+    { in: { data: {x0:'X0'}, spec: {x0:'X0'} }, out: {x0:'X0'} }
+    { in: { data: {x1:'X0'}, spec: {x1:'X1'} }, out: {x1:'X0'} }
+    { in: { data: {}, spec: {x2:'X2'} }, out: {x2:'X2'} }
+    
+    { in: { data: a, spec: '`$STRING`' }, out: a }
+    { in: { data: 1, spec: '`$STRING`' }, out: 1,
+      err: 'Expected string, but found integer: 1.' }
+
+    { in: { data: 1001, spec: '`$NUMBER`' }, out: 1001 }
+    { in: { data: 1002, spec: '`$INTEGER`' }, out: 1002 }
+    { in: { data: 1003.3, spec: '`$DECIMAL`' }, out: 1003.3 }
+    { in: { data: true, spec: '`$BOOLEAN`' }, out: true }
+    { in: { data: {}, spec: '`$MAP`' }, out: {} }
+    { in: { data: [], spec: '`$LIST`' }, out: [] }
+    { in: { data: null, spec: '`$NULL`' }, out: null }
+    { in: { data: {}, spec: {n0:'`$NIL`'} }, out: {} }
+
+    { in: { data: 1101, spec: '`$ANY`' }, out: 1101 }
+    { in: { data: 'b0', spec: '`$ANY`' }, out: 'b0' }
+    { in: { data: {}, spec: '`$ANY`' }, out: {} }
+      
+    { in: { data: {a0:A}, spec: {a0:'`$STRING`'} }, out: {a0:A} }
+
+    { in: { data: {a1:1}, spec: {a1:'`$STRING`'} }
+      err: 'Expected field a1 to be string, but found integer: 1' }
+
+    { in: { data: {a2:11,b2:'B'}, spec: {a2:'`$STRING`',b2:'`$NUMBER`'} }
+      err: 'Expected field a2 to be string, but found integer: 11. | '+
+           'Expected field b2 to be number, but found string: B.' }
+
+    { in: { data: {a3:2,b3:B,c3:true}, spec: {a3:'`$NUMBER`',b3:'`$STRING`',c3:'`$BOOLEAN`'}}
+      out: {a3:2,b3:B,c3:true} }
+
+    { in: { data: {a4:3,b4:B}, spec: {a4:'`$NUMBER`'}}
+      out: {a4:3,b4:B}
+      err: 'Unexpected keys at field <root>: b4' }
+
+    { in: { data: {a5:4,b5:D}, spec: {a5:'`$NUMBER`',b5:C}}
+      out: {a5:4,b5:D} }
+
+    { in: { data: {a:5,b:D}, spec: {a:'`$NUMBER`',b:C}}
+      out: {a:5,b:D} }
+
+    { in: { data: {a:6,b:2}, spec: {a:'`$NUMBER`',b:C}}
+      err: 'Expected field b to be string, but found integer: 2' }
+
+      
+    { in: { data: {x1:{a:1}}, spec: {x1:'`$MAP`'}}
+      out: {x1:{a:1}} }
+
+    { in: { data: {x2:{}}, spec: {x2:'`$MAP`'}}
+      out: {x2:{}} }
+      
+    { in: { data: {a:[],b:{}}, spec: {a:'`$LIST`',b:'`$MAP`'}}
+      out: {a:[],b:{}} }
+
+    { in: { data: {a:[11,22],b:{c:33,d:44}}, spec: {a:'`$LIST`',b:'`$MAP`'}}
+      out: {a:[11,22],b:{c:33,d:44}} }
+
+    { in: { data: {a:[[55],{c:66}],b:{d:[77],e:{f:88}}}, spec: {a:'`$LIST`',b:'`$MAP`'}}
+      out: {a:[[55],{c:66}],b:{d:[77],e:{f:88}}} }
+
+    { in: { data: {}, spec: {b0:'`$BOOLEAN`'} }
+      err: 'Expected field b0 to be boolean, but found no value.' }
+
+      { in: { data: {a:{x:1}}, spec: {a:{}} }, out: {a:{x:1}} }
+    { in: { data: {a:{x:{y:2}}}, spec: {a:{}} }, out: {a:{x:{y:2}}} }
+
+    { in: { data: {}, spec: {x:{y:11}} }, out: {x:{y:11}} }
+
+    { in: { data: [30], spec: ['`$NUMBER`']}, out: [30] }
+    { in: { data: [31,32], spec: ['`$NUMBER`','`$NUMBER`']}, out: [31,32] }
+
+    { in: { data: {a:{x:12,y:22}}, spec: {a:{x:0,'`$OPEN`':true}} }, out: {a:{x:12,y:22}} }
+
+    { in: { data: {c1:{}}, spec: {c1:[]} },
+      err:'Expected field c1 to be list, but found map: {}.' }
+
+    { in: { data: {c2:[]}, spec: {c2:{}} },
+      err:'Expected field c2 to be map, but found list: [].' }
+
+    { in: { data: '', spec: '`$STRING`' },
+      err:'Empty string at <root>' }
+
+    { in: { data: {s0:''}, spec: {s0:'`$STRING`'} },
+      err:'Empty string at s0' }
+      
+    { in: { data: {s1:''}, spec: {s1:['`$ONE`','`$STRING`','']} },
+      out: {s1:''} }
+
+    { in: { data: z0, spec: '`$NUMBER`' } err: 'Expected number, but found string: z0.' }
+    { in: { data: z1, spec: '`$INTEGER`' } err: 'Expected integer, but found string: z1.' }
+    { in: { data: z2, spec: '`$DECIMAL`' } err: 'Expected decimal, but found string: z2.' }
+    { in: { data: z3, spec: '`$BOOLEAN`' } err: 'Expected boolean, but found string: z3.' }
+    { in: { data: z4, spec: '`$MAP`' } err: 'Expected map, but found string: z4.' }
+    { in: { data: z5, spec: '`$LIST`' } err: 'Expected list, but found string: z5.' }
+    { in: { data: z6, spec: '`$NULL`' } err: 'Expected null, but found string: z6.' }
+    { in: { data: {n1:z7}, spec: {n1:'`$NIL`'} }
+      err: 'Expected field n1 to be nil, but found string: z7.' }
+    
+    { in: { data: 4.4, spec: '`$INTEGER`' }, err: 'Expected integer, but found decimal: 4.4.' }
+    { in: { data: 5, spec: '`$DECIMAL`' }, err: 'Expected decimal, but found integer: 5.' }
+
+  ]
+}
+
+
+child: {
+  set: [
+    { in: { data: {q:{a:{x:1},b:{x:2}}}, spec: {q:{'`$CHILD`':{x:'`$NUMBER`'}}} },
+      out: {q:{a:{x:1},b:{x:2}}} }
+
+    { in: { data: {q:{}}, spec: {q:{'`$CHILD`':{x:'`$NUMBER`'}}} },
+      out: {q:{}} }
+
+    { in: { data: {q:{a:{x:X}}}, spec: {q:{'`$CHILD`':{x:'`$NUMBER`'}}} },
+      err: 'Expected field q.a.x to be number, but found string: X' }
+      
+    { in: { data: {q:{a:{x:1,y:'Y1'},b:{x:2,y:'Y2'}}},
+            spec: {q:{'`$CHILD`':{x:'`$NUMBER`','`$OPEN`':true}}} },
+      out: {q:{a:{x:1,y:'Y1'},b:{x:2,y:'Y2'}}} }
+      
+    { in: { data: {q:{a:{a0:{x:0},a1:{x:1}}, b:{b0:{x:2},b1:{x:3}}}},
+           spec: {q:{'`$CHILD`':{'`$CHILD`':{x:'`$NUMBER`'}}}} },
+      out: {q:{a:{a0:{x:0},a1:{x:1}}, b:{b0:{x:2},b1:{x:3}}}} }
+      
+    { in: { data: {q:[21,22]}, spec: {q:['`$CHILD`','`$NUMBER`']} },
+      out: {q:[21,22]} }
+
+    { in: { data: {q:[23,a23]}, spec: {q:['`$CHILD`','`$NUMBER`']} },
+      err: 'Expected field q.1 to be number, but found string: a23' }
+      
+    { in: { data: {q:[a24]}, spec: {q:['`$CHILD`','`$STRING`']} },
+      out: {q:[a24]} }
+
+    { in: { data: {q:[true,false]}, spec: {q:['`$CHILD`','`$BOOLEAN`']} },
+      out: {q:[true,false]} }
+
+    { in: { data: {q:[]}, spec: {q:['`$CHILD`','`$BOOLEAN`']} },
+      out: {q:[]} }
+
+    { in: { data: {q:a25}, spec: {q:['`$CHILD`','`$MAP`']} },
+      err: 'Expected field q to be list, but found string: a25' }
+      
+      # Child template is a default value defining type
+    { in: { data:{a40:{x0:2}}, spec: {a40:{'`$CHILD`':1}}}, out:{a40:{x0:2}} }
+    { in: { data:{a41:{x0:3,x1:4}}, spec: {a41:{'`$CHILD`':1}}}, out:{a41:{x0:3,x1:4}} }
+    { in: { data:{a411:{x2:'X'}}, spec: {a411:{'`$CHILD`':1}}}
+      err: 'Expected field a411.x2 to be integer, but found string: X'}
+    
+    { in: { data:{a42:{}}, spec: {a42:{'`$CHILD`':1}}}, out:{a42:{}} }
+    { in: { data:{}, spec: {a43:{'`$CHILD`':1}}}, out:{a43:{}} }
+
+    { in: { data:{a44:1}, spec: {a44:{'`$CHILD`':{y:1}}}}
+      err: 'Expected field a44 to be map, but found integer: 1' }
+
+    { in: { data:{a50:[2]}, spec: {a50:['`$CHILD`',1]}}, out:{a50:[2]} }
+    { in: { data:{a51:[3,4]}, spec: {a51:['`$CHILD`',1]}}, out:{a51:[3,4]} }
+    { in: { data:{a52:[]}, spec: {a52:['`$CHILD`',1]}}, out:{a52:[]} }
+    { in: { data:{}, spec: {a53:['`$CHILD`',1]}}, out:{a53:[]} }
+
+
+    { in: {
+        data: {a54:1,b54:2}
+        spec: { '`$OPEN`':true, '`$CHILD`': '`$NUMBER`' }
+      }
+      out:{a54:1,b54:2} }
+
+      { in: {
+        data: {x:{a55:1,b55:2}}
+        spec: {x:{ '`$OPEN`':true, '`$CHILD`': '`$NUMBER`' }}
+      }
+      out:{x:{a55:1,b55:2}} }
+  ]
+}
+
+
+one: {
+  set: [
+    { in: { data: 33, spec: ['`$ONE`','`$STRING`','`$NUMBER`']}, out: 33 }
+
+    { in: { data: 'a31', spec: ['`$ONE`','`$STRING`','`$NUMBER`']}, out: 'a31' }
+
+    { in: { data: true, spec: ['`$ONE`','`$STRING`','`$NUMBER`']},
+     err: 'Expected one of string, number, but found boolean: true.' }
+
+    { in: { data: {x0:true}, spec: {x0:['`$ONE`','`$STRING`','`$NUMBER`']}},
+     err: 'Expected field x0 to be one of string, number, but found boolean: true.' }
+
+    { in: { data: {x1:{a:1}}, spec: ['`$ONE`',{x1:'`$LIST`'}, {x1:'`$MAP`'}]},
+      out: {x1:{a:1}} }
+
+    { in: { data: {x2:{a:1}}, spec: ['`$ONE`',{x2:{a:'`$STRING`'}}, {x2:{a:'`$NUMBER`'}}]},
+      out: {x2:{a:1}} }
+
+    { in: { data: {a:{}}, spec: {a:['`$ONE`','`$MAP`','`$LIST`']} }, out: {a:{}} }
+    { in: { data: {a:[]}, spec: {a:['`$ONE`','`$MAP`','`$LIST`']} }, out: {a:[]} }
+
+    { in: { data: {a:1}, spec: {a:['`$ONE`','`$MAP`','`$LIST`']} },
+      err: 'Expected field a to be one of map, list, but found integer: 1.' }
+
+    { in: { data: {}, spec: {a:['`$ONE`','`$MAP`','`$LIST`']} },
+      err: 'Expected field a to be one of map, list, but found no value.' }
+  ]
+}
+
+
+exact: {
+  set: [
+    { in: { data: 11, spec: ['`$EXACT`',22,11]}, out: 11 }
+    { in: { data: 12, spec: ['`$EXACT`',12,23]}, out: 12 }
+    { in: { data: 13, spec: ['`$EXACT`',13]}, out: 13 }
+    { in: { data: 'a', spec: ['`$EXACT`','a']}, out: 'a' }
+    { in: { data: true, spec: ['`$EXACT`',true]}, out: true }
+    { in: { data: null, spec: ['`$EXACT`',null]}, out: null }
+    { in: { data: {x:1}, spec: ['`$EXACT`',{x:1}]}, out: {x:1} }
+    { in: { data: {x:[2]}, spec: ['`$EXACT`', {x:[2]} ] }, out: {x:[2]} }
+    { in: { data: {x:{y:[3]}}, spec: ['`$EXACT`', {x:{y:[3]}} ] }, out: {x:{y:[3]}} }
+
+    { in: { data: [33], spec: ['`$EXACT`',[33] ] }, out: [33] }
+    { in: { data: [{x:2}], spec: ['`$EXACT`',[{x:2}] ] }, out: [{x:2}] }
+
+    { in: { data: 21, spec: ['`$EXACT`',22] },
+      err:'Expected value exactly equal to 22, but found integer: 21.' }
+
+    { in: { data: 23, spec: ['`$EXACT`','a',false,24] },
+      err:'Expected value exactly equal to one of a, false, 24, but found integer: 23.' }
+
+    { in: { data: 25, spec: ['`$EXACT`',{},[]] },
+      err:'Expected value exactly equal to one of {}, [], but found integer: 25.' }
+
+    { in: { data: 26, spec: ['`$EXACT`',{x:1},[2]] },
+      err:'Expected value exactly equal to one of {x:1}, [2], but found integer: 26.' }
+
+    { in: { data: 27, spec: ['`$EXACT`',{x:[3]},[{y:4}]] },
+      err:'Expected value exactly equal to one of {x:[3]}, [{y:4}], but found integer: 27.' }
+
+    { in: { data: 28, spec: ['`$EXACT`',{x:{y:{z:[]}}}] },
+      err:'Expected value exactly equal to {x:{y:{z:[]}}}, but found integer: 28.' }
+  
+    { in: { data: [31,32], spec: ['`$EXACT`',[33,34]] },
+      err:'Expected value exactly equal to [33,34], but found list: [31,32].' }
+
+    { in: { data: {x:111}, spec: ['`$EXACT`',{x:222}] },
+      err:'Expected value exactly equal to {x:222}, but found map: {x:111}.' }
+
+    { in: { data: {b:35,a:36}, spec: ['`$EXACT`',{b:37,a:36}] },
+      err:'Expected value exactly equal to {a:36,b:37}, but found map: {a:36,b:35}.' }
+
+    { in: { data: {x0:{b:35,a:36}}, spec: {x0:['`$EXACT`',{b:37,a:36}]} },
+      err:'Expected field x0 to be exactly equal to {a:36,b:37}, but found map: {a:36,b:35}.' }
+      
+  ]
+}
+
+
+invalid: set: [
+  { in: { data: null, spec: '`$STRING`' },
+    err: 'Expected string, but found no value.' }
+
+  { in: { data:{b0:1,a0:'a'}, spec: {a0:11,b0:'bb'}},
+    err: 'Expected field a0 to be integer, but found string: a. | '+
+         'Expected field b0 to be string, but found integer: 1.' }
+
+  { in: { data: {a0:2}, spec: {a0:['`$EXACT`', 1]} },
+    err: 'Expected field a0 to be exactly equal to 1, but found integer: 2.' }
+
+  { in: { data: {}, spec:{a1:['`$EXACT`', 1] } },
+    err: 'Expected field a1 to be exactly equal to 1, but found no value.' }
+
+  { in: { data: null, spec:{a2:['`$EXACT`', 1] } },
+    err: 'Expected field a2 to be exactly equal to 1, but found no value.' }
+
+  { in: { spec:{a3:['`$EXACT`', 1] } },
+    err: 'Expected field a3 to be exactly equal to 1, but found no value.' }
+]
+
+
+special: set: [
+  { in: { data: {x0:1}, spec:{x0:'`$NUMBER`', y0:'`x0`'} }, out: {x0:1,y0:1} }
+  { in: { data: {x1:1,y1:1}, spec:{x1:'`$NUMBER`', y1:'`x1`'} }, out: {x1:1,y1:1} }
+  { in: { data: {x2:2,y2:1}, spec:{x2:'`$NUMBER`', y2:'`x2`'} }, out: {x2:2,y2:1} }
+
+  { in: { data: {x3:3,y3:3}, spec:{x3:'`$NUMBER`', y3:['`$REF`','x3']} }, out: {x3:3,y3:3} }
+  { in: { data: {x4:3,y4:4}, spec:{x4:'`$NUMBER`', y4:['`$REF`','x4']} }, out: {x4:3,y4:4} }
+
+
+  { in: { data: {x10:100}, spec:{x10:['`$EXACT`', 100] }, inj:meta:q0:x1:100 }, out: {x10:100}}
+  { in: { data: {x11:'s11'}, spec:{x11:['`$EXACT`', 101] }, inj:meta:q0:x1:101 },
+    err: 'Expected field x11 to be exactly equal to 101, but found string: s11.'}
+
+  { in: { data: {x12:102}, spec:{x12:'`q0$=x1`' }, inj:meta:q0:x1:102 }, out: {x12:102} }
+  { in: { data: {x13:'s13'}, spec:{x13:'`q0$=x1`' }, inj:meta:q0:x1:103 },
+    err: 'Expected field x13 to be exactly equal to 103, but found string: s13.'}
+
+  { in: { data: {x14:104}, spec:{x14:'`q0$~x1`' }, inj:meta:q0:x1:104 }, out: {x14:104} }
+  { in: { data: {x15:204}, spec:{x15:'`q0$~x1`' }, inj:meta:q0:x1:104 }, out: {x15:204} }
+  { in: { data: {x16:'s16'}, spec:{x16:'`q0$~x1`' }, inj:meta:q0:x1:104 }
+    err: 'Expected field x16 to be integer, but found string: s16.' }
+
+  { in: { data: 2000, spec:2000, inj:meta:'`$EXACT`':true }, out: 2000 }
+
+  { in: { data: 2001, spec:2002, inj:meta:'`$EXACT`':true }
+    err: 'Value 2001 should equal 2002.' }
+
+  { in: { data: [3000], spec:[3000], inj:meta:'`$EXACT`':true }, out: [3000] }
+
+  { in: { data: [3001], spec:[3002], inj:meta:'`$EXACT`':true }
+    err: 'Value at field 0: 3001 should equal 3002.' }
+
+  { in: { data: a:b:c:4000, spec:a:b:c:4000, inj:meta:'`$EXACT`':true }, out: a:b:c:4000 }
+
+  { in: { data: a:b:c:4001, spec:a:b:c:4002, inj:meta:'`$EXACT`':true }
+    err: 'Value at field a.b.c: 4001 should equal 4002.' }
+
+    
+]

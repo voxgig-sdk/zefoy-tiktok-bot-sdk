@@ -1,0 +1,21 @@
+# Compiled Lua
+*.luac
+
+# Native libraries built by LuaRocks
+*.so
+*.dylib
+*.dll
+
+# LuaRocks
+.luarocks/
+lua_modules/
+*.rock
+
+# Coverage
+luacov.stats.out
+luacov.report.out
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,23 @@
+{
+  "name": "voxgig-sdk/zefoy-tiktok-bot",
+  "description": "ZefoyTiktokBot SDK for PHP",
+  "type": "library",
+  "license": "MIT",
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "ZefoyTiktokBot\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ZefoyTiktokBot\\Tests\\": "test/"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+
+basic: set: [
+  {
+    ctx: {
+      spec: {
+        base: 'base-',
+        prefix: 'prefix-',
+        suffix: 'suffix-',
+        path: '/p0/{a}',
+        params: {
+          a: 'A'
+        },
+        query: {},
+        alias: {}
+      },
+      result: { resmatch: {} }
+    },
+    out: 'base-/prefix-/p0/A/suffix-'
+  }
+
+]

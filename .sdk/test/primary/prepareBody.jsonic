@@ -1,0 +1,18 @@
+
+basic: set: [
+  {
+    ctx: {
+      opname:create, point:{transform:{req:'`reqdata.foo`'}},
+      reqdata:{foo:{x:1}}
+    }
+    out: {x:1}
+  }
+
+  {
+    ctx: {
+      opname:create, point:{transform:{req:'`reqdata.bar`'}},
+      reqdata:{foo:{x:2}}
+    }
+  }
+
+]

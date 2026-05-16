@@ -1,0 +1,22 @@
+
+main: kit: target: go: {
+
+  title: Golang
+  ext: go
+  comment: line: "//"
+  module: name: 'zefoy-tiktok-bot'
+  srcfeature: false
+
+  deps: &: {
+    kind: *'prod' | string
+  }
+
+  deps: {
+    'github.com/voxgig/struct': { active: true, version: 'v0.0.0', replace: './utility/struct' }
+  }
+}
+
+
+main: kit: feature: &: target: go: deps: &: {
+  kind: *'prod' | string
+}

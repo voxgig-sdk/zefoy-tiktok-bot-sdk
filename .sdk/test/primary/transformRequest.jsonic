@@ -1,0 +1,8 @@
+
+basic: set: [
+  {
+    ctx: { spec:{step:''}, point:{transform:{req:'`reqdata.foo`'}}, reqdata:{foo:{x:1}} }
+    out: {x:1}
+    match: ctx:spec:step:reqform
+  }
+]

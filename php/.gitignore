@@ -1,0 +1,15 @@
+# Composer
+vendor/
+composer.phar
+
+# PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
+
+# Coverage
+coverage/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store

@@ -1,0 +1,36 @@
+
+DEF: {
+  setup: a: {
+    base: 'BASE-',
+    prefix: 'PREFIX-',
+    suffix: 'SUFFIX-',
+  }
+}
+
+
+basic: set: [
+  {
+    ctx: {
+      opname: 'list'
+      point: {
+        parts: [],
+        args: { params: [] },
+        params: [],
+        alias: {},
+        transform: {},
+      }
+    },
+    match: ctx: spec: {
+      base: 'BASE-',
+      prefix: 'PREFIX-',
+      suffix: 'SUFFIX-',
+      method: 'GET',
+      params: {},
+      query: {},
+      headers: {
+        'content-type': 'application/json',
+      },
+      step: 'start',
+    }
+  }
+]

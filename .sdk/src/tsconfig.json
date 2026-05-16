@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "module": "nodenext",
+    "noEmitOnError": true,
+    "outDir":"../dist",
+    "rootDir":".",
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2021",
+    "types": ["node"],
+    "declaration": true,
+    "declarationDir": "../dist"
+  },
+  "exclude": ["**/fragment/*.fragment.ts"]
+}

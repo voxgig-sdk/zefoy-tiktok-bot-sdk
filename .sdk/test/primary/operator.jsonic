@@ -1,0 +1,17 @@
+
+basic: set: [
+  {
+    in: {
+      entity: 'Foo',
+      name: 'load',
+      input: 'match',
+      points: []
+    }
+    match: out: {
+      entity: 'Foo',
+      name: 'load',
+      input: 'match',
+      points: []
+    }
+  }
+]

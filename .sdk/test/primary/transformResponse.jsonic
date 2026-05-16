@@ -1,0 +1,10 @@
+
+basic: set: [
+
+  {
+    ctx: { result:{ok:true,body:{foo:{x:1}}}, spec:{step:''}, point:{transform:{res:'`body.foo`'}} }
+    out: {x:1}
+    match: ctx:spec:step:'resform'
+  }
+
+]

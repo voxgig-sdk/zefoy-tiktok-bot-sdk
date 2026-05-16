@@ -1,0 +1,30 @@
+
+main: kit: feature: test: {
+
+  name: key()
+  title: "In-memory mock transport for testing without a live server"
+  version: '0.0.1'
+  active: true
+
+  config: {
+    # Test mode is not active by default, unlike most features
+    options: active: false
+  }
+  
+  hook: {
+    PostConstruct: active: true
+    PostConstructEntity: active: true
+    SetData: active: true
+    GetData: active: true
+    SetMatch: active: true
+    GetMatch: active: true
+
+    PrePoint: active: true
+    PreSpec: active: true
+    PreRequest: active: true
+    PreResponse: active: true
+    PreResult: active: true
+  }
+}
+
+

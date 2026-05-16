@@ -1,0 +1,22 @@
+
+basic: set: [
+  {
+    ctx: {
+      response: {
+        status: 201,
+        statusText: 'OK1'
+        headers: {h1:v1}
+        body: {b:1}
+      }
+      spec: {step:''}
+      result: {ok:false,status:-1,statusText:''}
+      point: {transform:{}}
+    }
+    match:ctx:result: {
+      ok: true
+      status: 201
+      statusText: 'OK1'
+      body: {b:1}
+    }
+  }
+]

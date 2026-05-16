@@ -1,0 +1,26 @@
+
+main: kit: target: ts: {
+  
+  title: TypeScript
+  ext: ts
+  comment: line: "//"
+  module: name: 'zefoy-tiktok-bot'
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+
+  deps: &: {
+    # TODO: fix aontu disjunctions!
+    kind: *'prod' | string # 'peer' |'dev'
+  }
+  
+  deps: {
+    'dotenv': { active: true, version: '^17.4.2', kind: dev }
+    'typescript': { active: true, version: '^5.9.3', kind: dev }
+    '@types/node': { active: true, version: '^25.6.0', kind: dev }
+  }
+}
+
+
+main: kit: feature: &: target: ts: deps: &: {
+  # TODO: fix aontu disjunctions!
+  kind: *'prod' | string # 'peer' |'dev'
+}

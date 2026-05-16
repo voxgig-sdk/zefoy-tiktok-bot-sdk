@@ -1,0 +1,25 @@
+
+
+basic: set: [
+  {
+    ctx: {
+      spec: {
+        base: 'http://localhost/base-',
+        prefix: 'prefix-',
+        suffix: 'suffix-',
+        path: '/p0',
+        params: {},
+        query: {},
+        headers: {},
+        method: 'GET',
+        body: '__UNDEF__',
+        alias: {},
+      }
+    },
+
+    match:ctx: {
+      response: '__EXISTS__'
+      result: '__EXISTS__'
+    }
+  }
+]

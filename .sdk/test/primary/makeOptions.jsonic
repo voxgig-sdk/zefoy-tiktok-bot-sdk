@@ -1,0 +1,59 @@
+
+basic: set: [
+  {
+    in: { config:{}, options:{} }
+    match: out: {
+      base: 'http://localhost:8000',
+      entity: {},
+      prefix: '',
+      suffix: '',
+    }
+  }
+
+  {
+    in: { options: {}, config: { options: {
+      base: 'http://cbase.example',
+      prefix: 'cpre-',
+      suffix: 'csuf-',
+      entity: {
+        foo: {}
+      }
+    }}}
+    match: out: {
+      base: 'http://cbase.example',
+      prefix: 'cpre-',
+      suffix: 'csuf-',
+      entity: {
+        foo: {
+          alias: {}
+        }
+      }
+    }
+  }
+
+  {
+    in: {
+      options: {
+        base: 'http://cbase.example',
+        prefix: 'cpre-',
+        suffix: 'csuf-',
+        entity: {
+          foo: {}
+        }
+      }
+      config: {}
+    }
+    match: out: {
+      base: 'http://cbase.example',
+      prefix: 'cpre-',
+      suffix: 'csuf-',
+      entity: {
+        foo: {
+          alias: {}
+        }
+      }
+    }
+  }
+
+
+]

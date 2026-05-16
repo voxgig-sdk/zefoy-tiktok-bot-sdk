@@ -1,0 +1,14 @@
+
+basic: set: [
+  { ctx:{response:{status:200,statusText:'OK'},result:{}},
+    match:out:{status:200,statusText:'OK'}
+  }
+
+  { ctx:{response:{status:500,statusText:'r01'},result:{}},
+    match:out:{status:500,statusText:'r01',err:message:'request: 500: r01'}
+  }
+
+  { ctx:{response:{status:400,statusText:'BAD'},result:{err:{message:'Foo'}}},
+    match:out:{status:400,statusText:'BAD',err:message:'Foo: request: 400: BAD'}
+  }
+]

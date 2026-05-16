@@ -1,0 +1,16 @@
+
+basic: set: [
+  { args:[{}], err:'/\\w+SDK: unknown operation: unknown error/' }
+  { args:[{},{}], err:'/\\w+SDK: unknown operation: unknown error/' }
+
+  { args:[{opname:foo}], err:'/\\w+SDK: foo: unknown error/' }
+  { args:[{opname:foo,result:{}}], err:'/\\w+SDK: foo: unknown error/' }
+
+  { args:[{opname:foo,result:{err:{message:bar}}}], err:'/\\w+SDK: foo: bar/' }
+  { args:[{opname:foo}, {message:zed}], err:'/\\w+SDK: foo: zed/' }
+
+  { args:[{opname:o0}, {message:e0}], err:'/\\w+SDK: o0: e0/'
+    match: err:message:'/\\w+SDK: o0: e0/'
+  }
+
+]

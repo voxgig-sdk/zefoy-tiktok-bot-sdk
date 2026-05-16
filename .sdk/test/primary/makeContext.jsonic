@@ -1,0 +1,4 @@
+
+basic: set: [
+  { in:{opname:create}, match:out:{op:{name:create,input:data}} }
+]

@@ -1,0 +1,8 @@
+
+basic: set: [
+  { mark:10, ctx: {point:{params:[],alias:{}},reqmatch:{}}, out: {} }
+  { mark:20, ctx: {point:{params:[a],alias:{}},reqmatch:{}}, out: {} }
+  { mark:30, ctx: {point:{params:[a],alias:{}},reqmatch:{a:A}}, out: {} }
+  { mark:40, ctx: {point:{params:[a],alias:{}},reqmatch:{b:B}}, out: {b:B} }
+  { mark:50, ctx: {point:{params:[a],alias:{}},reqmatch:{a:A,b:B}}, out: {b:B} }
+]

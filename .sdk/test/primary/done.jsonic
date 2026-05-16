@@ -1,0 +1,6 @@
+
+basic: set: [
+  { ctx:{result:{ok:true,resdata:{x:1}}}, out:{x:1} }
+
+  { ctx:{result:{ok:false}}, err:'unknown operation: unknown error' }
+]

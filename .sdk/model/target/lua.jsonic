@@ -1,0 +1,23 @@
+
+main: kit: target: lua: {
+
+  title: Lua
+  ext: lua
+  comment: line: "--"
+  module: name: 'zefoy-tiktok-bot'
+  srcfeature: false
+
+  deps: &: {
+    kind: *'prod' | string
+  }
+
+  # struct utility is vendored under tm/lua/utility/struct - no manifest dep needed
+  deps: {
+    'dkjson': { active: true, version: '2.5' }
+  }
+}
+
+
+main: kit: feature: &: target: lua: deps: &: {
+  kind: *'prod' | string
+}

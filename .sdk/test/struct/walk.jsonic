@@ -1,0 +1,108 @@
+
+log: {
+  in: { a: { c: 2, b: 1 } }
+  out: {
+    before: [
+      'k=, v={a:{b:1,c:2}}, p=, t=<root>'
+      'k=a, v={b:1,c:2}, p={a:{b:1,c:2}}, t=a',
+      'k=b, v=1, p={b:1,c:2}, t=a.b',
+      'k=c, v=2, p={b:1,c:2}, t=a.c',
+    ]
+    after: [
+      'k=b, v=1, p={b:1,c:2}, t=a.b',
+      'k=c, v=2, p={b:1,c:2}, t=a.c',
+      'k=a, v={b:1,c:2}, p={a:{b:1,c:2}}, t=a',
+      'k=, v={a:{b:1,c:2}}, p=, t=<root>'
+    ]
+    both: [
+      'k=, v={a:{b:1,c:2}}, p=, t=<root>',
+      'k=a, v={b:1,c:2}, p={a:{b:1,c:2}}, t=a',
+      'k=b, v=1, p={b:1,c:2}, t=a.b',
+      'k=b, v=1, p={b:1,c:2}, t=a.b',
+      'k=c, v=2, p={b:1,c:2}, t=a.c',
+      'k=c, v=2, p={b:1,c:2}, t=a.c',
+      'k=a, v={b:1,c:2}, p={a:{b:1,c:2}}, t=a',
+      'k=, v={a:{b:1,c:2}}, p=, t=<root>'
+    ]
+  }
+}
+
+
+basic: {
+  set: [
+    { in: { a: 'A' }, out: { a: 'A~a' } }
+
+    { in: { a: 'A', b: 'B' }, out: { a: 'A~a', b: 'B~b' } }
+
+    { in: { a: { b: 'B' } }, out: { a: { b: 'B~a.b' } } }
+    { in: { a: { b: 'B', c: 'C' } }, out: { a: { b: 'B~a.b', c: 'C~a.c' } } }
+
+    { in: { a: { b: 'B' }, c: 'C' }, out: { a: { b: 'B~a.b' }, c: 'C~c' } }
+    { in: { d: 'D', a: { b: 'B' } }, out: { d: 'D~d', a: { b: 'B~a.b' } } }
+    { in: { d: 'D', a: { b: 'B' }, c: 'C' }, out: { d: 'D~d', a: { b: 'B~a.b' }, c: 'C~c' } }
+
+    { in: { a: { b: { c: 'C' } } }, out: { a: { b: { c: 'C~a.b.c' } } } }
+    { in: { a: { b: { c: { d: 'D' } } } }, out: { a: { b: { c: { d: 'D~a.b.c.d' } } } } }
+    { in: { a: { b: { c: { d: { e: 'E'} } } } },
+      out: { a: { b: { c: { d: { e: 'E~a.b.c.d.e' } } } } } }
+
+    { in: {}, out: {} }
+    { }
+    { in: { a: 1 }, out: { a: 1 } }
+    { in: { a: 1, b: 'B' }, out: { a: 1, b: 'B~b' } }
+    
+    { in: [], out: [] }
+    { in: [1], out: [1] }
+    { in: ['A'], out: ['A~0'] }
+    { in: [['A']], out: [['A~0.0']] }
+    { in: [[['A']]], out: [[['A~0.0.0']]] }
+    { in: [[[['A']]]], out: [[[['A~0.0.0.0']]]] }
+    { in: [[[[['A']]]]], out: [[[[['A~0.0.0.0.0']]]]] }
+
+    { in: {a:['A']}, out: {a:['A~a.0']} }
+    { in: {a:['A','B']}, out: {a:['A~a.0','B~a.1']} }
+    { in: {a:['A','B','C']}, out: {a:['A~a.0','B~a.1','C~a.2']} }
+
+    { in: {a:[{b:'B'}]}, out: {a:[{b:'B~a.0.b'}]} }
+    { in: {a:[{b:['B']}]}, out: {a:[{b:['B~a.0.b.0']}]} }
+    { in: {a:[{b:[{c:'C'}]}]}, out: {a:[{b:[{c:'C~a.0.b.0.c'}]}]} }
+
+    { in: {x1:{}}, out: {x1:{}} }
+    { in: {x2:[]}, out: {x2:[]} }
+  ]
+}
+
+
+depth: {
+  set: [
+    { in: { src: { a:b:{c:1,d:11} } } out: { a:b:{c:1,d:11} } }
+    { in: { src: { a:b:{c:2,d:22} } maxdepth:-1 }, out: { a:b:{c:2,d:22} } }
+    { in: { src: { a:b:{c:3,d:33} } maxdepth:11 }, out: { a:b:{c:3,d:33} } }
+    { in: { src: { a:b:{c:4,d:44} } maxdepth:4 }, out: { a:b:{c:4,d:44} } }
+    { in: { src: { a:b:{c:5,d:55} } maxdepth:3 }, out: { a:b:{c:5,d:55} } }
+    { in: { src: { a:b:{c:6,d:66} } maxdepth:2 }, out: { a:b:{} } }
+    { in: { src: { a:b:{c:7,d:77} } maxdepth:1 }, out: { a:{} } }
+    { in: { src: { a:b:{c:8,d:88} } maxdepth:0 }, out: {} }
+  ]
+}
+
+
+copy: {
+  set: [
+    { in: {a0:0} out: {a0:0} }
+    { in: [1] out: [1] }
+    { in: {} out: {} }
+    { in: [] out: [] }
+    { in: null out: null }
+    { }
+    { in: {a1:{b1:1}} out: {a1:{b1:1}} }
+
+    { in:  {a2:{b2:2},c2:{d2:{e2:22,f2:222}},g2:2222}
+      out: {a2:{b2:2},c2:{d2:{e2:22,f2:222}},g2:2222} }
+
+    { in: [[3],[33],[[333],[3333]]]
+      out: [[3],[33],[[333],[3333]]] }
+  ]
+}
+
+

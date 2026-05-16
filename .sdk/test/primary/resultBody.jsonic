@@ -1,0 +1,4 @@
+
+basic: set: [
+  { ctx:{response:{body:{a:A,b:B}},result:{}}, match:ctx:result:body:{a:A,b:B} }
+]

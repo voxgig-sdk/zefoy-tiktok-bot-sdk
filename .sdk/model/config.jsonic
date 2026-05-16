@@ -1,0 +1,15 @@
+# SDK Configuration
+
+main: kit: config: {
+
+  ## TODO: crate in apidef and put servers here
+  
+  # Authorization header token value prefix
+  auth: prefix: 'Bearer'
+
+
+  headers: {
+    'content-type': 'application/json'
+  }
+
+}

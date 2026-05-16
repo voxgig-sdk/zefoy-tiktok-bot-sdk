@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "_doc": "Per-SDK test control. Lists tests/operations to skip in unit and live modes; tunes per-test pacing. Edit by hand. Loaded by lua test runner.",
+  "test": {
+    "skip": {
+      "live": {
+        "direct": [],
+        "entityOp": []
+      },
+      "unit": {
+        "direct": [],
+        "entityOp": []
+      }
+    },
+    "live": {
+      "delayMs": 500
+    }
+  }
+}

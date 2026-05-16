@@ -1,0 +1,21 @@
+
+
+DEF: {
+  ctx0: {point:{alias:{}}}
+  ctx1: .ctx0
+  ctx2: .ctx1 & {reqmatch:{}}
+  ctx3: .ctx2 & {reqmatch:{a:'A'}}
+  ctx4: .ctx3
+  ctx5: .ctx4 & {point:{alias:{b:a}},spec:{alias:{}}}
+}
+
+basic: set: [
+  { mark:10, args: [ .....DEF.ctx0, a ] }
+  { mark:20, args: [ .....DEF.ctx1, a ] }
+  { mark:30, args: [ .....DEF.ctx2, a ] }
+  { mark:40, args: [ .....DEF.ctx3, a ], out: 'A'}
+  { mark:50, args: [ .....DEF.ctx3, b ] }
+  { mark:60, args: [ .....DEF.ctx4, b ] }
+  { mark:70, args: [ .....DEF.ctx5, a ], out: 'A' }
+  { mark:80, args: [ .....DEF.ctx5, b ], out: 'A', match: ctx:spec:alias:a:'b' }
+]

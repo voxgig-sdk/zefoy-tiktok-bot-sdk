@@ -1,0 +1,35 @@
+{
+  "name": "build-zefoy-tiktok-bot-sdk",
+  "version": "0.0.1",
+  "description": "ZefoyTiktokBot SDK Project",
+  "scripts": {
+    "generate": "voxgig-model model/sdk.jsonic",
+    "watch-generate": "voxgig-model -w model/sdk.jsonic",
+    "dry-generate": "voxgig-model -y model/sdk.jsonic",
+    "watch-dry-generate": "voxgig-model -w -y model/sdk.jsonic",
+    "test-model": "voxgig-model test/test.jsonic",
+    "watch-test-model": "voxgig-model -w test/test.jsonic",
+    "watch": "tsc --build src -w",
+    "build": "tsc --build src",
+    "test": "echo no-test",
+    "clean": "rm -rf dist dist-test node_modules yarn.lock package-lock.json",
+    "reset": "npm run clean && npm i && npm run build && npm test",
+    "add-target": "voxgig-sdkgen target add",
+    "dry-add-target": "voxgig-sdkgen -y target add",
+    "add-feature": "voxgig-sdkgen feature add",
+    "dry-add-feature": "voxgig-sdkgen -y feature add"
+  },
+  "author": "ZefoyTiktokBot",
+  "license": "$$const.License$$",
+  "devDependencies": {
+    "@types/node": ">=25.6",
+    "typescript": ">=6.0",
+    "@voxgig/apidef": ">=5.8",
+    "@voxgig/model": ">=8.1",
+    "@voxgig/sdkgen": ">=0.40",
+    "@voxgig/util": ">=0.4",
+    "@voxgig/struct": ">=0.1.0",
+    "jostraca": ">=0.29",
+    "aontu": ">=0.44"
+  }
+}

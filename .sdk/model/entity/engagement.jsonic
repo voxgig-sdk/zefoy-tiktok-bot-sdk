@@ -1,0 +1,74 @@
+# Entity: engagement
+
+main: kit: entity: engagement: {
+
+  alias: field: {}
+
+  fields: [
+    {
+      name: "amount"
+      req: false
+      type: "`$INTEGER`"
+    }
+    {
+      name: "estimated_time"
+      req: false
+      type: "`$INTEGER`"
+    }
+    {
+      name: "message"
+      req: false
+      type: "`$STRING`"
+    }
+    {
+      name: "status"
+      req: false
+      type: "`$STRING`"
+    }
+    {
+      name: "success"
+      req: false
+      type: "`$BOOLEAN`"
+    }
+    {
+      name: "type"
+      op: {
+        create: {
+          req: true
+          type: "`$STRING`"
+        }
+      }
+      req: false
+      type: "`$STRING`"
+    }
+    {
+      name: "url"
+      req: true
+      type: "`$STRING`"
+    }
+  ]
+
+  name: "engagement"
+  op: {
+    create: {
+      name: "create"
+      points: [
+        {
+          method: "POST"
+          orig: "/api/boost"
+          parts: [
+            "api"
+            "boost"
+          ]
+          transform: {
+            req: "`reqdata`"
+            res: "`body`"
+          }
+        }
+      ]
+    }
+  }
+
+
+
+}

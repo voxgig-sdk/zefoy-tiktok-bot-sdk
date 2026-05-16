@@ -1,0 +1,210 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Zefoy TikTok Bot",
+    "description": "The Zefoy API provides automation tools for TikTok, enabling users to acquire likes, followers, shares, and views efficiently. It streamlines the process of engaging with TikTok content, appealing to users seeking growth on the platform.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Zefoy TikTok Bot",
+      "url": "https://github.com/xtekky/zefoy"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://zefoy.com",
+      "description": "Zefoy Production Server"
+    }
+  ],
+  "paths": {
+    "/api/boost": {
+      "post": {
+        "summary": "Boost TikTok Engagement",
+        "description": "Automate engagement on TikTok by acquiring likes, followers, shares, and views for specified content.",
+        "operationId": "boostEngagement",
+        "tags": [
+          "Engagement"
+        ],
+        "security": [
+          {
+            "sessionAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "type"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The TikTok video or profile URL to boost",
+                    "example": "https://www.tiktok.com/@username/video/1234567890123456789"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "likes",
+                      "followers",
+                      "shares",
+                      "views"
+                    ],
+                    "description": "The type of engagement to boost",
+                    "example": "likes"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "description": "The amount of engagement to acquire (if applicable)",
+                    "minimum": 1,
+                    "example": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Engagement boost request successfully processed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "description": "Indicates if the request was successful",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Response message",
+                      "example": "Engagement boost initiated successfully"
+                    },
+                    "type": {
+                      "type": "string",
+                      "description": "The type of engagement boosted",
+                      "example": "likes"
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "Current status of the boost request",
+                      "example": "processing"
+                    },
+                    "estimatedTime": {
+                      "type": "integer",
+                      "description": "Estimated time to complete in seconds",
+                      "example": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing session ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - Cloudflare protection or rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indicates if the request was successful",
+            "example": false
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Invalid session ID or Cloudflare protection active"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code",
+            "example": "INVALID_SESSION"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "sessionAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "PHPSESSID",
+        "description": "Session ID obtained from zefoy.com cookies. You need to manually obtain this from the browser's cookie tab when visiting zefoy.com"
+      },
+      "cloudflareAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "cf_clearance",
+        "description": "Cloudflare clearance cookie required for bypassing Cloudflare protection"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Engagement",
+      "description": "Operations related to boosting TikTok engagement metrics"
+    }
+  ]
+}
