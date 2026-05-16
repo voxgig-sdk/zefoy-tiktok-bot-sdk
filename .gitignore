@@ -1,0 +1,17 @@
+# Local config / secrets
+*.local.*
+*.local
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+
+# Editor
+*~
+*.swp
