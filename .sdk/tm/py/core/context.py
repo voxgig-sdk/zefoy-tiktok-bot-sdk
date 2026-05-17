@@ -163,15 +163,20 @@ class ZefoyTiktokBotContext:
         self.op = self.resolve_op(opname)
 
     def resolve_op(self, opname):
-        if opname in self.opmap:
-            return self.opmap[opname]
-
-        if opname == "":
-            return ZefoyTiktokBotOperation({})
-
+        # Cache key is `<entity>:<opname>` so two entities with the same op
+        # (e.g. both have a "list") get distinct cached Operations. Keying
+        # on opname alone caused the first-resolved entity's points to be
+        # served to every subsequent entity's call.
         entname = "_"
         if self.entity is not None and hasattr(self.entity, "get_name") and callable(self.entity.get_name):
             entname = self.entity.get_name()
+        cache_key = entname + ":" + opname
+
+        if cache_key in self.opmap:
+            return self.opmap[cache_key]
+
+        if opname == "":
+            return ZefoyTiktokBotOperation({})
 
         opcfg = vs.getpath(self.config, "entity." + entname + ".op." + opname)
 
@@ -192,7 +197,7 @@ class ZefoyTiktokBotContext:
             "points": points,
         })
 
-        self.opmap[opname] = op
+        self.opmap[cache_key] = op
         return op
 
     def make_error(self, code, msg):

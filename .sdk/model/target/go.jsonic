@@ -11,9 +11,8 @@ main: kit: target: go: {
     kind: *'prod' | string
   }
 
-  deps: {
-    'github.com/voxgig/struct': { active: true, version: 'v0.0.0', replace: './utility/struct' }
-  }
+  // struct is inlined under <gomodule>/utility/struct — no external dep.
+  deps: {}
 }
 
 

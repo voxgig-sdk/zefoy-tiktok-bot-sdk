@@ -1,9 +1,9 @@
 package entity
 
 import (
-	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/core"
+	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/core"
 
-	vs "github.com/voxgig/struct"
+	vs "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/utility/struct"
 )
 
 type EngagementEntity struct {

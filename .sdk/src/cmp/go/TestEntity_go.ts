@@ -107,7 +107,7 @@ import (
 	sdk "${gomodule}"
 	"${gomodule}/core"
 
-	vs "github.com/voxgig/struct"
+	vs "${gomodule}/utility/struct"
 )
 
 func Test${entity.Name}Entity(t *testing.T) {

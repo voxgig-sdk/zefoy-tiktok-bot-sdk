@@ -217,17 +217,22 @@ func NewContext(ctxmap map[string]any, basectx *Context) *Context {
 }
 
 func (ctx *Context) resolveOp(opname string) *Operation {
-	if op, ok := ctx.Opmap[opname]; ok && op != nil {
+	// Cache key is `<entity>:<opname>` so two entities with the same op
+	// (e.g. both have a "list") get distinct cached Operations. Keying on
+	// opname alone caused the first-resolved entity's points to be served
+	// to every subsequent entity's call.
+	entname := ""
+	if ctx.Entity != nil {
+		entname = ctx.Entity.GetName()
+	}
+	cacheKey := entname + ":" + opname
+
+	if op, ok := ctx.Opmap[cacheKey]; ok && op != nil {
 		return op
 	}
 
 	if opname == "" {
 		return NewOperation(map[string]any{})
-	}
-
-	entname := ""
-	if ctx.Entity != nil {
-		entname = ctx.Entity.GetName()
 	}
 
 	opcfg := vs.GetPath([]any{"entity", entname, "op", opname}, ctx.Config)
@@ -258,7 +263,7 @@ func (ctx *Context) resolveOp(opname string) *Operation {
 		"points": targets,
 	})
 
-	ctx.Opmap[opname] = op
+	ctx.Opmap[cacheKey] = op
 	return op
 }
 

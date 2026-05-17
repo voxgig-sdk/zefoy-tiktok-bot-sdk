@@ -20,7 +20,7 @@ const Package = cmp(async function Package(props: any) {
 
   // Module name: concatenated lowercase (e.g., voxgigsolardemosdk)
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk`
+  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
   File({ name: 'go.mod' }, () => {
     Content(`module ${gomodule}

@@ -3,7 +3,7 @@ package sdktest
 import (
 	"testing"
 
-	sdk "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk"
+	sdk "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go"
 )
 
 func TestExists(t *testing.T) {

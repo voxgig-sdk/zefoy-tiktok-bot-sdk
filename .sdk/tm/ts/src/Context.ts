@@ -86,10 +86,15 @@ class Context {
 
 
   resolveOp(opname: string): Operation {
-    let op: Operation = getprop(this.opmap, opname)
+    // Cache key is `<entity>:<opname>` so two entities with the same op
+    // (e.g. both have a "list") get distinct cached Operations. Keying on
+    // opname alone caused the first-resolved entity's points to be served
+    // to every subsequent entity's call.
+    const entname = getprop(this.entity, 'name', '')
+    const cacheKey = entname + ':' + opname
+    let op: Operation = getprop(this.opmap, cacheKey)
 
     if (null == op && null != opname) {
-      const entname = getprop(this.entity, 'name', '')
       const opcfg = getpath(this.config, ['entity', entname, 'op', opname])
       let input = 'match'
 
@@ -104,7 +109,7 @@ class Context {
         points: getprop(opcfg, 'points', [])
       })
 
-      setprop(this.opmap, opname, op)
+      setprop(this.opmap, cacheKey, op)
     }
 
     return op

@@ -90,8 +90,10 @@ class ZefoyTiktokBotTestFeature(ZefoyTiktokBotBaseFeature):
                 # Match the existing entity by id only (or its alias). reqdata
                 # also contains the new field values, which would otherwise
                 # cause select to filter out the entity we want to update.
-                # Falls back to first entity when no match found, mirroring
-                # the TS mock.
+                # When reqdata has no id, fall back to the id the entity
+                # client carries from a prior create/load (in fctx.match /
+                # fctx.data), mirroring the TS mock where param(ctx,'id')
+                # resolves from accumulated state.
                 update_match = {}
                 if isinstance(fctx.reqdata, dict):
                     if "id" in fctx.reqdata:
@@ -101,6 +103,8 @@ class ZefoyTiktokBotTestFeature(ZefoyTiktokBotBaseFeature):
                         alias_id = vs.getprop(alias_map, "id")
                         if alias_id is not None and alias_id in fctx.reqdata:
                             update_match[alias_id] = fctx.reqdata[alias_id]
+                if not update_match:
+                    update_match = _resolve_match({})
                 args = test_self.build_args(fctx, op, update_match)
                 found = vs.select(entmap, args)
                 ent = vs.getelem(found, 0)

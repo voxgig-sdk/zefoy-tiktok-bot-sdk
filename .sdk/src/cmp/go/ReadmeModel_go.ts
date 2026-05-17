@@ -14,7 +14,7 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const entityList = each(entity).filter((e: any) => e.active !== false)
 
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk`
+  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
   const apikeyOptionRow = isAuthActive(model)
     ? '| `"apikey"` | `string` | API key for authentication. |\n'

@@ -83,21 +83,48 @@ const Root = cmp(function Root(props: any) {
 
       Folder({ name: target.name }, () => {
 
-        each(entity, (entity: any) => {
-          names(entity, entity.name)
-          Entity({ target, entity })
-        })
+        // Per-generation-phase activation. A target's jsonic carries
+        // a `phase` map mirroring the feature pattern:
+        //
+        //   phase: {
+        //     entity:  { active: false }
+        //     feature: { active: false }
+        //     readme:  { active: false }
+        //     test:    { active: false }
+        //   }
+        //
+        // Defaults are inclusive — when a phase entry is absent (or
+        // active is not explicitly false), the phase runs. Existing
+        // standard targets don't declare `phase` and keep current
+        // behaviour. A CLI-style target switches all four off and
+        // only emits Main.
+        const phase = target.phase || {}
+        const phaseActive = (name: string): boolean =>
+          false !== (phase[name] && phase[name].active)
 
-        each(feature).filter((feature: any) => feature.active).map((feature: any) => {
-          names(feature, feature.name)
-          Feature({ target, feature })
-        })
+        if (phaseActive('entity')) {
+          each(entity, (entity: any) => {
+            names(entity, entity.name)
+            Entity({ target, entity })
+          })
+        }
+
+        if (phaseActive('feature')) {
+          each(feature).filter((feature: any) => feature.active).map((feature: any) => {
+            names(feature, feature.name)
+            Feature({ target, feature })
+          })
+        }
 
         Main({ target })
 
-        Readme({ target })
+        if (phaseActive('readme')) {
+          Readme({ target })
+        }
 
-        Test({ target })
+        if (phaseActive('test')) {
+          Test({ target })
+        }
       })
     })
 

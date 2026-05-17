@@ -162,6 +162,10 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
                 // Match the existing entity by id only (or its alias). reqdata
                 // also contains the new field values, which would otherwise
                 // cause find_first to filter out the entity we want to update.
+                // When reqdata has no id, fall back to the id the entity
+                // client carries from a prior create/load (in $fctx->match /
+                // $fctx->data), mirroring the TS mock where param(ctx,'id')
+                // resolves from accumulated state.
                 $update_match = [];
                 if (is_array($fctx->reqdata)) {
                     if (array_key_exists('id', $fctx->reqdata)) {
@@ -171,6 +175,9 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
                     if ($id_alias !== null && array_key_exists($id_alias, $fctx->reqdata)) {
                         $update_match[$id_alias] = $fctx->reqdata[$id_alias];
                     }
+                }
+                if (empty($update_match)) {
+                    $update_match = $resolve_match([]);
                 }
                 $ent = $find_first($entmap, $update_match, $alias);
                 if ($ent === null) {

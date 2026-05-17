@@ -15,7 +15,7 @@ const Entity = cmp(function Entity(props: any) {
 
   // Module name: concatenated lowercase
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk`
+  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
   const entrep = {
     ...stdrep,
@@ -57,6 +57,7 @@ const Entity = cmp(function Entity(props: any) {
         replace: {
           ...entrep,
           'GOMODULE': gomodule,
+          '"github.com/voxgig/struct"': `"${gomodule}/utility/struct"`,
           ProjectName: model.const.Name,
           EntityName: entity.Name,
           entityname: entity.name,

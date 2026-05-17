@@ -109,8 +109,10 @@ function TestFeature:init(ctx, options)
     elseif op.name == "update" then
       -- Match the existing entity by id only (or its alias). reqdata also
       -- contains the new field values, which would otherwise cause select
-      -- to filter out the entity we want to update. Falls back to first
-      -- entity when no match found, mirroring the TS mock.
+      -- to filter out the entity we want to update. When reqdata has no id,
+      -- fall back to the id the entity client carries from a prior
+      -- create/load (in fctx.match / fctx.data), mirroring the TS mock
+      -- where param(ctx,'id') resolves from accumulated state.
       local update_match = {}
       if type(fctx.reqdata) == "table" then
         if fctx.reqdata["id"] ~= nil then update_match["id"] = fctx.reqdata["id"] end
@@ -120,6 +122,9 @@ function TestFeature:init(ctx, options)
             update_match[alias_id] = fctx.reqdata[alias_id]
           end
         end
+      end
+      if next(update_match) == nil then
+        update_match = resolve_match({})
       end
       local args = test_self:build_args(fctx, op, update_match)
       local found = vs.select(entmap, args)

@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/core"
+	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/core"
 )
 
 type LogFeature struct {

@@ -30,6 +30,7 @@ const EntityOperation = cmp(function Operation(props: any) {
     replace: {
       ...entrep,
       'GOMODULE': gomodule,
+      '"github.com/voxgig/struct"': `"${gomodule}/utility/struct"`,
       ProjectName: model.const.Name,
       EntityName: entity.Name,
       entityname: entity.name,

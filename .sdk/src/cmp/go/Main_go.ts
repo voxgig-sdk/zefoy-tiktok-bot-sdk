@@ -34,7 +34,7 @@ const Main = cmp(async function Main(props: any) {
 
   // Go module path == the repo path on GitHub (org from model.origin),
   // e.g. github.com/voxgig-sdk/<slug>-sdk. Used in go.mod and every import.
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk`
+  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
   // The root package name must be a plain Go identifier (can't be a path),
   // so it stays as the concatenated-lowercase form (e.g. voxgigdogsdk).
   const gopackage = (model.origin || 'voxgig-sdk').replace(/-sdk$/, '').replace(/[^a-z0-9]/gi, '') +
@@ -44,13 +44,20 @@ const Main = cmp(async function Main(props: any) {
 
   Gitignore({})
 
-  // Copy tm/go files with replacements
+  // Copy tm/go files with replacements.
+  //
+  // Rewrite the placeholder `github.com/voxgig/struct` import (used in the
+  // template since it's a self-contained module there) to its in-SDK path.
+  // The struct package is inlined under `<gomodule>/utility/struct` so the
+  // module is fully self-contained — no external go.mod required by
+  // downstream consumers.
   Copy({
     from: 'tm/' + target.name,
-    exclude: [/src\//],
+    exclude: [/src\//, /utility\/struct\/go\.mod$/],
     replace: {
       ...props.ctx$.stdrep,
       GOMODULE: gomodule,
+      '"github.com/voxgig/struct"': `"${gomodule}/utility/struct"`,
     }
   })
 
@@ -65,6 +72,7 @@ const Main = cmp(async function Main(props: any) {
           replace: {
             ...props.ctx$.stdrep,
             'ProjectNameModule': gomodule,
+            '"github.com/voxgig/struct"': `"${gomodule}/utility/struct"`,
 
             '#BuildFeatures': ({ indent }: any) => {
               each(feature, (feat: any) => {

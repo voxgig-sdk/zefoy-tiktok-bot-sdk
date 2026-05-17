@@ -1,6 +1,6 @@
 package utility
 
-import "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/core"
+import "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/core"
 
 func init() {
 	core.UtilityRegistrar = registerAll

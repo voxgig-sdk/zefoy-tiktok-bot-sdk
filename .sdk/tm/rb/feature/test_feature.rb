@@ -1,9 +1,9 @@
-# ProjectName SDK test feature
+# ZefoyTiktokBot SDK test feature
 
 require_relative '../utility/struct/voxgig_struct'
 require_relative 'base_feature'
 
-class ProjectNameTestFeature < ProjectNameBaseFeature
+class ZefoyTiktokBotTestFeature < ZefoyTiktokBotBaseFeature
   def initialize
     super
     @version = "0.0.1"
@@ -84,10 +84,10 @@ class ProjectNameTestFeature < ProjectNameBaseFeature
       elsif op.name == "update"
         # Match the existing entity by id only (or its alias). reqdata also
         # contains the new field values, which would otherwise cause select
-        # to filter out the entity we want to update. Falls back to first
-        # entity when no id present and no match found, mirroring the TS
-        # mock's empirical behavior where param(undef) collapses to "no
-        # constraint" and select returns all.
+        # to filter out the entity we want to update. When reqdata has no id,
+        # fall back to the id the entity client carries from a prior
+        # create/load (in fctx.match / fctx.data), mirroring the TS mock
+        # where param(ctx,'id') resolves from accumulated state.
         update_match = {}
         if fctx.reqdata.is_a?(Hash)
           update_match["id"] = fctx.reqdata["id"] if fctx.reqdata.key?("id")
@@ -98,6 +98,7 @@ class ProjectNameTestFeature < ProjectNameBaseFeature
             end
           end
         end
+        update_match = resolve_match.call({}) if update_match.empty?
         args = test_self.build_args(fctx, op, update_match)
         found = VoxgigStruct.select(entmap, args)
         ent = VoxgigStruct.getelem(found, 0)

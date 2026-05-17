@@ -160,17 +160,22 @@ end
 
 
 function Context:resolve_op(opname)
-  if self.opmap[opname] ~= nil then
-    return self.opmap[opname]
+  -- Cache key is `<entity>:<opname>` so two entities with the same op
+  -- (e.g. both have a "list") get distinct cached Operations. Keying
+  -- on opname alone caused the first-resolved entity's points to be
+  -- served to every subsequent entity's call.
+  local entname = "_"
+  if self.entity ~= nil and type(self.entity.get_name) == "function" then
+    entname = self.entity:get_name()
+  end
+  local cache_key = entname .. ":" .. opname
+
+  if self.opmap[cache_key] ~= nil then
+    return self.opmap[cache_key]
   end
 
   if opname == "" then
     return Operation.new({})
-  end
-
-  local entname = "_"
-  if self.entity ~= nil and type(self.entity.get_name) == "function" then
-    entname = self.entity:get_name()
   end
 
   local opcfg = vs.getpath(self.config, "entity." .. entname .. ".op." .. opname)
@@ -195,7 +200,7 @@ function Context:resolve_op(opname)
     points = points,
   })
 
-  self.opmap[opname] = op
+  self.opmap[cache_key] = op
   return op
 end
 

@@ -1,10 +1,10 @@
 package voxgigzefoytiktokbotsdk
 
 import (
-	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/core"
-	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/entity"
-	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/feature"
-	_ "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/utility"
+	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/core"
+	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/entity"
+	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/feature"
+	_ "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/utility"
 )
 
 // Type aliases preserve external API.

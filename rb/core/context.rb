@@ -75,10 +75,15 @@ class ZefoyTiktokBotContext
   end
 
   def resolve_op(opname)
-    return @opmap[opname] if @opmap[opname]
+    # Cache key is `<entity>:<opname>` so two entities with the same op
+    # (e.g. both have a "list") get distinct cached Operations. Keying
+    # on opname alone caused the first-resolved entity's points to be
+    # served to every subsequent entity's call.
+    entname = @entity&.respond_to?(:get_name) ? @entity.get_name : "_"
+    cache_key = "#{entname}:#{opname}"
+    return @opmap[cache_key] if @opmap[cache_key]
     return ZefoyTiktokBotOperation.new({}) if opname.empty?
 
-    entname = @entity&.respond_to?(:get_name) ? @entity.get_name : "_"
     opcfg = VoxgigStruct.getpath(@config, "entity.#{entname}.op.#{opname}")
 
     input = (opname == "update" || opname == "create") ? "data" : "match"
@@ -95,7 +100,7 @@ class ZefoyTiktokBotContext
       "input" => input,
       "points" => points,
     })
-    @opmap[opname] = op
+    @opmap[cache_key] = op
     op
   end
 

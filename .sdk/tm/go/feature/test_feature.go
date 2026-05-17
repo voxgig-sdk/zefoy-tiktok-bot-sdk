@@ -11,7 +11,7 @@ import (
 
 type TestFeature struct {
 	BaseFeature
-	client  *core.ProjectNameSDK
+	client  *core.ZefoyTiktokBotSDK
 	options map[string]any
 }
 
@@ -114,8 +114,10 @@ func (f *TestFeature) Init(ctx *core.Context, options map[string]any) {
 			// Match the existing entity by id only (or its alias). Reqdata
 			// also contains the new field values, which would otherwise
 			// cause Select to filter out the entity we want to update.
-			// Falls back to first entity when no match found, mirroring
-			// the TS mock.
+			// When reqdata has no id, fall back to the id the entity
+			// client carries from a prior create/load (in ctx.Match /
+			// ctx.Data), mirroring the TS mock where param(ctx,'id')
+			// resolves from accumulated state.
 			updateMatch := map[string]any{}
 			if ctx.Reqdata != nil {
 				if v, has := ctx.Reqdata["id"]; has {
@@ -130,6 +132,9 @@ func (f *TestFeature) Init(ctx *core.Context, options map[string]any) {
 						}
 					}
 				}
+			}
+			if len(updateMatch) == 0 {
+				updateMatch = resolveMatch(map[string]any{})
 			}
 			args := self.buildArgs(ctx, op, updateMatch)
 			found := vs.Select(entmap, args)
