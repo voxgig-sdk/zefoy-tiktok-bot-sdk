@@ -1,0 +1,135 @@
+name: ci
+
+# Unit tests only — strictly offline. No live API calls.
+# Each per-language job runs the mocked unit-test suite for that target.
+# Each step after checkout is gated by hashFiles() so a job auto-skips
+# all its work when the target directory is absent.
+#
+# Live API verification is NOT run here. It happens in the central
+# rebuild pipeline under controlled conditions, with per-API auth and
+# rate-limit handling.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('go/go.mod') != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - if: hashFiles('go/go.mod') != ''
+        run: make -C go test
+
+  go-cli:
+    runs-on: ubuntu-latest
+    # aql/eng/go is served via proxy.golang.org but its source repo
+    # (aql-lang/aql) is currently private, so sum.golang.org can't
+    # checksum-verify it. GOSUMDB=off lets `go mod tidy` use the
+    # committed go.sum without re-checking the public sum DB. Once
+    # aql-lang/aql goes public this env can be removed.
+    env:
+      GOSUMDB: 'off'
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('go-cli/go.mod') != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - if: hashFiles('go-cli/go.mod') != ''
+        run: |
+          cd go-cli
+          go mod tidy
+          go vet ./...
+          go build ./...
+          go test ./...
+
+  go-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('go-mcp/go.mod') != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - if: hashFiles('go-mcp/go.mod') != ''
+        run: |
+          cd go-mcp
+          go mod tidy
+          go vet ./...
+          go build ./...
+          go test ./...
+
+  ts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('ts/package.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - if: hashFiles('ts/package.json') != ''
+        run: cd ts && npm install --no-audit --no-fund
+      - if: hashFiles('ts/package.json') != ''
+        run: cd ts && npm test
+
+  py:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('py/Makefile') != ''
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - if: hashFiles('py/Makefile') != ''
+        run: pip install pytest
+      - if: hashFiles('py/Makefile') != ''
+        run: make -C py test
+
+  rb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('rb/Makefile') != ''
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - if: hashFiles('rb/Makefile') != ''
+        run: make -C rb test
+
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('php/composer.json') != ''
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+      - if: hashFiles('php/composer.json') != ''
+        run: cd php && composer install --no-interaction --no-progress
+      - if: hashFiles('php/composer.json') != ''
+        run: make -C php test
+
+  lua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('lua/Makefile') != ''
+        uses: leafo/gh-actions-lua@v10
+        with:
+          luaVersion: '5.4'
+      - if: hashFiles('lua/Makefile') != ''
+        uses: leafo/gh-actions-luarocks@v4
+      - if: hashFiles('lua/Makefile') != ''
+        run: luarocks install busted
+      - if: hashFiles('lua/Makefile') != ''
+        run: make -C lua test

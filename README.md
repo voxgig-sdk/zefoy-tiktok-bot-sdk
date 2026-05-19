@@ -2,7 +2,7 @@
 
 
 
-Available for [Golang](go/) and [Go CLI](go-cli/) and [Lua](lua/) and [PHP](php/) and [Python](py/) and [Ruby](rb/) and [TypeScript](ts/).
+Available for [Golang](go/) and [Go CLI](go-cli/) and [Go MCP server](go-mcp/) and [Lua](lua/) and [PHP](php/) and [Python](py/) and [Ruby](rb/) and [TypeScript](ts/).
 
 
 ## Entities
@@ -250,6 +250,7 @@ console.log(result.data)
 
 - [Golang SDK](go/README.md)
 - [Go CLI SDK](go-cli/README.md)
+- [Go MCP server SDK](go-mcp/README.md)
 - [Lua SDK](lua/README.md)
 - [PHP SDK](php/README.md)
 - [Python SDK](py/README.md)
