@@ -77,7 +77,6 @@ def engagement_basic_setup(extra)
     "ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID" => idmap,
     "ZEFOYTIKTOKBOT_TEST_LIVE" => "FALSE",
     "ZEFOYTIKTOKBOT_TEST_EXPLAIN" => "FALSE",
-    "ZEFOYTIKTOKBOT_APIKEY" => "NONE",
   })
 
   idmap_resolved = Helpers.to_map(
@@ -89,7 +88,6 @@ def engagement_basic_setup(extra)
   if env["ZEFOYTIKTOKBOT_TEST_LIVE"] == "TRUE"
     merged_opts = Vs.merge([
       {
-        "apikey" => env["ZEFOYTIKTOKBOT_APIKEY"],
       },
       extra || {},
     ])

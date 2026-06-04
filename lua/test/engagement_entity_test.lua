@@ -86,7 +86,6 @@ function engagement_basic_setup(extra)
     ["ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID"] = idmap,
     ["ZEFOYTIKTOKBOT_TEST_LIVE"] = "FALSE",
     ["ZEFOYTIKTOKBOT_TEST_EXPLAIN"] = "FALSE",
-    ["ZEFOYTIKTOKBOT_APIKEY"] = "NONE",
   })
 
   local idmap_resolved = helpers.to_map(
@@ -98,7 +97,6 @@ function engagement_basic_setup(extra)
   if env["ZEFOYTIKTOKBOT_TEST_LIVE"] == "TRUE" then
     local merged_opts = vs.merge({
       {
-        apikey = env["ZEFOYTIKTOKBOT_APIKEY"],
       },
       extra or {},
     })

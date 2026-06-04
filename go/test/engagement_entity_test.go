@@ -110,7 +110,6 @@ func engagementBasicSetup(extra map[string]any) *entityTestSetup {
 		"ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID": idmap,
 		"ZEFOYTIKTOKBOT_TEST_LIVE":      "FALSE",
 		"ZEFOYTIKTOKBOT_TEST_EXPLAIN":   "FALSE",
-		"ZEFOYTIKTOKBOT_APIKEY":         "NONE",
 	})
 
 	idmapResolved := core.ToMapAny(env["ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID"])
@@ -121,7 +120,6 @@ func engagementBasicSetup(extra map[string]any) *entityTestSetup {
 	if env["ZEFOYTIKTOKBOT_TEST_LIVE"] == "TRUE" {
 		mergedOpts := vs.Merge([]any{
 			map[string]any{
-				"apikey": env["ZEFOYTIKTOKBOT_APIKEY"],
 			},
 			extra,
 		})

@@ -113,7 +113,6 @@ function basicSetup(extra?: any) {
     'ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID': idmap,
     'ZEFOY_TIKTOK_BOT_TEST_LIVE': 'FALSE',
     'ZEFOY_TIKTOK_BOT_TEST_EXPLAIN': 'FALSE',
-    'ZEFOY_TIKTOK_BOT_APIKEY': 'NONE',
   })
 
   idmap = env['ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID']
@@ -123,7 +122,6 @@ function basicSetup(extra?: any) {
   if (live) {
     client = new ZefoyTiktokBotSDK(merge([
       {
-        apikey: env.ZEFOY_TIKTOK_BOT_APIKEY,
       },
       extra
     ]))
