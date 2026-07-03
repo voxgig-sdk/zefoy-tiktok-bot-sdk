@@ -13,10 +13,10 @@
         "action": "apidef,sdkgen"
       },
       "watch": {
-        "src": {},
+        "def": {},
         "dist": {},
-        "tm": {},
-        "def": {}
+        "src": {},
+        "tm": {}
       }
     }
   }

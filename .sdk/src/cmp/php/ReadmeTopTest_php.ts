@@ -16,14 +16,12 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
   Content(`\`\`\`php
-$client = ${model.const.Name}SDK::test(null, null);
+$client = ${model.const.Name}SDK::test();
 `)
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`[$result, $err] = $client->${eName}(null)->load(
-    ["id" => "test01"], null
-);
+    Content(`[$result, $err] = $client->${eName}()->load(["id" => "test01"]);
 `)
   }
 

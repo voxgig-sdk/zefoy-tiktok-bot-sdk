@@ -1,20 +1,8 @@
 # ZefoyTiktokBot SDK
 
-Unofficial wrapper around Zefoy's free TikTok engagement automation site
+Zefoy TikTok Bot client, generated from the OpenAPI spec.
 
 > TypeScript, Python, PHP, Golang, Ruby, Lua SDKs, a CLI, an interactive REPL, and an MCP server for AI agents — all generated from one OpenAPI spec by [@voxgig/sdkgen](https://github.com/voxgig/sdkgen).
-
-## About Zefoy TikTok Bot
-
-[Zefoy](https://zefoy.com) is a free, web-based tool that offers TikTok engagement actions (such as views, hearts, followers and shares) gated by per-action cooldown timers and CAPTCHA checks. This SDK is an unofficial wrapper that targets the public `https://zefoy.com` site rather than a documented HTTP API.
-
-Because Zefoy itself does not publish an API specification, the surface exposed here is a thin scripted client over the same forms a browser would submit. Expect to handle:
-
-- CAPTCHA prompts before any engagement action can run
-- Cooldown windows between successive requests for the same action
-- HTML/markup changes on the upstream site that may require the SDK to be updated
-
-Zefoy's own homepage stresses that it does not sell services, run official apps, or operate paid tiers, and that the only legitimate entry point is `https://zefoy.com/`. Anything else claiming to be Zefoy is not. Use this SDK accordingly, and review TikTok's Terms of Service before automating against accounts you care about.
 
 ## Try it
 
@@ -48,27 +36,28 @@ gem install zefoy-tiktok-bot-sdk
 luarocks install zefoy-tiktok-bot-sdk
 ```
 
-## 30-second quickstart
+## Quickstart
 
 ### TypeScript
 
 ```ts
 import { ZefoyTiktokBotSDK } from 'zefoy-tiktok-bot'
 
-const client = new ZefoyTiktokBotSDK({})
+const client = new ZefoyTiktokBotSDK({
+  apikey: process.env.ZEFOY-TIKTOK-BOT_APIKEY,
+})
 
 ```
 
-See the [TypeScript README](ts/README.md) for the
-full guide, or scroll down for the same example in other languages.
+See the [TypeScript README](ts/README.md) for the full guide.
 
-## What's in the box
+## Surfaces
 
-| Surface | Use it for | Path |
-| --- | --- | --- |
-| **SDK** (TypeScript, Python, PHP, Golang, Ruby, Lua) | App integration | `ts/` `py/` `php/` `go/` `rb/` `lua/` |
-| **CLI** | Scripts, CI, ops, one-off API calls | `go-cli/` |
-| **MCP server** | AI agents (Claude, Cursor, Cline) | `go-mcp/` |
+| Surface | Path |
+| --- | --- |
+| **SDK** (TypeScript, Python, PHP, Golang, Ruby, Lua) | `ts/` `py/` `php/` `go/` `rb/` `lua/` |
+| **CLI** | `go-cli/` |
+| **MCP server** | `go-mcp/` |
 
 ## Use it from an AI agent (MCP)
 
@@ -98,7 +87,7 @@ The API exposes one entity:
 
 | Entity | Description | API path |
 | --- | --- | --- |
-| **Engagement** | Represents TikTok engagement actions (e.g. views, hearts, followers, shares) requested through the Zefoy site, each subject to its own cooldown and CAPTCHA gate. | `/api/boost` |
+| **Engagement** |  | `/api/boost` |
 
 Each entity supports the following operations where available: **load**,
 **list**, **create**, **update**, and **remove**.
@@ -108,9 +97,12 @@ Each entity supports the following operations where available: **load**,
 ### Python
 
 ```python
+import os
 from zefoytiktokbot_sdk import ZefoyTiktokBotSDK
 
-client = ZefoyTiktokBotSDK({})
+client = ZefoyTiktokBotSDK({
+    "apikey": os.environ.get("ZEFOY-TIKTOK-BOT_APIKEY"),
+})
 
 ```
 
@@ -120,7 +112,9 @@ client = ZefoyTiktokBotSDK({})
 <?php
 require_once 'zefoytiktokbot_sdk.php';
 
-$client = new ZefoyTiktokBotSDK([]);
+$client = new ZefoyTiktokBotSDK([
+    "apikey" => getenv("ZEFOY-TIKTOK-BOT_APIKEY"),
+]);
 
 ```
 
@@ -129,7 +123,9 @@ $client = new ZefoyTiktokBotSDK([]);
 ```go
 import sdk "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go"
 
-client := sdk.NewZefoyTiktokBotSDK(map[string]any{})
+client := sdk.NewZefoyTiktokBotSDK(map[string]any{
+    "apikey": os.Getenv("ZEFOY-TIKTOK-BOT_APIKEY"),
+})
 
 ```
 
@@ -138,7 +134,9 @@ client := sdk.NewZefoyTiktokBotSDK(map[string]any{})
 ```ruby
 require_relative "ZefoyTiktokBot_sdk"
 
-client = ZefoyTiktokBotSDK.new({})
+client = ZefoyTiktokBotSDK.new({
+  "apikey" => ENV["ZEFOY-TIKTOK-BOT_APIKEY"],
+})
 
 ```
 
@@ -147,7 +145,9 @@ client = ZefoyTiktokBotSDK.new({})
 ```lua
 local sdk = require("zefoy-tiktok-bot_sdk")
 
-local client = sdk.new({})
+local client = sdk.new({
+  apikey = os.getenv("ZEFOY-TIKTOK-BOT_APIKEY"),
+})
 
 ```
 
@@ -167,25 +167,21 @@ const result = await client.Engagement().load({ id: 'test01' })
 ### Python
 
 ```python
-client = ZefoyTiktokBotSDK.test(None, None)
-result, err = client.Engagement(None).load(
-    {"id": "test01"}, None
-)
+client = ZefoyTiktokBotSDK.test()
+result, err = client.Engagement().load({"id": "test01"})
 ```
 
 ### PHP
 
 ```php
-$client = ZefoyTiktokBotSDK::test(null, null);
-[$result, $err] = $client->Engagement(null)->load(
-    ["id" => "test01"], null
-);
+$client = ZefoyTiktokBotSDK::test();
+[$result, $err] = $client->Engagement()->load(["id" => "test01"]);
 ```
 
 ### Golang
 
 ```go
-client := sdk.TestSDK(nil, nil)
+client := sdk.Test()
 result, err := client.Engagement(nil).Load(
     map[string]any{"id": "test01"}, nil,
 )
@@ -194,19 +190,15 @@ result, err := client.Engagement(nil).Load(
 ### Ruby
 
 ```ruby
-client = ZefoyTiktokBotSDK.test(nil, nil)
-result, err = client.Engagement(nil).load(
-  { "id" => "test01" }, nil
-)
+client = ZefoyTiktokBotSDK.test
+result, err = client.Engagement().load({ "id" => "test01" })
 ```
 
 ### Lua
 
 ```lua
-local client = sdk.test(nil, nil)
-local result, err = client:Engagement(nil):load(
-  { id = "test01" }, nil
-)
+local client = sdk.test()
+local result, err = client:Engagement():load({ id = "test01" })
 ```
 
 ## How it works
@@ -310,15 +302,6 @@ local result, err = client:direct({
 - [Golang](go/README.md)
 - [Ruby](rb/README.md)
 - [Lua](lua/README.md)
-
-## Using the Zefoy TikTok Bot
-
-- Upstream: [https://zefoy.com](https://zefoy.com)
-
-- SDK code is distributed under the MIT licence.
-- Zefoy is a third-party website; this project is not affiliated with, endorsed by, or sponsored by Zefoy or TikTok.
-- Zefoy publishes no public API contract, so endpoint behaviour can change or break at any time.
-- Automating engagement on TikTok may violate TikTok's Terms of Service; use at your own risk.
 
 ---
 

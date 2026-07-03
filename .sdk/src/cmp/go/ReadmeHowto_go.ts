@@ -59,7 +59,7 @@ fmt.Println(fetchdef["headers"])
 Create a mock client for unit testing \u2014 no server required:
 
 \`\`\`go
-client := sdk.TestSDK(nil, nil)
+client := sdk.Test()
 
 result, err := client.Planet(nil).Load(
     map[string]any{"id": "test01"}, nil,

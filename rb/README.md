@@ -1,6 +1,11 @@
 # ZefoyTiktokBot Ruby SDK
 
-The Ruby SDK for the ZefoyTiktokBot API. Provides an entity-oriented interface using idiomatic Ruby conventions.
+
+
+The Ruby SDK for the ZefoyTiktokBot API — an entity-oriented client using idiomatic Ruby conventions.
+
+> Other languages, the CLI, and MCP server live alongside this one — see
+> the [top-level README](../README.md).
 
 
 ## Install
@@ -31,14 +36,16 @@ loading a specific record.
 ```ruby
 require_relative "ZefoyTiktokBot_sdk"
 
-client = ZefoyTiktokBotSDK.new({})
+client = ZefoyTiktokBotSDK.new({
+  "apikey" => ENV["ZEFOY-TIKTOK-BOT_APIKEY"],
+})
 ```
 
 ### 4. Create, update, and remove
 
 ```ruby
 # Create
-created, _ = client.Engagement(nil).create({ "name" => "Example" }, nil)
+created, _ = client.Engagement().create({ "name" => "Example" })
 
 ```
 
@@ -83,11 +90,9 @@ puts fetchdef["headers"]
 Create a mock client for unit testing — no server required:
 
 ```ruby
-client = ZefoyTiktokBotSDK.test(nil, nil)
+client = ZefoyTiktokBotSDK.test
 
-result, err = client.ZefoyTiktokBot(nil).load(
-  { "id" => "test01" }, nil
-)
+result, err = client.ZefoyTiktokBot().load({ "id" => "test01" })
 # result contains mock response data
 ```
 
@@ -119,6 +124,7 @@ Create a `.env.local` file at the project root:
 
 ```
 ZEFOY-TIKTOK-BOT_TEST_LIVE=TRUE
+ZEFOY-TIKTOK-BOT_APIKEY=<your-key>
 ```
 
 Then run:
@@ -141,6 +147,7 @@ Creates a new SDK client.
 
 | Option | Type | Description |
 | --- | --- | --- |
+| `apikey` | `String` | API key for authentication. |
 | `base` | `String` | Base URL of the API server. |
 | `prefix` | `String` | URL path prefix prepended to all requests. |
 | `suffix` | `String` | URL path suffix appended to all requests. |

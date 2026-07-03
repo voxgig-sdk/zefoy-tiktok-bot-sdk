@@ -18,16 +18,16 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
     e.active !== false && e.ancestors && e.ancestors.length > 0
   ) as any
 
-  const apikeyArg = isAuthActive(model)
-    ? `\n  apikey = os.getenv("${model.NAME}_APIKEY"),\n`
-    : ''
+  const ctor = isAuthActive(model)
+    ? `sdk.new({\n  apikey = os.getenv("${model.NAME}_APIKEY"),\n})`
+    : `sdk.new()`
 
   Content(`### 1. Create a client
 
 \`\`\`lua
 local sdk = require("${model.name}_sdk")
 
-local client = sdk.new({${apikeyArg}})
+local client = ${ctor}
 \`\`\`
 
 `)
@@ -40,7 +40,7 @@ local client = sdk.new({${apikeyArg}})
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`lua
-local result, err = client:${eName}(nil):list(nil, nil)
+local result, err = client:${eName}():list()
 if err then error(err) end
 
 if type(result) == "table" then
@@ -58,7 +58,7 @@ end
       Content(`### 3. Load a ${eName.toLowerCase()}
 
 \`\`\`lua
-local result, err = client:${eName}(nil):load({ id = "example_id" }, nil)
+local result, err = client:${eName}():load({ id = "example_id" })
 if err then error(err) end
 print(result)
 \`\`\`
@@ -73,19 +73,19 @@ print(result)
 `)
       if (opnames.includes('create')) {
         Content(`-- Create
-local created, _ = client:${eName}(nil):create({ name = "Example" }, nil)
+local created, _ = client:${eName}():create({ name = "Example" })
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`-- Update
-client:${eName}(nil):update({ id = created["id"], name = "Example-Renamed" }, nil)
+client:${eName}():update({ id = created["id"], name = "Example-Renamed" })
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`-- Remove
-client:${eName}(nil):remove({ id = created["id"] }, nil)
+client:${eName}():remove({ id = created["id"] })
 `)
       }
       Content(`\`\`\`

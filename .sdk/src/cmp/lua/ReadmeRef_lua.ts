@@ -87,12 +87,12 @@ Create a new SDK client instance.
 
 `)
 
-    Content(`#### \`sdk.test(testopts, sdkopts)\`
+    Content(`#### \`sdk.test(testopts?, sdkopts?)\`
 
-Create a test client with mock features active. Both arguments may be \`nil\`.
+Create a test client with mock features active. Both arguments are optional.
 
 \`\`\`lua
-local client = sdk.test(nil, nil)
+local client = sdk.test()
 \`\`\`
 
 `)
@@ -238,21 +238,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.Name}(nil):${opname}({ id = "${ent.name}_id" }, nil)
+local result, err = client:${ent.Name}():${opname}({ id = "${ent.name}_id" })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`lua
-local results, err = client:${ent.Name}(nil):list(nil, nil)
+local results, err = client:${ent.Name}():list()
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.Name}(nil):create({
+local result, err = client:${ent.Name}():create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -260,17 +260,17 @@ local result, err = client:${ent.Name}(nil):create({
 `)
               }
             })
-            Content(`}, nil)
+            Content(`})
 \`\`\`
 
 `)
           }
           else if ('update' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.Name}(nil):update({
+local result, err = client:${ent.Name}():update({
   id = "${ent.name}_id",
   -- Fields to update
-}, nil)
+})
 \`\`\`
 
 `)

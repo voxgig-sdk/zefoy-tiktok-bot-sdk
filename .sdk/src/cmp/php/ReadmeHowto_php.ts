@@ -47,11 +47,9 @@ print_r($fetchdef["headers"]);
 Create a mock client for unit testing — no server required:
 
 \`\`\`php
-$client = ${model.const.Name}SDK::test(null, null);
+$client = ${model.const.Name}SDK::test();
 
-[$result, $err] = $client->${model.const.Name}(null)->load(
-    ["id" => "test01"], null
-);
+[$result, $err] = $client->${model.const.Name}()->load(["id" => "test01"]);
 // $result contains mock response data
 \`\`\`
 

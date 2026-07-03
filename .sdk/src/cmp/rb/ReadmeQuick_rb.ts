@@ -18,16 +18,16 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
     e.active !== false && e.ancestors && e.ancestors.length > 0
   ) as any
 
-  const apikeyArg = isAuthActive(model)
-    ? `\n  "apikey" => ENV["${model.NAME}_APIKEY"],\n`
-    : ''
+  const ctor = isAuthActive(model)
+    ? `${model.const.Name}SDK.new({\n  "apikey" => ENV["${model.NAME}_APIKEY"],\n})`
+    : `${model.const.Name}SDK.new`
 
   Content(`### 1. Create a client
 
 \`\`\`ruby
 require_relative "${model.const.Name}_sdk"
 
-client = ${model.const.Name}SDK.new({${apikeyArg}})
+client = ${ctor}
 \`\`\`
 
 `)
@@ -40,7 +40,7 @@ client = ${model.const.Name}SDK.new({${apikeyArg}})
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`ruby
-result, err = client.${eName}(nil).list(nil, nil)
+result, err = client.${eName}().list
 raise err if err
 
 if result.is_a?(Array)
@@ -58,7 +58,7 @@ end
       Content(`### 3. Load a ${eName.toLowerCase()}
 
 \`\`\`ruby
-result, err = client.${eName}(nil).load({ "id" => "example_id" }, nil)
+result, err = client.${eName}().load({ "id" => "example_id" })
 raise err if err
 puts result
 \`\`\`
@@ -73,19 +73,19 @@ puts result
 `)
       if (opnames.includes('create')) {
         Content(`# Create
-created, _ = client.${eName}(nil).create({ "name" => "Example" }, nil)
+created, _ = client.${eName}().create({ "name" => "Example" })
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`# Update
-client.${eName}(nil).update({ "id" => created["id"], "name" => "Example-Renamed" }, nil)
+client.${eName}().update({ "id" => created["id"], "name" => "Example-Renamed" })
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`# Remove
-client.${eName}(nil).remove({ "id" => created["id"] }, nil)
+client.${eName}().remove({ "id" => created["id"] })
 `)
       }
       Content(`\`\`\`

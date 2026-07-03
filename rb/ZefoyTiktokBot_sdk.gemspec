@@ -10,8 +10,6 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["."]
 
   spec.required_ruby_version = ">= 3.0"
-
-  spec.add_dependency "json"
   spec.add_dependency "json", "~> 0"
   spec.add_dependency "voxgig-struct", "~> 0.0.10"
 

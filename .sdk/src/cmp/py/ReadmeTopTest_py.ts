@@ -16,14 +16,12 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
   Content(`\`\`\`python
-client = ${model.const.Name}SDK.test(None, None)
+client = ${model.const.Name}SDK.test()
 `)
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`result, err = client.${eName}(None).load(
-    {"id": "test01"}, None
-)
+    Content(`result, err = client.${eName}().load({"id": "test01"})
 `)
   }
 

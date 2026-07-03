@@ -17,14 +17,15 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
-  const apikeyArg = isAuthActive(model)
-    ? `\n    "apikey": os.Getenv("${model.NAME}_APIKEY"),\n`
-    : ''
+  const authActive = isAuthActive(model)
+  const ctor = authActive
+    ? `sdk.New${model.const.Name}SDK(map[string]any{\n    "apikey": os.Getenv("${model.NAME}_APIKEY"),\n})`
+    : `sdk.New()`
 
   Content(`\`\`\`go
 import sdk "${gomodule}"
 
-client := sdk.New${model.const.Name}SDK(map[string]any{${apikeyArg}})
+client := ${ctor}
 
 `)
 
@@ -32,10 +33,14 @@ client := sdk.New${model.const.Name}SDK(map[string]any{${apikeyArg}})
     const eName = nom(exampleEntity, 'Name')
     const opnames = Object.keys(exampleEntity.op || {})
 
+    let hasCall = false
+
     if (opnames.includes('list')) {
       Content(`// List all ${eName.toLowerCase()}s
 ${eName.toLowerCase()}s, err := client.${eName}(nil).List(nil, nil)
+fmt.Println(${eName.toLowerCase()}s)
 `)
+      hasCall = true
     }
 
     // Find a nested entity for a more interesting example
@@ -54,7 +59,18 @@ ${eName.toLowerCase()}s, err := client.${eName}(nil).List(nil, nil)
 ${neName.toLowerCase()}, err := client.${neName}(nil).Load(
     map[string]any{"${parentParam}": "example", "id": "example_id"}, nil,
 )
+fmt.Println(${neName.toLowerCase()})
 `)
+      hasCall = true
+    }
+
+    // Fallback: APIs with only `load` (no list, no nested) — still show one call.
+    if (!hasCall && opnames.includes('load')) {
+      Content(`// Load ${eName.toLowerCase()} data
+${eName.toLowerCase()}, err := client.${eName}(nil).Load(map[string]any{}, nil)
+fmt.Println(${eName.toLowerCase()})
+`)
+      hasCall = true
     }
   }
 

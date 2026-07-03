@@ -47,11 +47,9 @@ print(fetchdef["headers"])
 Create a mock client for unit testing — no server required:
 
 \`\`\`lua
-local client = sdk.test(nil, nil)
+local client = sdk.test()
 
-local result, err = client:${model.const.Name}(nil):load(
-  { id = "test01" }, nil
-)
+local result, err = client:${model.const.Name}():load({ id = "test01" })
 -- result contains mock response data
 \`\`\`
 

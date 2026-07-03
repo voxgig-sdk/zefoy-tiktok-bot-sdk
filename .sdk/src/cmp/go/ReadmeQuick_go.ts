@@ -27,9 +27,9 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   const goImports = authActive
     ? `    "fmt"\n    "os"\n`
     : `    "fmt"\n`
-  const apikeyArg = authActive
-    ? `\n        "apikey": os.Getenv("${model.NAME}_APIKEY"),\n    `
-    : ''
+  const ctor = authActive
+    ? `sdk.New${model.const.Name}SDK(map[string]any{\n        "apikey": os.Getenv("${model.NAME}_APIKEY"),\n    })`
+    : `sdk.New()`
 
   Content(`### 1. Create a client
 
@@ -43,7 +43,7 @@ ${goImports}
 )
 
 func main() {
-    client := sdk.New${model.const.Name}SDK(map[string]any{${apikeyArg}})
+    client := ${ctor}
 \`\`\`
 
 `)

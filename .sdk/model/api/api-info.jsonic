@@ -21,26 +21,7 @@ main: {
       ]
       title: "Zefoy TikTok Bot"
       version: "1.0.0"
-      tagline: "Unofficial wrapper around Zefoy's free TikTok engagement automation site"
-      homepage: "https://zefoy.com"
-      license_short: "MIT licence on the SDK wrapper; the underlying Zefoy service is third-party and not affiliated with this project."
-      license_md: `- SDK code is distributed under the MIT licence.
-- Zefoy is a third-party website; this project is not affiliated with, endorsed by, or sponsored by Zefoy or TikTok.
-- Zefoy publishes no public API contract, so endpoint behaviour can change or break at any time.
-- Automating engagement on TikTok may violate TikTok's Terms of Service; use at your own risk.`
-      about_md: `[Zefoy](https://zefoy.com) is a free, web-based tool that offers TikTok engagement actions (such as views, hearts, followers and shares) gated by per-action cooldown timers and CAPTCHA checks. This SDK is an unofficial wrapper that targets the public \`https://zefoy.com\` site rather than a documented HTTP API.
-
-Because Zefoy itself does not publish an API specification, the surface exposed here is a thin scripted client over the same forms a browser would submit. Expect to handle:
-
-- CAPTCHA prompts before any engagement action can run
-- Cooldown windows between successive requests for the same action
-- HTML/markup changes on the upstream site that may require the SDK to be updated
-
-Zefoy's own homepage stresses that it does not sell services, run official apps, or operate paid tiers, and that the only legitimate entry point is \`https://zefoy.com/\`. Anything else claiming to be Zefoy is not. Use this SDK accordingly, and review TikTok's Terms of Service before automating against accounts you care about.`
-      entity_desc: {
-        engagement: "Represents TikTok engagement actions (e.g. views, hearts, followers, shares) requested through the Zefoy site, each subject to its own cooldown and CAPTCHA gate."
-      }
-      auth: false
     }
   }
 }
+

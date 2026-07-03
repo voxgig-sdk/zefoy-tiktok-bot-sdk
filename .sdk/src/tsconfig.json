@@ -10,6 +10,13 @@
     "strict": true,
     "target": "es2021",
     "types": ["node"],
+
+    // A generated project must not fail on a *dependency's* own .d.ts: e.g.
+    // thread-stream (via @voxgig/apidef -> pino) references
+    // worker_threads.TransferListItem, dropped in @types/node >=26. Only src
+    // is our code, so skip lib checking of node_modules type declarations.
+    "skipLibCheck": true,
+
     "declaration": true,
     "declarationDir": "../dist"
   },

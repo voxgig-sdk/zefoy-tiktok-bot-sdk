@@ -20,16 +20,16 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
   const authActive = isAuthActive(model)
   const apikeyImport = authActive ? `import os\n` : ''
-  const apikeyArg = authActive
-    ? `\n    "apikey": os.environ.get("${model.NAME}_APIKEY"),\n`
-    : ''
+  const ctor = authActive
+    ? `${model.const.Name}SDK({\n    "apikey": os.environ.get("${model.NAME}_APIKEY"),\n})`
+    : `${model.const.Name}SDK()`
 
   Content(`### 1. Create a client
 
 \`\`\`python
 ${apikeyImport}from ${model.const.Name.toLowerCase()}_sdk import ${model.const.Name}SDK
 
-client = ${model.const.Name}SDK({${apikeyArg}})
+client = ${ctor}
 \`\`\`
 
 `)
@@ -42,7 +42,7 @@ client = ${model.const.Name}SDK({${apikeyArg}})
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`python
-result, err = client.${eName}(None).list(None, None)
+result, err = client.${eName}().list()
 if err:
     raise Exception(err)
 
@@ -59,7 +59,7 @@ if isinstance(result, list):
       Content(`### 3. Load a ${eName.toLowerCase()}
 
 \`\`\`python
-result, err = client.${eName}(None).load({"id": "example_id"}, None)
+result, err = client.${eName}().load({"id": "example_id"})
 if err:
     raise Exception(err)
 print(result)
@@ -75,19 +75,19 @@ print(result)
 `)
       if (opnames.includes('create')) {
         Content(`# Create
-created, _ = client.${eName}(None).create({"name": "Example"}, None)
+created, _ = client.${eName}().create({"name": "Example"})
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`# Update
-client.${eName}(None).update({"id": created["id"], "name": "Example-Renamed"}, None)
+client.${eName}().update({"id": created["id"], "name": "Example-Renamed"})
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`# Remove
-client.${eName}(None).remove({"id": created["id"]}, None)
+client.${eName}().remove({"id": created["id"]})
 `)
       }
       Content(`\`\`\`

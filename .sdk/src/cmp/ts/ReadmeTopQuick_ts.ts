@@ -14,14 +14,15 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
-  const apikeyArg = isAuthActive(model)
-    ? `\n  apikey: process.env.${model.NAME}_APIKEY,\n`
-    : ''
+  const authActive = isAuthActive(model)
+  const ctor = authActive
+    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${model.NAME}_APIKEY,\n})`
+    : `new ${model.const.Name}SDK()`
 
   Content(`\`\`\`ts
 import { ${model.const.Name}SDK } from '${target.module.name}'
 
-const client = new ${model.const.Name}SDK({${apikeyArg}})
+const client = ${ctor}
 
 `)
 
@@ -29,10 +30,14 @@ const client = new ${model.const.Name}SDK({${apikeyArg}})
     const eName = nom(exampleEntity, 'Name')
     const opnames = Object.keys(exampleEntity.op || {})
 
+    let hasCall = false
+
     if (opnames.includes('list')) {
       Content(`// List all ${eName.toLowerCase()}s
 const ${eName.toLowerCase()}s = await client.${eName}().list()
+console.log(${eName.toLowerCase()}s.data)
 `)
+      hasCall = true
     }
 
     // Find a nested entity for a more interesting example
@@ -52,7 +57,19 @@ const ${neName.toLowerCase()} = await client.${neName}().load({
   ${parentParam}: 'example',
   id: 'example_id',
 })
+console.log(${neName.toLowerCase()}.data)
 `)
+      hasCall = true
+    }
+
+    // Fallback: APIs with only `load` (no list, no nested) — most public
+    // read-only services. Still show one concrete call.
+    if (!hasCall && opnames.includes('load')) {
+      Content(`// Load ${eName.toLowerCase()} data
+const ${eName.toLowerCase()} = await client.${eName}().load({})
+console.log(${eName.toLowerCase()}.data)
+`)
+      hasCall = true
     }
   }
 

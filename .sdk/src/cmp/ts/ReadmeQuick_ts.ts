@@ -21,16 +21,16 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
     e.active !== false && e.ancestors && e.ancestors.length > 0
   ) as any
 
-  const apikeyArg = isAuthActive(model)
-    ? `\n  apikey: process.env.${model.NAME}_APIKEY,\n`
-    : ''
+  const ctor = isAuthActive(model)
+    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${model.NAME}_APIKEY,\n})`
+    : `new ${model.const.Name}SDK()`
 
   Content(`### 1. Create a client
 
 \`\`\`ts
 import { ${model.const.Name}SDK } from '${target.module.name}'
 
-const client = new ${model.const.Name}SDK({${apikeyArg}})
+const client = ${ctor}
 \`\`\`
 
 `)

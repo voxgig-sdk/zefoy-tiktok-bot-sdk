@@ -16,14 +16,12 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
   Content(`\`\`\`lua
-local client = sdk.test(nil, nil)
+local client = sdk.test()
 `)
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`local result, err = client:${eName}(nil):load(
-  { id = "test01" }, nil
-)
+    Content(`local result, err = client:${eName}():load({ id = "test01" })
 `)
   }
 

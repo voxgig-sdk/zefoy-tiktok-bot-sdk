@@ -25,11 +25,19 @@ const Package = cmp(async function Package(props: any) {
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
   const rockName = `${ns}-${pkgBase}`
 
+  // Single source for the version so the rockspec version and the source.tag
+  // (which `make publish` pushes as lua/v<rockVersion>) can never drift apart.
+  const rockVersion = '0.0.1'
+
   File({ name: model.name + '.rockspec' }, () => {
     Content(`package = "${rockName}"
-version = "0.0-1"
+version = "${rockVersion}-1"
 source = {
-  url = "git://github.com/${ns}/${model.name}-sdk.git"
+  -- git+https (GitHub dropped git:// in 2022); pin the install to the release
+  -- tag pushed by \`make publish\`, and point at the lua/ subdir of the monorepo.
+  url = "git+https://github.com/${ns}/${model.name}-sdk.git",
+  tag = "lua/v${rockVersion}",
+  dir = "${model.name}-sdk/lua"
 }
 description = {
   summary = "${model.const.Name} SDK for Lua",

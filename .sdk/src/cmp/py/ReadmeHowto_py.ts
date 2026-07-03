@@ -48,11 +48,9 @@ print(fetchdef["headers"])
 Create a mock client for unit testing — no server required:
 
 \`\`\`python
-client = ${model.const.Name}SDK.test(None, None)
+client = ${model.const.Name}SDK.test()
 
-result, err = client.${model.const.Name}(None).load(
-    {"id": "test01"}, None
-)
+result, err = client.${model.const.Name}().load({"id": "test01"})
 # result contains mock response data
 \`\`\`
 

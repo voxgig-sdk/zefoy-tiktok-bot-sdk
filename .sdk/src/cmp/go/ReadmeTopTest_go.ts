@@ -18,7 +18,7 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
   Content(`\`\`\`go
-client := sdk.TestSDK(nil, nil)
+client := sdk.Test()
 `)
 
   if (exampleEntity) {

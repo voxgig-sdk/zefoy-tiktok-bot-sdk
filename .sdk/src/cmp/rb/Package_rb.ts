@@ -44,6 +44,13 @@ gemspec
 
   // Generate gemspec
   File({ name: model.const.Name + '_sdk.gemspec' }, () => {
+    // RubyGems rejects a gemspec that declares the same runtime dependency
+    // twice (Gem::InvalidSpecificationException at `gem build`), so the
+    // unconstrained json fallback is only emitted when the model's own
+    // dependency list doesn't already declare json.
+    const deps = collectDeps(model, target.name, target.deps)
+    const hasJson = deps.some((d: any) => 'json' === d.name)
+
     Content(`Gem::Specification.new do |spec|
   spec.name          = "${gemName}"
   spec.version       = "0.0.1"
@@ -56,11 +63,11 @@ gemspec
   spec.require_paths = ["."]
 
   spec.required_ruby_version = ">= 3.0"
-
+${hasJson ? '' : `
   spec.add_dependency "json"
-`)
+`}`)
 
-    for (const d of collectDeps(model, target.name, target.deps)) {
+    for (const d of deps) {
       Content(`  spec.add_dependency "${d.name}", "~> ${versionOf(d)}"
 `)
     }
