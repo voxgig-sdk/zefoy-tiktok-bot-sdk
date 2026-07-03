@@ -10,7 +10,7 @@ The PHP SDK for the ZefoyTiktokBot API — an entity-oriented client using PHP c
 
 ## Install
 ```bash
-composer require voxgig/zefoy-tiktok-bot-sdk
+composer require voxgig-sdk/zefoy-tiktok-bot
 ```
 
 

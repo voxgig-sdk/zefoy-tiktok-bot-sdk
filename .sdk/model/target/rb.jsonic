@@ -21,3 +21,15 @@ main: kit: target: rb: {
 main: kit: feature: &: target: rb: deps: &: {
   kind: *'prod' | string
 }
+
+
+# Publication: rubygems registry (declared but not yet active).
+main: kit: target: rb: publish: {
+  tag: { active: true }
+  registry: {
+    active: false
+    name: 'rubygems'
+    url: 'https://rubygems.org'
+    vault: { recipe: 'gem', alias: 'gem' }
+  }
+}

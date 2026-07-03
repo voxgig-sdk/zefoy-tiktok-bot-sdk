@@ -38,3 +38,10 @@ main: kit: target: 'go-cli': {
 main: kit: feature: &: target: 'go-cli': deps: &: {
   kind: *'prod' | string
 }
+
+
+# Publication: tag-only — the Go module proxy resolves versions from the
+# go-cli/vX.Y.Z GitHub tag; there is no package registry to upload to.
+main: kit: target: 'go-cli': publish: {
+  tag: { active: true, via: 'root' }
+}

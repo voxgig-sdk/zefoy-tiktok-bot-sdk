@@ -10,7 +10,7 @@ The Lua SDK for the ZefoyTiktokBot API — an entity-oriented client using Lua c
 
 ## Install
 ```bash
-luarocks install zefoy-tiktok-bot-sdk
+luarocks install voxgig-sdk-zefoy-tiktok-bot
 ```
 
 If the module is not yet published, add the source directory to

@@ -1,13 +1,14 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, installCommand } from '@voxgig/sdkgen'
 
 
 const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
-  const { target } = props
+  const { target, ctx$ } = props
+  const { model } = ctx$
 
   Content('```bash')
   Content(`
-npm install ${target.module.name}
+${installCommand(model, target.name)}
 `)
   Content('```')
 

@@ -1,5 +1,5 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, installCommand } from '@voxgig/sdkgen'
 
 
 const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
@@ -7,7 +7,7 @@ const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
   const { model } = ctx$
 
   Content(`\`\`\`bash
-composer require voxgig/${model.name}-sdk
+${installCommand(model, target.name)}
 \`\`\`
 
 `)

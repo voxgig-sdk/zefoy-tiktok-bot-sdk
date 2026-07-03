@@ -21,3 +21,15 @@ main: kit: target: py: {
 main: kit: feature: &: target: py: deps: &: {
   kind: *'prod' | string
 }
+
+
+# Publication: pypi registry (declared but not yet active).
+main: kit: target: py: publish: {
+  tag: { active: true }
+  registry: {
+    active: false
+    name: 'pypi'
+    url: 'https://pypi.org'
+    vault: { recipe: 'pypi', alias: 'pypi' }
+  }
+}

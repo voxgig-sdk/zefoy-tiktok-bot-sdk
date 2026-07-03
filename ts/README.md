@@ -10,7 +10,7 @@ The TypeScript SDK for the ZefoyTiktokBot API — a type-safe, entity-oriented c
 
 ## Install
 ```bash
-npm install zefoy-tiktok-bot
+npm install @voxgig-sdk/zefoy-tiktok-bot
 ```
 ## Tutorial: your first API call
 

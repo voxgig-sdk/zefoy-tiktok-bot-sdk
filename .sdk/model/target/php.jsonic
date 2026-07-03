@@ -19,3 +19,15 @@ main: kit: target: php: {
 main: kit: feature: &: target: php: deps: &: {
   kind: *'prod' | string
 }
+
+
+# Publication: packagist registry (declared but not yet active).
+main: kit: target: php: publish: {
+  tag: { active: true }
+  registry: {
+    active: false
+    name: 'packagist'
+    url: 'https://packagist.org'
+    vault: { alias: 'packagist', env: 'PACKAGIST_API_TOKEN' }
+  }
+}

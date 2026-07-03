@@ -10,13 +10,13 @@ The Ruby SDK for the ZefoyTiktokBot API — an entity-oriented client using idio
 
 ## Install
 ```bash
-gem install zefoy-tiktok-bot-sdk
+gem install voxgig-sdk-zefoy-tiktok-bot
 ```
 
 Or add to your `Gemfile`:
 
 ```ruby
-gem "zefoy-tiktok-bot-sdk"
+gem "voxgig-sdk-zefoy-tiktok-bot"
 ```
 
 Then run:

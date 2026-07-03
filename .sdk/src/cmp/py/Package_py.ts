@@ -4,6 +4,9 @@ import {
   File,
   cmp,
   collectDeps,
+  pkgDescription,
+  keywords,
+  repoInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -24,6 +27,8 @@ const Package = cmp(async function Package(props: any) {
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
   const distName = `${ns}-${pkgBase}`
+  const { repoUrl, issuesUrl } = repoInfo(model)
+  const kw = keywords(model).map((k) => `"${k}"`).join(', ')
 
   File({ name: 'pyproject.toml' }, () => {
     Content(`[build-system]
@@ -33,14 +38,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "${distName}"
 version = "0.0.1"
-description = "${model.const.Name} SDK for Python"
+description = "${pkgDescription(model, 'py')}"
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
+keywords = [${kw}]
 dependencies = [
-    "requests>=2.33",
 `)
 
+    const seen = new Set<string>()
     for (const d of collectDeps(model, target.name, target.deps)) {
+      if (seen.has(d.name)) continue
+      seen.add(d.name)
       const v = d.source === 'target' ? (d.version || '0.0') : d.version
       Content(`    "${d.name}>=${v}",
 `)
@@ -49,7 +58,9 @@ dependencies = [
     Content(`]
 
 [project.urls]
-Homepage = "https://github.com/voxgig/${model.name}-sdk"
+Homepage = "${repoUrl}"
+Repository = "${repoUrl}"
+Issues = "${issuesUrl}"
 
 # Explicit package list — setuptools auto-discovery refuses to pick when
 # multiple top-level dirs (core/entity/feature/utility) are present.

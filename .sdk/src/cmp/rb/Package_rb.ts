@@ -4,6 +4,8 @@ import {
   File,
   cmp,
   collectDeps,
+  pkgDescription,
+  repoInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -24,6 +26,7 @@ const Package = cmp(async function Package(props: any) {
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
   const gemName = `${ns}-${pkgBase}`
+  const { repoUrl, issuesUrl, changelogUrl } = repoInfo(model)
 
   const versionOf = (d: { version: string; source: 'feature' | 'target' }) =>
     d.source === 'target' ? (d.version || '0.0') : d.version
@@ -55,9 +58,17 @@ gemspec
   spec.name          = "${gemName}"
   spec.version       = "0.0.1"
   spec.authors       = ["Voxgig"]
-  spec.summary       = "${model.const.Name} SDK for Ruby"
+  spec.summary       = "${pkgDescription(model, 'rb')}"
+  spec.description   = "${pkgDescription(model, 'rb')}"
   spec.license       = "MIT"
-  spec.homepage      = "https://github.com/${ns}/${model.name}-sdk"
+  spec.homepage      = "${repoUrl}"
+  spec.metadata      = {
+    "homepage_uri"          => "${repoUrl}",
+    "source_code_uri"       => "${repoUrl}",
+    "bug_tracker_uri"       => "${issuesUrl}",
+    "changelog_uri"         => "${changelogUrl}",
+    "rubygems_mfa_required" => "true"
+  }
 
   spec.files         = Dir["lib/**/*.rb", "*.rb"]
   spec.require_paths = ["."]

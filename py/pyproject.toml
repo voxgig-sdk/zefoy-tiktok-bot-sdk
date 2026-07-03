@@ -5,16 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "voxgig-sdk-zefoy-tiktok-bot"
 version = "0.0.1"
-description = "ZefoyTiktokBot SDK for Python"
+description = "Unofficial generated Python SDK for the Zefoy TikTok Bot public API. Not affiliated with or endorsed by the upstream API provider."
+readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"
+keywords = ["voxgig", "sdk", "generated-sdk", "openapi", "api-client", "zefoy-tiktok-bot"]
 dependencies = [
-    "requests>=2.33",
     "requests>=2.33",
 ]
 
 [project.urls]
-Homepage = "https://github.com/voxgig/zefoy-tiktok-bot-sdk"
+Homepage = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk"
+Repository = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk"
+Issues = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/issues"
 
 # Explicit package list — setuptools auto-discovery refuses to pick when
 # multiple top-level dirs (core/entity/feature/utility) are present.

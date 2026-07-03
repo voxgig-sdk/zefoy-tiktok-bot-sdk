@@ -21,3 +21,15 @@ main: kit: target: lua: {
 main: kit: feature: &: target: lua: deps: &: {
   kind: *'prod' | string
 }
+
+
+# Publication: luarocks registry (declared but not yet active).
+main: kit: target: lua: publish: {
+  tag: { active: true }
+  registry: {
+    active: false
+    name: 'luarocks'
+    url: 'https://luarocks.org'
+    vault: { alias: 'luarocks', env: 'LUAROCKS_API_KEY' }
+  }
+}

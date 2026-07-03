@@ -10,7 +10,7 @@ The Python SDK for the ZefoyTiktokBot API — an entity-oriented client followin
 
 ## Install
 ```bash
-pip install zefoy-tiktok-bot-sdk
+pip install voxgig-sdk-zefoy-tiktok-bot
 ```
 
 Or install from source:

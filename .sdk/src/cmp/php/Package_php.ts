@@ -4,6 +4,9 @@ import {
   File,
   cmp,
   collectDeps,
+  pkgDescription,
+  keywords,
+  repoInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -23,14 +26,25 @@ const Package = cmp(async function Package(props: any) {
   // "-sdk" (matches the TS Package generator).
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
+  const { repoUrl, issuesUrl } = repoInfo(model)
+  const kw = keywords(model).map((k) => `"${k}"`).join(', ')
 
   // Generate composer.json
   File({ name: 'composer.json' }, () => {
     Content(`{
   "name": "${ns}/${pkgBase}",
-  "description": "${model.const.Name} SDK for PHP",
+  "description": "${pkgDescription(model, 'php')}",
   "type": "library",
+  "keywords": [${kw}],
+  "homepage": "${repoUrl}",
   "license": "MIT",
+  "authors": [
+    { "name": "Voxgig", "homepage": "https://voxgig.com" }
+  ],
+  "support": {
+    "issues": "${issuesUrl}",
+    "source": "${repoUrl}"
+  },
   "minimum-stability": "stable",
   "require": {
     "php": ">=8.2"`)

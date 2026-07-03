@@ -4,6 +4,9 @@ import {
   File,
   cmp,
   collectDeps,
+  pkgDescription,
+  keywords,
+  repoInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -24,6 +27,8 @@ const Package = cmp(async function Package(props: any) {
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
   const rockName = `${ns}-${pkgBase}`
+  const { repoUrl, issuesUrl } = repoInfo(model)
+  const labels = keywords(model).map((k) => `"${k}"`).join(', ')
 
   // Single source for the version so the rockspec version and the source.tag
   // (which `make publish` pushes as lua/v<rockVersion>) can never drift apart.
@@ -40,15 +45,21 @@ source = {
   dir = "${model.name}-sdk/lua"
 }
 description = {
-  summary = "${model.const.Name} SDK for Lua",
-  license = "MIT"
+  summary = "${pkgDescription(model, 'lua')}",
+  homepage = "${repoUrl}",
+  issues_url = "${issuesUrl}",
+  license = "MIT",
+  labels = { ${labels} }
 }
 dependencies = {
   "lua >= 5.3",
   "dkjson >= 2.5",
 `)
 
+    const seen = new Set<string>(['lua', 'dkjson'])
     for (const d of collectDeps(model, target.name, target.deps)) {
+      if (seen.has(d.name)) continue
+      seen.add(d.name)
       const v = d.source === 'target' ? (d.version || '0.0') : d.version
       Content(`  "${d.name} >= ${v}",
 `)

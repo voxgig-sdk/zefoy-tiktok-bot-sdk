@@ -1,5 +1,5 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, installCommand, packageName } from '@voxgig/sdkgen'
 
 
 const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
@@ -7,13 +7,13 @@ const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
   const { model } = ctx$
 
   Content(`\`\`\`bash
-gem install ${model.name}-sdk
+${installCommand(model, target.name)}
 \`\`\`
 
 Or add to your \`Gemfile\`:
 
 \`\`\`ruby
-gem "${model.name}-sdk"
+gem "${packageName(model, 'gem')}"
 \`\`\`
 
 Then run:
