@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -17,7 +17,7 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const authActive = isAuthActive(model)
   const ctor = authActive
-    ? `new ${model.const.Name}SDK([\n    "apikey" => getenv("${model.NAME}_APIKEY"),\n])`
+    ? `new ${model.const.Name}SDK([\n    "apikey" => getenv("${envName(model)}_APIKEY"),\n])`
     : `new ${model.const.Name}SDK()`
 
   Content(`\`\`\`php
@@ -35,8 +35,8 @@ $client = ${ctor};
     let hasCall = false
 
     if (opnames.includes('list')) {
-      Content(`// List all ${eName.toLowerCase()}s
-[$${eName.toLowerCase()}s, $err] = $client->${eName}()->list();
+      Content(`// List all ${eName.toLowerCase()}s (throws on error)
+$${eName.toLowerCase()}s = $client->${eName.toLowerCase()}()->list();
 print_r($${eName.toLowerCase()}s);
 `)
       hasCall = true
@@ -45,7 +45,7 @@ print_r($${eName.toLowerCase()}s);
     if (opnames.includes('load')) {
       Content(`
 // Load a specific ${eName.toLowerCase()}
-[$${eName.toLowerCase()}, $err] = $client->${eName}()->load(["id" => "example_id"]);
+$${eName.toLowerCase()} = $client->${eName.toLowerCase()}()->load(["id" => "example_id"]);
 print_r($${eName.toLowerCase()});
 `)
       hasCall = true

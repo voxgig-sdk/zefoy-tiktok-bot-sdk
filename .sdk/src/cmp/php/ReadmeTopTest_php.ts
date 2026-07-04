@@ -21,7 +21,7 @@ $client = ${model.const.Name}SDK::test();
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`[$result, $err] = $client->${eName}()->load(["id" => "test01"]);
+    Content(`$result = $client->${eName.toLowerCase()}()->load(["id" => "test01"]);
 `)
   }
 

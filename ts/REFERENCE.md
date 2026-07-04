@@ -110,7 +110,7 @@ Alias for `ZefoyTiktokBotSDK.test()`.
 ## EngagementEntity
 
 ```ts
-const engagement = client.Engagement()
+const engagement = client.engagement
 ```
 
 ### Fields
@@ -144,7 +144,7 @@ const engagement = client.Engagement()
 Create a new entity with the given data.
 
 ```ts
-const result = await client.Engagement().create({
+const result = await client.engagement.create({
   url: /* `$STRING` */,
 })
 ```

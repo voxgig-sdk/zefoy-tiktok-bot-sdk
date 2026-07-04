@@ -1,12 +1,18 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+
+import { KIT, getModelPath, nom } from '@voxgig/apidef'
 
 
 const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
+  const entity = getModelPath(model, `main.${KIT}.entity`)
+  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+
   const apikeyEnvLine = isAuthActive(model)
-    ? `\n${model.NAME}_APIKEY=<your-key>`
+    ? `\n${envName(model)}_APIKEY=<your-key>`
     : ''
 
   Content(`### Make a direct HTTP request
@@ -14,28 +20,31 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
 For endpoints not covered by entity methods:
 
 \`\`\`php
-[$result, $err] = $client->direct([
+// direct() is the raw-HTTP escape hatch: it returns a result array
+// (it does not throw). Branch on $result["ok"].
+$result = $client->direct([
     "path" => "/api/resource/{id}",
     "method" => "GET",
     "params" => ["id" => "example"],
 ]);
-if ($err) { throw new \\Exception($err); }
 
 if ($result["ok"]) {
     echo $result["status"];  // 200
     print_r($result["data"]);  // response body
+} else {
+    echo "Error: " . $result["err"]->getMessage();
 }
 \`\`\`
 
 ### Prepare a request without sending it
 
 \`\`\`php
-[$fetchdef, $err] = $client->prepare([
+// prepare() throws on error and returns the fetch definition.
+$fetchdef = $client->prepare([
     "path" => "/api/resource/{id}",
     "method" => "DELETE",
     "params" => ["id" => "example"],
 ]);
-if ($err) { throw new \\Exception($err); }
 
 echo $fetchdef["url"];
 echo $fetchdef["method"];
@@ -49,7 +58,7 @@ Create a mock client for unit testing — no server required:
 \`\`\`php
 $client = ${model.const.Name}SDK::test();
 
-[$result, $err] = $client->${model.const.Name}()->load(["id" => "test01"]);
+$result = $client->${eName.toLowerCase()}()->load(["id" => "test01"]);
 // $result contains mock response data
 \`\`\`
 
@@ -83,7 +92,7 @@ $client = new ${model.const.Name}SDK([
 Create a \`.env.local\` file at the project root:
 
 \`\`\`
-${model.NAME}_TEST_LIVE=TRUE${apikeyEnvLine}
+${envName(model)}_TEST_LIVE=TRUE${apikeyEnvLine}
 \`\`\`
 
 Then run:

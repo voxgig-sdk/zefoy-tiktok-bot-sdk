@@ -3,6 +3,11 @@ require_relative '../core/helpers'
 
 # EJECT-START
 
+  # Load a single EntityName.
+  #
+  # @param reqmatch [EntityNameLoadMatch, Hash, nil] match criteria (id/query fields)
+  # @param ctrl [Object, nil] optional per-call control
+  # @return [EntityName, Hash] the loaded EntityName; raises ProjectNameError on failure
   def load(reqmatch, ctrl = nil)
     utility = @_utility
     ctx = utility.make_context.call({

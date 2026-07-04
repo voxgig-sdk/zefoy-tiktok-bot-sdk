@@ -264,8 +264,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-    ${datavar}_result, err = ${entvar}.create(${datavar}, nil)
-    assert_nil err
+    ${datavar}_result = ${entvar}.create(${datavar}, nil)
     ${datavar} = Helpers.to_map(${datavar}_result)
     assert !${datavar}.nil?
 `)
@@ -310,8 +309,7 @@ const generateList: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-    ${listvar}_result, err = ${entvar}.list(${matchvar}, nil)
-    assert_nil err
+    ${listvar}_result = ${entvar}.list(${matchvar}, nil)
     assert ${listvar}_result.is_a?(Array)
 `)
 
@@ -399,8 +397,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-    ${resdatavar}_result, err = ${entvar}.update(${datavar}_up, nil)
-    assert_nil err
+    ${resdatavar}_result = ${entvar}.update(${datavar}_up, nil)
     ${resdatavar} = Helpers.to_map(${resdatavar}_result)
     assert !${resdatavar}.nil?
 `)
@@ -465,8 +462,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
     Content(`    ${matchvar} = {
       "id" => ${srcdatavar}["id"],
     }
-    ${datavar}_loaded, err = ${entvar}.load(${matchvar}, nil)
-    assert_nil err
+    ${datavar}_loaded = ${entvar}.load(${matchvar}, nil)
     ${datavar}_load_result = Helpers.to_map(${datavar}_loaded)
     assert !${datavar}_load_result.nil?
     assert_equal ${datavar}_load_result["id"], ${srcdatavar}["id"]
@@ -474,8 +470,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
   }
   else {
     Content(`    ${matchvar} = {}
-    ${datavar}_loaded, err = ${entvar}.load(${matchvar}, nil)
-    assert_nil err
+    ${datavar}_loaded = ${entvar}.load(${matchvar}, nil)
     assert !${datavar}_loaded.nil?
 `)
   }
@@ -503,8 +498,7 @@ const generateRemove: OpGen = (ctx, step, index) => {
   Content(`    ${matchvar} = {
       "id" => ${srcdatavar}["id"],
     }
-    _, err = ${entvar}.remove(${matchvar}, nil)
-    assert_nil err
+    ${entvar}.remove(${matchvar}, nil)
 `)
 }
 

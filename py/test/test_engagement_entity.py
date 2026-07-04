@@ -44,9 +44,7 @@ class TestEngagementEntity:
         engagement_ref01_data = helpers.to_map(vs.getprop(
             vs.getpath(setup["data"], "new.engagement"), "engagement_ref01"))
 
-        engagement_ref01_data_result, err = engagement_ref01_ent.create(engagement_ref01_data, None)
-        assert err is None
-        engagement_ref01_data = helpers.to_map(engagement_ref01_data_result)
+        engagement_ref01_data = helpers.to_map(engagement_ref01_ent.create(engagement_ref01_data, None))
         assert engagement_ref01_data is not None
 
 

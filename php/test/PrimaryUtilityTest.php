@@ -405,7 +405,11 @@ class PrimaryUtilityTest extends TestCase
             $ctxmap = $entry['ctx'] ?? [];
             $ctx = self::make_ctx_from_map($ctxmap, $client, $utility);
             self::fixctx($ctx, $client);
-            return ($utility->done)($ctx);
+            // done now returns the bare result data (or raises on error, which
+            // runset catches). Re-wrap success into a (result, err) tuple so the
+            // data-driven spec matcher keeps working.
+            $out = ($utility->done)($ctx);
+            return [$out, null];
         });
     }
 
@@ -437,7 +441,11 @@ class PrimaryUtilityTest extends TestCase
                 $err = self::err_from_map($args[1]);
             }
 
-            return ($utility->make_error)($ctx, $err);
+            // make_error now RAISES the constructed exception (default throw
+            // path); runset catches it. On the no-throw path it returns the
+            // bare result data, which we re-wrap into a (result, err) tuple.
+            $out = ($utility->make_error)($ctx, $err);
+            return [$out, null];
         });
     }
 
@@ -455,8 +463,9 @@ class PrimaryUtilityTest extends TestCase
             'resdata' => ['id' => 'safe01'],
         ]);
 
-        [$out, $err] = ($utility->make_error)($ctx, $ctx->make_error('test_code', 'test message'));
-        $this->assertNull($err, 'expected no error');
+        // throw_err === false: make_error returns the bare result data instead
+        // of raising (the result-object / no-throw escape hatch).
+        $out = ($utility->make_error)($ctx, $ctx->make_error('test_code', 'test message'));
         $this->assertIsArray($out);
         $this->assertEquals('safe01', $out['id']);
     }

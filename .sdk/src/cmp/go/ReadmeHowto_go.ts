@@ -1,9 +1,10 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
+  nom,
 } from '@voxgig/apidef'
 
 
@@ -13,8 +14,12 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // Go module path == repo path on GitHub (org from model.origin).
   const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
+  const entity = getModelPath(model, `main.${KIT}.entity`)
+  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+
   const apikeyEnvLine = isAuthActive(model)
-    ? `\n${model.NAME}_APIKEY=<your-key>`
+    ? `\n${envName(model)}_APIKEY=<your-key>`
     : ''
 
   Content(`### Make a direct HTTP request
@@ -61,7 +66,7 @@ Create a mock client for unit testing \u2014 no server required:
 \`\`\`go
 client := sdk.Test()
 
-result, err := client.Planet(nil).Load(
+result, err := client.${eName}(nil).Load(
     map[string]any{"id": "test01"}, nil,
 )
 // result contains mock response data
@@ -96,7 +101,7 @@ client := sdk.New${model.const.Name}SDK(map[string]any{
 Create a \`.env.local\` file at the project root:
 
 \`\`\`
-${model.NAME}_TEST_LIVE=TRUE${apikeyEnvLine}
+${envName(model)}_TEST_LIVE=TRUE${apikeyEnvLine}
 \`\`\`
 
 Then run:

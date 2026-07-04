@@ -278,8 +278,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        [$${datavar}_result, $err] = $${entvar}->create($${datavar}, null);
-        $this->assertNull($err);
+        $${datavar}_result = $${entvar}->create($${datavar}, null);
         $${datavar} = Helpers::to_map($${datavar}_result);
         $this->assertNotNull($${datavar});
 `)
@@ -324,8 +323,7 @@ const generateList: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        [$${listvar}_result, $err] = $${entvar}->list($${matchvar}, null);
-        $this->assertNull($err);
+        $${listvar}_result = $${entvar}->list($${matchvar}, null);
         $this->assertIsArray($${listvar}_result);
 `)
 
@@ -413,8 +411,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        [$${resdatavar}_result, $err] = $${entvar}->update($${datavar}_up, null);
-        $this->assertNull($err);
+        $${resdatavar}_result = $${entvar}->update($${datavar}_up, null);
         $${resdatavar} = Helpers::to_map($${resdatavar}_result);
         $this->assertNotNull($${resdatavar});
 `)
@@ -479,8 +476,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
     Content(`        $${matchvar} = [
             "id" => $${srcdatavar}["id"],
         ];
-        [$${datavar}_loaded, $err] = $${entvar}->load($${matchvar}, null);
-        $this->assertNull($err);
+        $${datavar}_loaded = $${entvar}->load($${matchvar}, null);
         $${datavar}_load_result = Helpers::to_map($${datavar}_loaded);
         $this->assertNotNull($${datavar}_load_result);
         $this->assertEquals($${datavar}_load_result["id"], $${srcdatavar}["id"]);
@@ -488,8 +484,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
   }
   else {
     Content(`        $${matchvar} = [];
-        [$${datavar}_loaded, $err] = $${entvar}->load($${matchvar}, null);
-        $this->assertNull($err);
+        $${datavar}_loaded = $${entvar}->load($${matchvar}, null);
         $this->assertNotNull($${datavar}_loaded);
 `)
   }
@@ -517,8 +512,7 @@ const generateRemove: OpGen = (ctx, step, index) => {
   Content(`        $${matchvar} = [
             "id" => $${srcdatavar}["id"],
         ];
-        [$_, $err] = $${entvar}->remove($${matchvar}, null);
-        $this->assertNull($err);
+        $${entvar}->remove($${matchvar}, null);
 `)
 }
 

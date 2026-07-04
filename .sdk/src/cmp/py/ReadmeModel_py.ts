@@ -50,8 +50,8 @@ Creates a test-mode client with mock transport. Both arguments may be \`None\`.
 | --- | --- | --- |
 | \`options_map\` | \`() -> dict\` | Deep copy of current SDK options. |
 | \`get_utility\` | \`() -> Utility\` | Copy of the SDK utility object. |
-| \`prepare\` | \`(fetchargs) -> (dict, err)\` | Build an HTTP request definition without sending. |
-| \`direct\` | \`(fetchargs) -> (dict, err)\` | Build and send an HTTP request. |
+| \`prepare\` | \`(fetchargs) -> dict\` | Build an HTTP request definition without sending. Raises on error. |
+| \`direct\` | \`(fetchargs) -> dict\` | Build and send an HTTP request. Returns a result dict (branch on \`ok\`). |
 `)
 
   each(entityList, (ent: any) => {
@@ -66,11 +66,11 @@ All entities share the same interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| \`load\` | \`(reqmatch, ctrl) -> (any, err)\` | Load a single entity by match criteria. |
-| \`list\` | \`(reqmatch, ctrl) -> (any, err)\` | List entities matching the criteria. |
-| \`create\` | \`(reqdata, ctrl) -> (any, err)\` | Create a new entity. |
-| \`update\` | \`(reqdata, ctrl) -> (any, err)\` | Update an existing entity. |
-| \`remove\` | \`(reqmatch, ctrl) -> (any, err)\` | Remove an entity. |
+| \`load\` | \`(reqmatch, ctrl) -> any\` | Load a single entity by match criteria. Raises on error. |
+| \`list\` | \`(reqmatch, ctrl) -> list\` | List entities matching the criteria. Raises on error. |
+| \`create\` | \`(reqdata, ctrl) -> any\` | Create a new entity. Raises on error. |
+| \`update\` | \`(reqdata, ctrl) -> any\` | Update an existing entity. Raises on error. |
+| \`remove\` | \`(reqmatch, ctrl) -> any\` | Remove an entity. Raises on error. |
 | \`data_get\` | \`() -> dict\` | Get entity data. |
 | \`data_set\` | \`(data)\` | Set entity data. |
 | \`match_get\` | \`() -> dict\` | Get entity match criteria. |
@@ -80,8 +80,12 @@ All entities share the same interface.
 
 ### Result shape
 
-Entity operations return \`(any, err)\`. The first value is a
-\`dict\` with these keys:
+Entity operations return the bare result data (a \`dict\` for single-entity
+ops, a \`list\` for \`list\`) and raise on error. Wrap calls in
+\`try\`/\`except\` to handle failures.
+
+The \`direct()\` escape hatch never raises — it returns a result \`dict\`
+you branch on via \`result["ok"]\`:
 
 | Key | Type | Description |
 | --- | --- | --- |

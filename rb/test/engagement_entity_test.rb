@@ -36,8 +36,7 @@ class EngagementEntityTest < Minitest::Test
     engagement_ref01_data = Helpers.to_map(Vs.getprop(
       Vs.getpath(setup[:data], "new.engagement"), "engagement_ref01"))
 
-    engagement_ref01_data_result, err = engagement_ref01_ent.create(engagement_ref01_data, nil)
-    assert_nil err
+    engagement_ref01_data_result = engagement_ref01_ent.create(engagement_ref01_data, nil)
     engagement_ref01_data = Helpers.to_map(engagement_ref01_data_result)
     assert !engagement_ref01_data.nil?
 

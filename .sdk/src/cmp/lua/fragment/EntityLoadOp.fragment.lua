@@ -5,6 +5,10 @@ local entityLoadOp = {}
 
 -- EJECT-START
 
+---@param reqmatch EntityNameLoadMatch
+---@param ctrl? table
+---@return EntityName
+---@return string? err
 function EntityNameEntity:load(reqmatch, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({

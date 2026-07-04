@@ -9,29 +9,29 @@ import {
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
   load: {
-    sig: 'load(array $reqmatch, ?array $ctrl = null): array',
-    returns: 'array [$result, $err]',
-    desc: 'Load a single entity matching the given criteria.',
+    sig: 'load(array $reqmatch, ?array $ctrl = null): mixed',
+    returns: 'mixed — the result data; throws on error',
+    desc: 'Load a single entity matching the given criteria. Throws on error.',
   },
   list: {
-    sig: 'list(array $reqmatch, ?array $ctrl = null): array',
-    returns: 'array [$result, $err]',
-    desc: 'List entities matching the given criteria. Returns an array.',
+    sig: 'list(array $reqmatch, ?array $ctrl = null): mixed',
+    returns: 'array — the list of results; throws on error',
+    desc: 'List entities matching the given criteria. Returns an array. Throws on error.',
   },
   create: {
-    sig: 'create(array $reqdata, ?array $ctrl = null): array',
-    returns: 'array [$result, $err]',
-    desc: 'Create a new entity with the given data.',
+    sig: 'create(array $reqdata, ?array $ctrl = null): mixed',
+    returns: 'mixed — the result data; throws on error',
+    desc: 'Create a new entity with the given data. Throws on error.',
   },
   update: {
-    sig: 'update(array $reqdata, ?array $ctrl = null): array',
-    returns: 'array [$result, $err]',
-    desc: 'Update an existing entity. The data must include the entity `id`.',
+    sig: 'update(array $reqdata, ?array $ctrl = null): mixed',
+    returns: 'mixed — the result data; throws on error',
+    desc: 'Update an existing entity. The data must include the entity `id`. Throws on error.',
   },
   remove: {
-    sig: 'remove(array $reqmatch, ?array $ctrl = null): array',
-    returns: 'array [$result, $err]',
-    desc: 'Remove the entity matching the given criteria.',
+    sig: 'remove(array $reqmatch, ?array $ctrl = null): mixed',
+    returns: 'mixed — the result data; throws on error',
+    desc: 'Remove the entity matching the given criteria. Throws on error.',
   },
 }
 
@@ -72,8 +72,7 @@ Create a new SDK client instance.
 | Name | Type | Description |
 | --- | --- | --- |
 | \`$options\` | \`array\` | SDK configuration options. |
-| \`$options["apikey"]\` | \`string\` | API key for authentication. |
-| \`$options["base"]\` | \`string\` | Base URL for API requests. |
+${isAuthActive(model) ? '| \`$options["apikey"]\` | \`string\` | API key for authentication. |\n' : ''}| \`$options["base"]\` | \`string\` | Base URL for API requests. |
 | \`$options["prefix"]\` | \`string\` | URL prefix appended after base. |
 | \`$options["suffix"]\` | \`string\` | URL suffix appended after path. |
 | \`$options["headers"]\` | \`array\` | Custom headers for all requests. |
@@ -125,7 +124,10 @@ Return a copy of the SDK utility object.
 
 #### \`direct(array $fetchargs = []): array\`
 
-Make a direct HTTP request to any API endpoint. Returns \`[$result, $err]\`.
+Make a direct HTTP request to any API endpoint. This is the raw-HTTP escape
+hatch: it does **not** throw. It returns a result array
+\`["ok" => bool, "status" => int, "headers" => array, "data" => mixed]\`, or
+\`["ok" => false, "err" => \\Exception]\` on failure. Branch on \`$result["ok"]\`.
 
 **Parameters:**
 
@@ -139,11 +141,12 @@ Make a direct HTTP request to any API endpoint. Returns \`[$result, $err]\`.
 | \`$fetchargs["body"]\` | \`mixed\` | Request body (arrays are JSON-serialized). |
 | \`$fetchargs["ctrl"]\` | \`array\` | Control options. |
 
-**Returns:** \`array [$result, $err]\`
+**Returns:** \`array\` — the result dict (see above); never throws.
 
-#### \`prepare(array $fetchargs = []): array\`
+#### \`prepare(array $fetchargs = []): mixed\`
 
-Prepare a fetch definition without sending the request. Returns \`[$fetchdef, $err]\`.
+Prepare a fetch definition without sending the request. Returns the
+\`$fetchdef\` array. Throws on error.
 
 `)
 
@@ -167,7 +170,7 @@ Prepare a fetch definition without sending the request. Returns \`[$fetchdef, $e
       }
 
       Content(`\`\`\`php
-$${ent.name} = $client->${ent.Name}();
+$${ent.name} = $client->${ent.name}();
 \`\`\`
 
 `)
@@ -236,21 +239,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`php
-[$result, $err] = $client->${ent.Name}()->${opname}(["id" => "${ent.name}_id"]);
+$result = $client->${ent.name}()->${opname}(["id" => "${ent.name}_id"]);
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`php
-[$results, $err] = $client->${ent.Name}()->list([]);
+$results = $client->${ent.name}()->list([]);
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`php
-[$result, $err] = $client->${ent.Name}()->create([
+$result = $client->${ent.name}()->create([
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -265,7 +268,7 @@ ${info.desc}
           }
           else if ('update' === opname) {
             Content(`\`\`\`php
-[$result, $err] = $client->${ent.Name}()->update([
+$result = $client->${ent.name}()->update([
   "id" => "${ent.name}_id",
   // Fields to update
 ]);

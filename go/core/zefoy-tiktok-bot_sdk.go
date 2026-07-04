@@ -245,6 +245,9 @@ func (sdk *ZefoyTiktokBotSDK) Direct(fetchargs map[string]any) (map[string]any, 
 }
 
 
+// Engagement returns a Engagement entity bound to this client.
+// Idiomatic usage: client.Engagement(nil).List(nil, nil) or
+// client.Engagement(nil).Load(map[string]any{"id": ...}, nil).
 func (sdk *ZefoyTiktokBotSDK) Engagement(data map[string]any) ZefoyTiktokBotEntity {
 	return NewEngagementEntityFunc(sdk, data)
 }

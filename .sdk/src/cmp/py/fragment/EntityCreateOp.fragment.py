@@ -5,7 +5,7 @@ entity_create_op = None
 
 # EJECT-START
 
-    def create(self, reqdata, ctrl=None):
+    def create(self, reqdata: EntityNameCreateData, ctrl=None) -> EntityName:
         utility = self._utility
         ctx = utility.make_context({
             "opname": "create",

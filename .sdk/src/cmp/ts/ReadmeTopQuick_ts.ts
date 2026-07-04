@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, packageName, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -16,11 +16,11 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const authActive = isAuthActive(model)
   const ctor = authActive
-    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${model.NAME}_APIKEY,\n})`
+    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${envName(model)}_APIKEY,\n})`
     : `new ${model.const.Name}SDK()`
 
   Content(`\`\`\`ts
-import { ${model.const.Name}SDK } from '${target.module.name}'
+import { ${model.const.Name}SDK } from '${packageName(model, target.name)}'
 
 const client = ${ctor}
 
@@ -34,7 +34,7 @@ const client = ${ctor}
 
     if (opnames.includes('list')) {
       Content(`// List all ${eName.toLowerCase()}s
-const ${eName.toLowerCase()}s = await client.${eName}().list()
+const ${eName.toLowerCase()}s = await client.${eName.toLowerCase()}.list()
 console.log(${eName.toLowerCase()}s.data)
 `)
       hasCall = true
@@ -53,7 +53,7 @@ console.log(${eName.toLowerCase()}s.data)
 
       Content(`
 // Load a specific ${neName.toLowerCase()}
-const ${neName.toLowerCase()} = await client.${neName}().load({
+const ${neName.toLowerCase()} = await client.${neName.toLowerCase()}.load({
   ${parentParam}: 'example',
   id: 'example_id',
 })
@@ -66,7 +66,7 @@ console.log(${neName.toLowerCase()}.data)
     // read-only services. Still show one concrete call.
     if (!hasCall && opnames.includes('load')) {
       Content(`// Load ${eName.toLowerCase()} data
-const ${eName.toLowerCase()} = await client.${eName}().load({})
+const ${eName.toLowerCase()} = await client.${eName.toLowerCase()}.load({})
 console.log(${eName.toLowerCase()}.data)
 `)
       hasCall = true

@@ -9,29 +9,29 @@ import {
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
   load: {
-    sig: 'load(reqmatch, ctrl = nil) -> result, err',
-    returns: 'result, err',
-    desc: 'Load a single entity matching the given criteria.',
+    sig: 'load(reqmatch, ctrl = nil) -> result',
+    returns: 'result',
+    desc: 'Load a single entity matching the given criteria. Raises on error.',
   },
   list: {
-    sig: 'list(reqmatch, ctrl = nil) -> result, err',
-    returns: 'result, err',
-    desc: 'List entities matching the given criteria. Returns an array.',
+    sig: 'list(reqmatch, ctrl = nil) -> Array',
+    returns: 'Array',
+    desc: 'List entities matching the given criteria. Returns an array. Raises on error.',
   },
   create: {
-    sig: 'create(reqdata, ctrl = nil) -> result, err',
-    returns: 'result, err',
-    desc: 'Create a new entity with the given data.',
+    sig: 'create(reqdata, ctrl = nil) -> result',
+    returns: 'result',
+    desc: 'Create a new entity with the given data. Raises on error.',
   },
   update: {
-    sig: 'update(reqdata, ctrl = nil) -> result, err',
-    returns: 'result, err',
-    desc: 'Update an existing entity. The data must include the entity `id`.',
+    sig: 'update(reqdata, ctrl = nil) -> result',
+    returns: 'result',
+    desc: 'Update an existing entity. The data must include the entity `id`. Raises on error.',
   },
   remove: {
-    sig: 'remove(reqmatch, ctrl = nil) -> result, err',
-    returns: 'result, err',
-    desc: 'Remove the entity matching the given criteria.',
+    sig: 'remove(reqmatch, ctrl = nil) -> result',
+    returns: 'result',
+    desc: 'Remove the entity matching the given criteria. Raises on error.',
   },
 }
 
@@ -72,8 +72,7 @@ Create a new SDK client instance.
 | Name | Type | Description |
 | --- | --- | --- |
 | \`options\` | \`Hash\` | SDK configuration options. |
-| \`options["apikey"]\` | \`String\` | API key for authentication. |
-| \`options["base"]\` | \`String\` | Base URL for API requests. |
+${isAuthActive(model) ? '| \`options["apikey"]\` | \`String\` | API key for authentication. |\n' : ''}| \`options["base"]\` | \`String\` | Base URL for API requests. |
 | \`options["prefix"]\` | \`String\` | URL prefix appended after base. |
 | \`options["suffix"]\` | \`String\` | URL suffix appended after path. |
 | \`options["headers"]\` | \`Hash\` | Custom headers for all requests. |
@@ -123,9 +122,11 @@ Return a deep copy of the current SDK options.
 
 Return a copy of the SDK utility object.
 
-#### \`direct(fetchargs = {}) -> Hash, err\`
+#### \`direct(fetchargs = {}) -> Hash\`
 
-Make a direct HTTP request to any API endpoint.
+Make a direct HTTP request to any API endpoint. Returns a result hash
+(\`{ "ok" => ..., "status" => ..., "data" => ..., "err" => ... }\`); it
+does not raise — inspect \`result["ok"]\`.
 
 **Parameters:**
 
@@ -139,14 +140,14 @@ Make a direct HTTP request to any API endpoint.
 | \`fetchargs["body"]\` | \`any\` | Request body (hashes are JSON-serialized). |
 | \`fetchargs["ctrl"]\` | \`Hash\` | Control options (e.g. \`{ "explain" => true }\`). |
 
-**Returns:** \`Hash, err\`
+**Returns:** \`Hash\`
 
-#### \`prepare(fetchargs = {}) -> Hash, err\`
+#### \`prepare(fetchargs = {}) -> Hash\`
 
 Prepare a fetch definition without sending the request. Accepts the
-same parameters as \`direct()\`.
+same parameters as \`direct()\`. Raises on error.
 
-**Returns:** \`Hash, err\`
+**Returns:** \`Hash\` (the fetch definition; raises on error)
 
 `)
 
@@ -170,7 +171,7 @@ same parameters as \`direct()\`.
       }
 
       Content(`\`\`\`ruby
-${ent.name} = client.${ent.Name}
+${ent.name} = client.${ent.name}
 \`\`\`
 
 `)
@@ -239,21 +240,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`ruby
-result, err = client.${ent.Name}.${opname}({ "id" => "${ent.name}_id" })
+result = client.${ent.name}.${opname}({ "id" => "${ent.name}_id" })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`ruby
-results, err = client.${ent.Name}.list(nil)
+results = client.${ent.name}.list(nil)
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`ruby
-result, err = client.${ent.Name}.create({
+result = client.${ent.name}.create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -268,7 +269,7 @@ result, err = client.${ent.Name}.create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`ruby
-result, err = client.${ent.Name}.update({
+result = client.${ent.name}.update({
   "id" => "${ent.name}_id",
   # Fields to update
 })

@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, packageName, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -22,13 +22,13 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   ) as any
 
   const ctor = isAuthActive(model)
-    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${model.NAME}_APIKEY,\n})`
+    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${envName(model)}_APIKEY,\n})`
     : `new ${model.const.Name}SDK()`
 
   Content(`### 1. Create a client
 
 \`\`\`ts
-import { ${model.const.Name}SDK } from '${target.module.name}'
+import { ${model.const.Name}SDK } from '${packageName(model, target.name)}'
 
 const client = ${ctor}
 \`\`\`
@@ -38,13 +38,14 @@ const client = ${ctor}
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
+    const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`ts
-const result = await client.${eName}().list()
+const result = await client.${eName.toLowerCase()}.list()
 
 if (result.ok) {
   for (const item of result.data) {
@@ -58,16 +59,17 @@ if (result.ok) {
 
     if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
+      const neArticle = /^[aeiou]/i.test(neName) ? 'an' : 'a'
       const parentFields = (nestedEntity.fields || [])
         .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
       const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
 
-      Content(`### 3. Load a ${neName.toLowerCase()}
+      Content(`### 3. Load ${neArticle} ${neName.toLowerCase()}
 
 ${neName} is nested under ${eName}, so provide the \`${parentParam}\`:
 
 \`\`\`ts
-const ${neName.toLowerCase()} = client.${neName}()
+const ${neName.toLowerCase()} = client.${neName.toLowerCase()}
 const result = await ${neName.toLowerCase()}.load({
   ${parentParam}: 'example',
   id: 'example_id',
@@ -81,10 +83,10 @@ if (result.ok) {
 `)
     }
     else if (opnames.includes('load')) {
-      Content(`### 3. Load a ${eName.toLowerCase()}
+      Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`\`\`ts
-const result = await client.${eName}().load({ id: 'example_id' })
+const result = await client.${eName.toLowerCase()}.load({ id: 'example_id' })
 
 if (result.ok) {
   console.log(result.data)
@@ -102,7 +104,7 @@ if (result.ok) {
 `)
       if (opnames.includes('create')) {
         Content(`// Create
-const created = await client.${eName}().create({
+const created = await client.${eName.toLowerCase()}.create({
   name: 'Example',
 })
 
@@ -110,7 +112,7 @@ const created = await client.${eName}().create({
       }
       if (opnames.includes('update')) {
         Content(`// Update
-const updated = await client.${eName}().update({
+const updated = await client.${eName.toLowerCase()}.update({
   id: created.data.id,
   name: 'Example-Renamed',
 })
@@ -119,7 +121,7 @@ const updated = await client.${eName}().update({
       }
       if (opnames.includes('remove')) {
         Content(`// Remove
-const removed = await client.${eName}().remove({
+const removed = await client.${eName.toLowerCase()}.remove({
   id: created.data.id,
 })
 `)

@@ -13,14 +13,29 @@ const MainEntity = cmp(async function MainEntity(props: any) {
   const { entity } = props
   const { model } = props.ctx$
 
-  const accessor = PHP_RESERVED_LOWER.has(entity.Name.toLowerCase())
-    ? entity.Name + '_'
-    : entity.Name
+  // Idiomatic facade method name is the lowercase entity name. PHP method
+  // names are case-insensitive, so `$client->${entity.Name}()` still resolves
+  // here (deprecated alias) — we cannot declare a separate PascalCase method
+  // without a "Cannot redeclare" fatal.
+  const accessor = PHP_RESERVED_LOWER.has(entity.name.toLowerCase())
+    ? entity.name + '_'
+    : entity.name
 
   Content(`
+    private $_${entity.name} = null;
+
+    // Idiomatic facade: $client->${accessor}()->list() / ->load(["id" => ...]).
+    // Also serves the deprecated PascalCase alias ${entity.Name}() (PHP method
+    // names are case-insensitive).
     public function ${accessor}($data = null)
     {
         require_once __DIR__ . '/entity/${entity.name}_entity.php';
+        if ($data === null) {
+            if ($this->_${entity.name} === null) {
+                $this->_${entity.name} = new ${entity.Name}Entity($this, null);
+            }
+            return $this->_${entity.name};
+        }
         return new ${entity.Name}Entity($this, $data);
     }
 

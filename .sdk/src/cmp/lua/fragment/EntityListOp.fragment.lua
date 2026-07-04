@@ -2,6 +2,10 @@ local entityListOp = {}
 
 -- EJECT-START
 
+---@param reqmatch EntityNameListMatch
+---@param ctrl? table
+---@return EntityName[]
+---@return string? err
 function EntityNameEntity:list(reqmatch, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({

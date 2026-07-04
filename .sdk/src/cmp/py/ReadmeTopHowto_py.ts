@@ -7,7 +7,7 @@ const ReadmeTopHowto = cmp(function ReadmeTopHowto(props: any) {
 
   Content(`**Python:**
 \`\`\`python
-result, err = client.direct({
+result = client.direct({
     "path": "/api/resource/{id}",
     "method": "GET",
     "params": {"id": "example"},

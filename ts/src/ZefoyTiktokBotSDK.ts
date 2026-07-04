@@ -2,6 +2,8 @@
 
 import { EngagementEntity } from './entity/EngagementEntity'
 
+export type * from './ZefoyTiktokBotTypes'
+
 
 import { inspect } from 'node:util'
 
@@ -202,6 +204,14 @@ class ZefoyTiktokBotSDK {
 
 
 
+  _engagement?: EngagementEntity
+
+  // Idiomatic facade: `client.engagement.list()` / `client.engagement.load({ id })`.
+  get engagement(): EngagementEntity {
+    return (this._engagement ??= new EngagementEntity(this, undefined))
+  }
+
+  /** @deprecated Use `client.engagement` instead. */
   Engagement(data?: any) {
     const self = this
     return new EngagementEntity(self,data)

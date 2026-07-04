@@ -3,6 +3,11 @@ require_relative '../core/helpers'
 
 # EJECT-START
 
+  # Create a new EntityName.
+  #
+  # @param reqdata [EntityNameCreateData, Hash, nil] body data
+  # @param ctrl [Object, nil] optional per-call control
+  # @return [EntityName, Hash] the created EntityName; raises ProjectNameError on failure
   def create(reqdata, ctrl = nil)
     utility = @_utility
     ctx = utility.make_context.call({

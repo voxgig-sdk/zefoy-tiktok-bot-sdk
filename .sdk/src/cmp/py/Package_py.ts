@@ -62,10 +62,20 @@ Homepage = "${repoUrl}"
 Repository = "${repoUrl}"
 Issues = "${issuesUrl}"
 
+# Ship the top-level single-file modules (setuptools find only discovers
+# package dirs, never these) so the documented import actually installs.
+# ${model.const.Name.toLowerCase()}_types holds the generated @dataclass models.
+[tool.setuptools]
+py-modules = ["${model.const.Name.toLowerCase()}_sdk", "${model.const.Name.toLowerCase()}_types", "config", "features"]
+
 # Explicit package list — setuptools auto-discovery refuses to pick when
 # multiple top-level dirs (core/entity/feature/utility) are present.
 [tool.setuptools.packages.find]
 include = ["core*", "entity*", "feature*", "utility*"]
+
+# Ship the PEP 561 py.typed marker(s) so the inline type hints reach consumers.
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
 `)
   })
 })

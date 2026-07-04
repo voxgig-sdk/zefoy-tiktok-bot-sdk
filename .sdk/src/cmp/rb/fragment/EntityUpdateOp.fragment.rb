@@ -3,6 +3,11 @@ require_relative '../core/helpers'
 
 # EJECT-START
 
+  # Update an existing EntityName.
+  #
+  # @param reqdata [EntityNameUpdateData, Hash, nil] body data
+  # @param ctrl [Object, nil] optional per-call control
+  # @return [EntityName, Hash] the updated EntityName; raises ProjectNameError on failure
   def update(reqdata, ctrl = nil)
     utility = @_utility
     ctx = utility.make_context.call({

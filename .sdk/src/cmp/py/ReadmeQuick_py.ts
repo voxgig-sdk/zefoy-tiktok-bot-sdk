@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -21,7 +21,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   const authActive = isAuthActive(model)
   const apikeyImport = authActive ? `import os\n` : ''
   const ctor = authActive
-    ? `${model.const.Name}SDK({\n    "apikey": os.environ.get("${model.NAME}_APIKEY"),\n})`
+    ? `${model.const.Name}SDK({\n    "apikey": os.environ.get("${envName(model)}_APIKEY"),\n})`
     : `${model.const.Name}SDK()`
 
   Content(`### 1. Create a client
@@ -36,33 +36,34 @@ client = ${ctor}
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
+    const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`python
-result, err = client.${eName}().list()
-if err:
-    raise Exception(err)
-
-if isinstance(result, list):
+try:
+    result = client.${eName.toLowerCase()}.list()
     for item in result:
         d = item.data_get()
         print(d["id"], d["name"])
+except Exception as err:
+    print(f"list failed: {err}")
 \`\`\`
 
 `)
     }
 
     if (opnames.includes('load')) {
-      Content(`### 3. Load a ${eName.toLowerCase()}
+      Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`\`\`python
-result, err = client.${eName}().load({"id": "example_id"})
-if err:
-    raise Exception(err)
-print(result)
+try:
+    result = client.${eName.toLowerCase()}.load({"id": "example_id"})
+    print(result)
+except Exception as err:
+    print(f"load failed: {err}")
 \`\`\`
 
 `)
@@ -75,19 +76,19 @@ print(result)
 `)
       if (opnames.includes('create')) {
         Content(`# Create
-created, _ = client.${eName}().create({"name": "Example"})
+created = client.${eName.toLowerCase()}.create({"name": "Example"})
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`# Update
-client.${eName}().update({"id": created["id"], "name": "Example-Renamed"})
+client.${eName.toLowerCase()}.update({"id": created["id"], "name": "Example-Renamed"})
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`# Remove
-client.${eName}().remove({"id": created["id"]})
+client.${eName.toLowerCase()}.remove({"id": created["id"]})
 `)
       }
       Content(`\`\`\`

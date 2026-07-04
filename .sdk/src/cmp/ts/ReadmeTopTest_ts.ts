@@ -20,7 +20,7 @@ const client = ${model.const.Name}SDK.test()
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`const result = await client.${eName}().load({ id: 'test01' })
+    Content(`const result = await client.${eName.toLowerCase()}.load({ id: 'test01' })
 // result.ok === true, result.data contains mock data
 `)
   }

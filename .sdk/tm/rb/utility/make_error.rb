@@ -36,9 +36,12 @@ module ZefoyTiktokBotUtilities
 
     ctx.ctrl.err = sdk_err
 
+    # Opt-out escape hatch: when throwing is explicitly disabled, return the
+    # bare result data instead of raising.
     if ctx.ctrl.throw_err == false
-      return result.resdata, nil
+      return result.resdata
     end
-    return nil, sdk_err
+    # Default idiomatic path: raise the already-constructed exception.
+    raise sdk_err
   }
 end

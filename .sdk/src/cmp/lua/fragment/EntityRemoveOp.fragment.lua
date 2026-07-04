@@ -5,6 +5,10 @@ local entityRemoveOp = {}
 
 -- EJECT-START
 
+---@param reqmatch EntityNameRemoveMatch
+---@param ctrl? table
+---@return EntityName
+---@return string? err
 function EntityNameEntity:remove(reqmatch, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({

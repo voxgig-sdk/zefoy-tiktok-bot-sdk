@@ -9,29 +9,29 @@ import {
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
   load: {
-    sig: 'load(reqmatch, ctrl=None) -> tuple',
-    returns: '(result, err)',
-    desc: 'Load a single entity matching the given criteria.',
+    sig: 'load(reqmatch, ctrl=None) -> dict',
+    returns: 'the entity data',
+    desc: 'Load a single entity matching the given criteria. Returns the entity data and raises on error.',
   },
   list: {
-    sig: 'list(reqmatch, ctrl=None) -> tuple',
-    returns: '(result, err)',
-    desc: 'List entities matching the given criteria. Returns an array.',
+    sig: 'list(reqmatch, ctrl=None) -> list',
+    returns: 'a list of entities',
+    desc: 'List entities matching the given criteria. Returns a list and raises on error.',
   },
   create: {
-    sig: 'create(reqdata, ctrl=None) -> tuple',
-    returns: '(result, err)',
-    desc: 'Create a new entity with the given data.',
+    sig: 'create(reqdata, ctrl=None) -> dict',
+    returns: 'the created entity data',
+    desc: 'Create a new entity with the given data. Returns the created entity data and raises on error.',
   },
   update: {
-    sig: 'update(reqdata, ctrl=None) -> tuple',
-    returns: '(result, err)',
-    desc: 'Update an existing entity. The data must include the entity `id`.',
+    sig: 'update(reqdata, ctrl=None) -> dict',
+    returns: 'the updated entity data',
+    desc: 'Update an existing entity. The data must include the entity `id`. Returns the updated entity data and raises on error.',
   },
   remove: {
-    sig: 'remove(reqmatch, ctrl=None) -> tuple',
-    returns: '(result, err)',
-    desc: 'Remove the entity matching the given criteria.',
+    sig: 'remove(reqmatch, ctrl=None) -> dict',
+    returns: 'the removed entity data',
+    desc: 'Remove the entity matching the given criteria. Raises on error.',
   },
 }
 
@@ -72,8 +72,7 @@ Create a new SDK client instance.
 | Name | Type | Description |
 | --- | --- | --- |
 | \`options\` | \`dict\` | SDK configuration options. |
-| \`options["apikey"]\` | \`str\` | API key for authentication. |
-| \`options["base"]\` | \`str\` | Base URL for API requests. |
+${isAuthActive(model) ? '| \`options["apikey"]\` | \`str\` | API key for authentication. |\n' : ''}| \`options["base"]\` | \`str\` | Base URL for API requests. |
 | \`options["prefix"]\` | \`str\` | URL prefix appended after base. |
 | \`options["suffix"]\` | \`str\` | URL suffix appended after path. |
 | \`options["headers"]\` | \`dict\` | Custom headers for all requests. |
@@ -123,9 +122,9 @@ Return a deep copy of the current SDK options.
 
 Return a copy of the SDK utility object.
 
-#### \`direct(fetchargs=None) -> tuple\`
+#### \`direct(fetchargs=None) -> dict\`
 
-Make a direct HTTP request to any API endpoint. Returns \`(result, err)\`.
+Make a direct HTTP request to any API endpoint. Returns a result \`dict\` with \`ok\`, \`status\`, \`headers\`, and \`data\` (or \`err\` on failure). This escape hatch never raises — branch on \`result["ok"]\`.
 
 **Parameters:**
 
@@ -138,11 +137,11 @@ Make a direct HTTP request to any API endpoint. Returns \`(result, err)\`.
 | \`fetchargs["headers"]\` | \`dict\` | Request headers (merged with defaults). |
 | \`fetchargs["body"]\` | \`any\` | Request body (dicts are JSON-serialized). |
 
-**Returns:** \`(result_dict, err)\`
+**Returns:** \`result_dict\`
 
-#### \`prepare(fetchargs=None) -> tuple\`
+#### \`prepare(fetchargs=None) -> dict\`
 
-Prepare a fetch definition without sending. Returns \`(fetchdef, err)\`.
+Prepare a fetch definition without sending. Returns the \`fetchdef\` and raises on error.
 
 `)
 
@@ -166,7 +165,7 @@ Prepare a fetch definition without sending. Returns \`(fetchdef, err)\`.
       }
 
       Content(`\`\`\`python
-${ent.name} = client.${ent.Name}()
+${ent.name} = client.${ent.name}
 \`\`\`
 
 `)
@@ -235,21 +234,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`python
-result, err = client.${ent.Name}().${opname}({"id": "${ent.name}_id"})
+result = client.${ent.name}.${opname}({"id": "${ent.name}_id"})
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`python
-results, err = client.${ent.Name}().list({})
+results = client.${ent.name}.list({})
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`python
-result, err = client.${ent.Name}().create({
+result = client.${ent.name}.create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -264,7 +263,7 @@ result, err = client.${ent.Name}().create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`python
-result, err = client.${ent.Name}().update({
+result = client.${ent.name}.update({
     "id": "${ent.name}_id",
     # Fields to update
 })

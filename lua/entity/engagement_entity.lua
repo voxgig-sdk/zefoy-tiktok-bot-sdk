@@ -83,6 +83,10 @@ end
 
 
 
+---@param reqdata EngagementCreateData
+---@param ctrl? table
+---@return Engagement
+---@return string? err
 function EngagementEntity:create(reqdata, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({

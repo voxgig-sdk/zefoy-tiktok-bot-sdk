@@ -14,9 +14,13 @@ import type {
   Control,
 } from '../types'
 
+import type {
+  Engagement,
+  EngagementCreateData,
+} from '../ZefoyTiktokBotTypes'
 
 // TODO: needs Entity superclass
-class EngagementEntity extends ZefoyTiktokBotEntityBase {
+class EngagementEntity extends ZefoyTiktokBotEntityBase<Engagement> {
 
   constructor(client: ZefoyTiktokBotSDK, entopts: any) {
     super(client, entopts)
@@ -34,7 +38,7 @@ class EngagementEntity extends ZefoyTiktokBotEntityBase {
 
 
 
-  async create(this: any, reqdata?: any, ctrl?: Control) {
+  async create(this: any, reqdata?: EngagementCreateData, ctrl?: Control): Promise<Engagement> {
 
     const utility = this._utility
     const {
@@ -133,7 +137,9 @@ class EngagementEntity extends ZefoyTiktokBotEntityBase {
         throw err
       }
       else {
-        return undefined
+        // Off-happy-path (throw disabled): typed as any so the method's
+        // Promise<Engagement> return stays clean under strict null checks.
+        return undefined as any
       }
     }
   }

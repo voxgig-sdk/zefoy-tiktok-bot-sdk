@@ -22,6 +22,7 @@ import { Package } from './Package_py'
 import { Config } from './Config_py'
 import { Gitignore } from './Gitignore_py'
 import { MainEntity } from './MainEntity_py'
+import { EntityTypes } from './EntityTypes_py'
 
 
 const Main = cmp(async function Main(props: any) {
@@ -77,6 +78,16 @@ self._utility.feature_hook(self._rootctx, "${name}")
           MainEntity(entprops)
         })
       })
+  })
+
+  // Generate the typed-model module (<sdk>_types.py) next to the main SDK file.
+  EntityTypes({ target })
+
+  // PEP 561 marker so the inline type hints ship to consumers. Emitted at the
+  // language root (documents intent for the top-level modules) and inside the
+  // entity package (the type-bearing package, included via package-data).
+  File({ name: 'py.typed' }, () => {
+    Content(``)
   })
 
   // Generate config module
@@ -135,6 +146,11 @@ def _make_feature(name):
 
   Folder({ name: 'entity' }, () => {
     File({ name: '__init__.' + target.ext }, () => {
+      Content(``)
+    })
+    // PEP 561 marker inside the type-bearing package so setuptools package-data
+    // ("*" = ["py.typed"]) bundles it into the wheel.
+    File({ name: 'py.typed' }, () => {
       Content(``)
     })
   })

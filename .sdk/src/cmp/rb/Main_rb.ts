@@ -22,6 +22,7 @@ import { Package } from './Package_rb'
 import { Config } from './Config_rb'
 import { Gitignore } from './Gitignore_rb'
 import { MainEntity } from './MainEntity_rb'
+import { EntityTypes } from './EntityTypes_rb'
 
 
 const Main = cmp(async function Main(props: any) {
@@ -83,6 +84,9 @@ utility.feature_hook.call(@_rootctx, "${name}")
   Folder({ name: '.' }, () => {
     Config({ target })
   })
+
+  // Generate typed models (<Sdk>_types.rb) — required by the main SDK file.
+  EntityTypes({ target })
 
   // Generate feature factory module
   File({ name: 'features.' + target.ext }, () => {

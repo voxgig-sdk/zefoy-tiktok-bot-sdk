@@ -70,8 +70,7 @@ Create a new SDK client instance.
 | Name | Type | Description |
 | --- | --- | --- |
 | \`options\` | \`object\` | SDK configuration options. |
-| \`options.apikey\` | \`string\` | API key for authentication. |
-| \`options.base\` | \`string\` | Base URL for API requests. |
+${isAuthActive(model) ? '| \`options.apikey\` | \`string\` | API key for authentication. |\n' : ''}| \`options.base\` | \`string\` | Base URL for API requests. |
 | \`options.prefix\` | \`string\` | URL prefix appended after base. |
 | \`options.suffix\` | \`string\` | URL suffix appended after path. |
 | \`options.headers\` | \`object\` | Custom headers for all requests. |
@@ -195,7 +194,7 @@ Alias for \`${model.Name}SDK.test()\`.
       }
 
       Content(`\`\`\`ts
-const ${ent.name} = client.${ent.Name}()
+const ${ent.name} = client.${ent.name}
 \`\`\`
 
 `)
@@ -264,21 +263,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.Name}().${opname}({ id: '${ent.name}_id' })
+const result = await client.${ent.name}.${opname}({ id: '${ent.name}_id' })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`ts
-const results = await client.${ent.Name}().${opname}()
+const results = await client.${ent.name}.${opname}()
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.Name}().create({
+const result = await client.${ent.name}.create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -293,7 +292,7 @@ const result = await client.${ent.Name}().create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.Name}().update({
+const result = await client.${ent.name}.update({
   id: '${ent.name}_id',
   // Fields to update
 })

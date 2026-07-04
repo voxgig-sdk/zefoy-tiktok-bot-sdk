@@ -23,10 +23,11 @@ main: kit: feature: &: target: py: deps: &: {
 }
 
 
-# Publication: pypi registry (declared but not yet active).
+# Publication: pypi registry (declared, publish pending — git-tag only).
 main: kit: target: py: publish: {
   tag: { active: true }
   registry: {
+    state: 'pending'
     active: false
     name: 'pypi'
     url: 'https://pypi.org'

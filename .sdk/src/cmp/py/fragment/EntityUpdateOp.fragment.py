@@ -5,7 +5,7 @@ entity_update_op = None
 
 # EJECT-START
 
-    def update(self, reqdata, ctrl=None):
+    def update(self, reqdata: EntityNameUpdateData, ctrl=None) -> EntityName:
         utility = self._utility
         ctx = utility.make_context({
             "opname": "update",

@@ -5,7 +5,7 @@ entity_load_op = None
 
 # EJECT-START
 
-    def load(self, reqmatch, ctrl=None):
+    def load(self, reqmatch: EntityNameLoadMatch, ctrl=None) -> EntityName:
         utility = self._utility
         ctx = utility.make_context({
             "opname": "load",

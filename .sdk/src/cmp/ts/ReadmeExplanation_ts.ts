@@ -1,5 +1,5 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, packageName } from '@voxgig/sdkgen'
 
 
 const ReadmeExplanation = cmp(function ReadmeExplanation(props: any) {
@@ -21,7 +21,7 @@ ${model.name}/
 Import the SDK from the package root:
 
 \`\`\`ts
-import { ${model.Name}SDK } from '${model.name}'
+import { ${model.Name}SDK } from '${packageName(model, target.name)}'
 \`\`\`
 
 `)

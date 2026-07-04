@@ -20,13 +20,10 @@
     "phpunit/phpunit": "^11.0"
   },
   "autoload": {
-    "psr-4": {
-      "ZefoyTiktokBot\\": "src/"
-    }
+    "files": ["zefoytiktokbot_sdk.php"],
+    "classmap": ["core/", "entity/", "feature/", "types/", "utility/", "config.php", "features.php"]
   },
   "autoload-dev": {
-    "psr-4": {
-      "ZefoyTiktokBot\\Tests\\": "test/"
-    }
+    "classmap": ["test/"]
   }
 }

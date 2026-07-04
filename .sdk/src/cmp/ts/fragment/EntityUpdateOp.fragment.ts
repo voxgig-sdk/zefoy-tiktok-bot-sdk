@@ -10,7 +10,7 @@ class EntityOperation {
 
   // EJECT-START
 
-  async update(this: any, reqdata?: any, ctrl?: Control) {
+  async update(this: any, reqdata?: EntityNameUpdateData, ctrl?: Control): Promise<EntityName> {
 
     const utility = this._utility
 
@@ -101,7 +101,9 @@ class EntityOperation {
         throw err
       }
       else {
-        return undefined
+        // Off-happy-path (throw disabled): typed as any so the method's
+        // Promise<EntityName> return stays clean under strict null checks.
+        return undefined as any
       }
     }
   }

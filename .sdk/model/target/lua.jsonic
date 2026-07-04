@@ -23,10 +23,11 @@ main: kit: feature: &: target: lua: deps: &: {
 }
 
 
-# Publication: luarocks registry (declared but not yet active).
+# Publication: luarocks registry (declared, publish pending — git-tag only).
 main: kit: target: lua: publish: {
   tag: { active: true }
   registry: {
+    state: 'pending'
     active: false
     name: 'luarocks'
     url: 'https://luarocks.org'

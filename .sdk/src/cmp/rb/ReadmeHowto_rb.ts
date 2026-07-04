@@ -1,12 +1,22 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+
+import {
+  KIT,
+  getModelPath,
+  nom,
+} from '@voxgig/apidef'
 
 
 const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
+  const entity = getModelPath(model, `main.${KIT}.entity`)
+  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+
   const apikeyEnvLine = isAuthActive(model)
-    ? `\n${model.NAME}_APIKEY=<your-key>`
+    ? `\n${envName(model)}_APIKEY=<your-key>`
     : ''
 
   Content(`### Make a direct HTTP request
@@ -14,32 +24,35 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
 For endpoints not covered by entity methods:
 
 \`\`\`ruby
-result, err = client.direct({
+result = client.direct({
   "path" => "/api/resource/{id}",
   "method" => "GET",
   "params" => { "id" => "example" },
 })
-raise err if err
 
 if result["ok"]
   puts result["status"]  # 200
   puts result["data"]    # response body
+else
+  warn result["err"]
 end
 \`\`\`
 
 ### Prepare a request without sending it
 
 \`\`\`ruby
-fetchdef, err = client.prepare({
-  "path" => "/api/resource/{id}",
-  "method" => "DELETE",
-  "params" => { "id" => "example" },
-})
-raise err if err
-
-puts fetchdef["url"]
-puts fetchdef["method"]
-puts fetchdef["headers"]
+begin
+  fetchdef = client.prepare({
+    "path" => "/api/resource/{id}",
+    "method" => "DELETE",
+    "params" => { "id" => "example" },
+  })
+  puts fetchdef["url"]
+  puts fetchdef["method"]
+  puts fetchdef["headers"]
+rescue => err
+  warn "prepare failed: #{err}"
+end
 \`\`\`
 
 ### Use test mode
@@ -49,7 +62,7 @@ Create a mock client for unit testing — no server required:
 \`\`\`ruby
 client = ${model.const.Name}SDK.test
 
-result, err = client.${model.const.Name}().load({ "id" => "test01" })
+result = client.${eName.toLowerCase()}.load({ "id" => "test01" })
 # result contains mock response data
 \`\`\`
 
@@ -80,7 +93,7 @@ client = ${model.const.Name}SDK.new({
 Create a \`.env.local\` file at the project root:
 
 \`\`\`
-${model.NAME}_TEST_LIVE=TRUE${apikeyEnvLine}
+${envName(model)}_TEST_LIVE=TRUE${apikeyEnvLine}
 \`\`\`
 
 Then run:

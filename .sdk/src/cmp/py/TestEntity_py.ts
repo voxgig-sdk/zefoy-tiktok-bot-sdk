@@ -272,9 +272,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   const hasEntIdC = null != ctx.entity.id
 
   Content(`
-        ${datavar}_result, err = ${entvar}.create(${datavar}, None)
-        assert err is None
-        ${datavar} = helpers.to_map(${datavar}_result)
+        ${datavar} = helpers.to_map(${entvar}.create(${datavar}, None))
         assert ${datavar} is not None
 `)
   if (hasEntIdC) {
@@ -318,8 +316,7 @@ const generateList: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        ${listvar}_result, err = ${entvar}.list(${matchvar}, None)
-        assert err is None
+        ${listvar}_result = ${entvar}.list(${matchvar}, None)
         assert isinstance(${listvar}_result, list)
 `)
 
@@ -407,9 +404,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        ${resdatavar}_result, err = ${entvar}.update(${datavar}_up, None)
-        assert err is None
-        ${resdatavar} = helpers.to_map(${resdatavar}_result)
+        ${resdatavar} = helpers.to_map(${entvar}.update(${datavar}_up, None))
         assert ${resdatavar} is not None
 `)
   if (hasEntIdU) {
@@ -472,8 +467,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
     Content(`        ${matchvar} = {
             "id": ${srcdatavar}["id"],
         }
-        ${datavar}_loaded, err = ${entvar}.load(${matchvar}, None)
-        assert err is None
+        ${datavar}_loaded = ${entvar}.load(${matchvar}, None)
         ${datavar}_load_result = helpers.to_map(${datavar}_loaded)
         assert ${datavar}_load_result is not None
         assert ${datavar}_load_result["id"] == ${srcdatavar}["id"]
@@ -481,8 +475,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
   }
   else {
     Content(`        ${matchvar} = {}
-        ${datavar}_loaded, err = ${entvar}.load(${matchvar}, None)
-        assert err is None
+        ${datavar}_loaded = ${entvar}.load(${matchvar}, None)
         assert ${datavar}_loaded is not None
 `)
   }
@@ -510,8 +503,7 @@ const generateRemove: OpGen = (ctx, step, index) => {
   Content(`        ${matchvar} = {
             "id": ${srcdatavar}["id"],
         }
-        _, err = ${entvar}.remove(${matchvar}, None)
-        assert err is None
+        ${entvar}.remove(${matchvar}, None)
 `)
 }
 

@@ -23,6 +23,7 @@ import { Config } from './Config_ts'
 import { Gitignore } from './Gitignore_ts'
 import { MainEntity } from './MainEntity_ts'
 import { EntityBase } from './EntityBase_ts'
+import { EntityTypes } from './EntityTypes_ts'
 import { SdkError } from './SdkError_ts'
 
 
@@ -56,6 +57,10 @@ const Main = cmp(async function Main(props: any) {
 
       List({ item: entity }, ({ item }: any) =>
         Line(`import { ${item.Name}Entity } from './entity/${item.Name}Entity'`))
+
+      // Re-export the generated typed models so consumers can
+      // `import { Advice, AdviceLoadMatch } from '<pkg>'`.
+      Line(`export type * from './${model.const.Name}Types'\n`)
 
       Fragment(
         {
@@ -99,6 +104,7 @@ if (fres instanceof Promise) { await fres }
 
     Config({ target })
     EntityBase({ target })
+    EntityTypes({ target })
 
   })
 })

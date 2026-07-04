@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -28,7 +28,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
     ? `    "fmt"\n    "os"\n`
     : `    "fmt"\n`
   const ctor = authActive
-    ? `sdk.New${model.const.Name}SDK(map[string]any{\n        "apikey": os.Getenv("${model.NAME}_APIKEY"),\n    })`
+    ? `sdk.New${model.const.Name}SDK(map[string]any{\n        "apikey": os.Getenv("${envName(model)}_APIKEY"),\n    })`
     : `sdk.New()`
 
   Content(`### 1. Create a client
@@ -78,8 +78,9 @@ func main() {
       const parentFields = (nestedEntity.fields || [])
         .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
       const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
+      const article = /^[aeiou]/i.test(neName) ? 'an' : 'a'
 
-      Content(`### 3. Load a ${neName.toLowerCase()}
+      Content(`### 3. Load ${article} ${neName.toLowerCase()}
 
 ${neName} is nested under ${eName}, so provide the \`${parentParam}\`:
 
@@ -102,7 +103,8 @@ ${neName} is nested under ${eName}, so provide the \`${parentParam}\`:
 `)
     }
     else if (opnames.includes('load')) {
-      Content(`### 3. Load a ${eName.toLowerCase()}
+      const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
+      Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`\`\`go
     result, err = client.${eName}(nil).Load(

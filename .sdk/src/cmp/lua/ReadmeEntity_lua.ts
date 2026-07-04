@@ -53,7 +53,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`const ${entity.name} = client.${entity.Name}()\`
+    Content(`Create an instance: \`const ${entity.name} = client.${entity.name}\`
 
 `)
 
@@ -96,7 +96,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
       Content(`#### Example: Load
 
 \`\`\`ts
-const ${entity.name} = await client.${entity.Name}().load({ id: '${entity.name}_id' })
+const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id' })
 \`\`\`
 
 `)
@@ -106,7 +106,7 @@ const ${entity.name} = await client.${entity.Name}().load({ id: '${entity.name}_
       Content(`#### Example: List
 
 \`\`\`ts
-const ${entity.name}s = await client.${entity.Name}().list()
+const ${entity.name}s = await client.${entity.name}.list()
 \`\`\`
 
 `)
@@ -116,7 +116,7 @@ const ${entity.name}s = await client.${entity.Name}().list()
       Content(`#### Example: Create
 
 \`\`\`ts
-const ${entity.name} = await client.${entity.Name}().create({
+const ${entity.name} = await client.${entity.name}.create({
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {

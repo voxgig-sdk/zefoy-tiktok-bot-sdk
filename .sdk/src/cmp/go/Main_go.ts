@@ -22,6 +22,7 @@ import { Package } from './Package_go'
 import { Config } from './Config_go'
 import { Gitignore } from './Gitignore_go'
 import { MainEntity } from './MainEntity_go'
+import { EntityTypes } from './EntityTypes_go'
 
 
 const Main = cmp(async function Main(props: any) {
@@ -60,6 +61,10 @@ const Main = cmp(async function Main(props: any) {
       '"github.com/voxgig/struct"': `"${gomodule}/utility/struct"`,
     }
   })
+
+  // Typed models: entity/types.go (package entity), emitted alongside the
+  // generated *_entity.go files so the typed accessors resolve without imports.
+  EntityTypes({ target })
 
   // Generate main SDK file in core/ folder
   Folder({ name: 'core' }, () => {

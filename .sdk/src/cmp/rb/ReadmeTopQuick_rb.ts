@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -17,7 +17,7 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const authActive = isAuthActive(model)
   const ctor = authActive
-    ? `${model.const.Name}SDK.new({\n  "apikey" => ENV["${model.NAME}_APIKEY"],\n})`
+    ? `${model.const.Name}SDK.new({\n  "apikey" => ENV["${envName(model)}_APIKEY"],\n})`
     : `${model.const.Name}SDK.new`
 
   Content(`\`\`\`ruby
@@ -35,7 +35,7 @@ client = ${ctor}
 
     if (opnames.includes('list')) {
       Content(`# List all ${eName.toLowerCase()}s
-${eName.toLowerCase()}s, err = client.${eName}().list
+${eName.toLowerCase()}s = client.${eName.toLowerCase()}.list
 puts ${eName.toLowerCase()}s
 `)
       hasCall = true
@@ -44,7 +44,7 @@ puts ${eName.toLowerCase()}s
     if (opnames.includes('load')) {
       Content(`
 # Load a specific ${eName.toLowerCase()}
-${eName.toLowerCase()}, err = client.${eName}().load({ "id" => "example_id" })
+${eName.toLowerCase()} = client.${eName.toLowerCase()}.load({ "id" => "example_id" })
 puts ${eName.toLowerCase()}
 `)
       hasCall = true

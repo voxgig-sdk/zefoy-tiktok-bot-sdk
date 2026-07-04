@@ -61,14 +61,11 @@ const Package = cmp(async function Package(props: any) {
     "phpunit/phpunit": "^11.0"
   },
   "autoload": {
-    "psr-4": {
-      "${model.const.Name}\\\\": "src/"
-    }
+    "files": ["${model.const.Name.toLowerCase()}_sdk.php"],
+    "classmap": ["core/", "entity/", "feature/", "types/", "utility/", "config.php", "features.php"]
   },
   "autoload-dev": {
-    "psr-4": {
-      "${model.const.Name}\\\\Tests\\\\": "test/"
-    }
+    "classmap": ["test/"]
   }
 }
 `)

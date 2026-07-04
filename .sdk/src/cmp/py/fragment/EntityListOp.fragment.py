@@ -2,7 +2,7 @@ entity_list_op = None
 
 # EJECT-START
 
-    def list(self, reqmatch, ctrl=None):
+    def list(self, reqmatch: EntityNameListMatch, ctrl=None) -> list[EntityName]:
         utility = self._utility
         ctx = utility.make_context({
             "opname": "list",

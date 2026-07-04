@@ -43,8 +43,7 @@ class EngagementEntityTest extends TestCase
         $engagement_ref01_data = Helpers::to_map(Vs::getprop(
             Vs::getpath($setup["data"], "new.engagement"), "engagement_ref01"));
 
-        [$engagement_ref01_data_result, $err] = $engagement_ref01_ent->create($engagement_ref01_data, null);
-        $this->assertNull($err);
+        $engagement_ref01_data_result = $engagement_ref01_ent->create($engagement_ref01_data, null);
         $engagement_ref01_data = Helpers::to_map($engagement_ref01_data_result);
         $this->assertNotNull($engagement_ref01_data);
 

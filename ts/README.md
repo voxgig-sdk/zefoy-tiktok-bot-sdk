@@ -9,9 +9,12 @@ The TypeScript SDK for the ZefoyTiktokBot API — a type-safe, entity-oriented c
 
 
 ## Install
-```bash
-npm install @voxgig-sdk/zefoy-tiktok-bot
-```
+This package is not yet published to npm. Install it from the GitHub
+release tag (`ts/vX.Y.Z`):
+
+- Releases: [https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/releases](https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/releases)
+
+
 ## Tutorial: your first API call
 
 This tutorial walks through creating a client, listing entities, and
@@ -20,10 +23,10 @@ loading a specific record.
 ### 1. Create a client
 
 ```ts
-import { ZefoyTiktokBotSDK } from 'zefoy-tiktok-bot'
+import { ZefoyTiktokBotSDK } from '@voxgig-sdk/zefoy-tiktok-bot'
 
 const client = new ZefoyTiktokBotSDK({
-  apikey: process.env.ZEFOY-TIKTOK-BOT_APIKEY,
+  apikey: process.env.ZEFOY_TIKTOK_BOT_APIKEY,
 })
 ```
 
@@ -31,7 +34,7 @@ const client = new ZefoyTiktokBotSDK({
 
 ```ts
 // Create
-const created = await client.Engagement().create({
+const created = await client.engagement.create({
   name: 'Example',
 })
 
@@ -79,7 +82,7 @@ Create a mock client for unit testing — no server required:
 ```ts
 const client = ZefoyTiktokBotSDK.test()
 
-const result = await client.Planet().load({ id: 'test01' })
+const result = await client.engagement.load({ id: 'test01' })
 // result.ok === true
 // result.data contains mock response data
 ```
@@ -96,7 +99,7 @@ const testClient = client.tester()
 Entity instances remember their last match and data:
 
 ```ts
-const entity = client.Planet()
+const entity = client.engagement
 
 // First call sets internal match
 await entity.load({ id: 'example' })
@@ -133,8 +136,8 @@ const client = new ZefoyTiktokBotSDK({
 Create a `.env.local` file at the project root:
 
 ```
-ZEFOY-TIKTOK-BOT_TEST_LIVE=TRUE
-ZEFOY-TIKTOK-BOT_APIKEY=<your-key>
+ZEFOY_TIKTOK_BOT_TEST_LIVE=TRUE
+ZEFOY_TIKTOK_BOT_APIKEY=<your-key>
 ```
 
 Then run:
@@ -272,7 +275,7 @@ API path: `/api/boost`
 
 ### Engagement
 
-Create an instance: `const engagement = client.Engagement()`
+Create an instance: `const engagement = client.engagement`
 
 #### Operations
 
@@ -295,7 +298,7 @@ Create an instance: `const engagement = client.Engagement()`
 #### Example: Create
 
 ```ts
-const engagement = await client.Engagement().create({
+const engagement = await client.engagement.create({
   url: /* `$STRING` */,
 })
 ```
@@ -358,7 +361,7 @@ zefoy-tiktok-bot/
 Import the SDK from the package root:
 
 ```ts
-import { ZefoyTiktokBotSDK } from 'zefoy-tiktok-bot'
+import { ZefoyTiktokBotSDK } from '@voxgig-sdk/zefoy-tiktok-bot'
 ```
 
 ### Entity state
@@ -368,11 +371,11 @@ stores the returned data and match criteria internally. Subsequent
 calls on the same instance can rely on this state.
 
 ```ts
-const moon = client.Moon()
-await moon.load({ planet_id: 'earth', id: 'luna' })
+const engagement = client.engagement
+await engagement.load({ id: "example_id" })
 
-// moon.data() now returns the loaded moon data
-// moon.match() returns { planet_id: 'earth', id: 'luna' }
+// engagement.data() now returns the loaded engagement data
+// engagement.match() returns { id: "example_id" }
 ```
 
 Call `make()` to create a fresh instance with the same configuration

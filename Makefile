@@ -11,16 +11,16 @@
 #   go       tag-only
 #   go-cli   tag-only
 #   go-mcp   tag-only
-#   lua      luarocks (inactive: deploy publishes the git tag only) https://luarocks.org
-#   php      packagist (inactive: deploy publishes the git tag only) https://packagist.org
-#   py       pypi (inactive: deploy publishes the git tag only) https://pypi.org
-#   rb       rubygems (inactive: deploy publishes the git tag only) https://rubygems.org
-#   ts       npm (inactive: deploy publishes the git tag only) https://registry.npmjs.org
+#   lua      luarocks (publish pending: deploy publishes the git tag only) https://luarocks.org
+#   php      packagist (publish pending: deploy publishes the git tag only) https://packagist.org
+#   py       pypi (publish pending: deploy publishes the git tag only) https://pypi.org
+#   rb       rubygems (publish pending: deploy publishes the git tag only) https://rubygems.org
+#   ts       npm (publish pending: deploy publishes the git tag only) https://registry.npmjs.org
 #
 #   make deploy               list per-target deploy commands
 #   make deploy-<target>      deploy ONE target (no deploy-all: each
 #                             registry upload is irreversible); while a
-#                             registry is inactive this publishes the
+#                             registry is pending this publishes the
 #                             port's git tag only
 #   make deploy-dry           rehearse EVERY target: aql --dry-run
 #                             injects a filler token that each publish
@@ -55,11 +55,11 @@ deploy:
 	@echo "  deploy-go       tag-only"
 	@echo "  deploy-go-cli   tag-only"
 	@echo "  deploy-go-mcp   tag-only"
-	@echo "  deploy-lua      luarocks inactive (deploy = git tag only)"
-	@echo "  deploy-php      packagist inactive (deploy = git tag only)"
-	@echo "  deploy-py       pypi inactive (deploy = git tag only)"
-	@echo "  deploy-rb       rubygems inactive (deploy = git tag only)"
-	@echo "  deploy-ts       npm inactive (deploy = git tag only)"
+	@echo "  deploy-lua      luarocks publish pending (deploy = git tag only)"
+	@echo "  deploy-php      packagist publish pending (deploy = git tag only)"
+	@echo "  deploy-py       pypi publish pending (deploy = git tag only)"
+	@echo "  deploy-rb       rubygems publish pending (deploy = git tag only)"
+	@echo "  deploy-ts       npm publish pending (deploy = git tag only)"
 	@echo "Rehearse everything safely first: make deploy-dry"
 
 deploy-dry: $(addprefix deploy-dry-,$(TARGETS))
@@ -114,7 +114,7 @@ tag-push-go-mcp:
 	echo "pushed $$tag (tag-only port)"
 
 deploy-lua:
-	@echo "deploy-lua: luarocks publication is inactive — publishing the git tag only."
+	@echo "deploy-lua: luarocks publication is pending — publishing the git tag only."
 	aql vault exec --for=github=$(GITHUB_ALIAS) -- $(MAKE) tag-push-lua
 
 deploy-dry-lua:
@@ -132,10 +132,10 @@ tag-push-lua:
 	url=$$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#'); \
 	hdr="AUTHORIZATION: basic $$(printf 'x-access-token:%s' "$$token" | base64 | tr -d '\n')"; \
 	git -c http.extraheader="$$hdr" push "$$url" "$$tag"; \
-	echo "pushed $$tag (luarocks publication inactive — tag-only deploy)"
+	echo "pushed $$tag (luarocks publication pending — tag-only deploy)"
 
 deploy-php:
-	@echo "deploy-php: packagist publication is inactive — publishing the git tag only."
+	@echo "deploy-php: packagist publication is pending — publishing the git tag only."
 	aql vault exec --for=github=$(GITHUB_ALIAS) -- $(MAKE) tag-push-php
 
 deploy-dry-php:
@@ -153,10 +153,10 @@ tag-push-php:
 	url=$$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#'); \
 	hdr="AUTHORIZATION: basic $$(printf 'x-access-token:%s' "$$token" | base64 | tr -d '\n')"; \
 	git -c http.extraheader="$$hdr" push "$$url" "$$tag"; \
-	echo "pushed $$tag (packagist publication inactive — tag-only deploy)"
+	echo "pushed $$tag (packagist publication pending — tag-only deploy)"
 
 deploy-py:
-	@echo "deploy-py: pypi publication is inactive — publishing the git tag only."
+	@echo "deploy-py: pypi publication is pending — publishing the git tag only."
 	aql vault exec --for=github=$(GITHUB_ALIAS) -- $(MAKE) tag-push-py
 
 deploy-dry-py:
@@ -174,10 +174,10 @@ tag-push-py:
 	url=$$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#'); \
 	hdr="AUTHORIZATION: basic $$(printf 'x-access-token:%s' "$$token" | base64 | tr -d '\n')"; \
 	git -c http.extraheader="$$hdr" push "$$url" "$$tag"; \
-	echo "pushed $$tag (pypi publication inactive — tag-only deploy)"
+	echo "pushed $$tag (pypi publication pending — tag-only deploy)"
 
 deploy-rb:
-	@echo "deploy-rb: rubygems publication is inactive — publishing the git tag only."
+	@echo "deploy-rb: rubygems publication is pending — publishing the git tag only."
 	aql vault exec --for=github=$(GITHUB_ALIAS) -- $(MAKE) tag-push-rb
 
 deploy-dry-rb:
@@ -195,10 +195,10 @@ tag-push-rb:
 	url=$$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#'); \
 	hdr="AUTHORIZATION: basic $$(printf 'x-access-token:%s' "$$token" | base64 | tr -d '\n')"; \
 	git -c http.extraheader="$$hdr" push "$$url" "$$tag"; \
-	echo "pushed $$tag (rubygems publication inactive — tag-only deploy)"
+	echo "pushed $$tag (rubygems publication pending — tag-only deploy)"
 
 deploy-ts:
-	@echo "deploy-ts: npm publication is inactive — publishing the git tag only."
+	@echo "deploy-ts: npm publication is pending — publishing the git tag only."
 	aql vault exec --for=github=$(GITHUB_ALIAS) -- $(MAKE) tag-push-ts
 
 deploy-dry-ts:
@@ -216,4 +216,4 @@ tag-push-ts:
 	url=$$(git remote get-url origin | sed -E 's#^git@github.com:#https://github.com/#'); \
 	hdr="AUTHORIZATION: basic $$(printf 'x-access-token:%s' "$$token" | base64 | tr -d '\n')"; \
 	git -c http.extraheader="$$hdr" push "$$url" "$$tag"; \
-	echo "pushed $$tag (npm publication inactive — tag-only deploy)"
+	echo "pushed $$tag (npm publication pending — tag-only deploy)"

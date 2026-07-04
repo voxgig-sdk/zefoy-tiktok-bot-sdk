@@ -14,9 +14,11 @@ import type {
   Control,
 } from '../types'
 
+// #TypeImports
+
 
 // TODO: needs Entity superclass
-class EntityNameEntity extends ProjectNameEntityBase {
+class EntityNameEntity extends ProjectNameEntityBase<EntityName> {
 
   constructor(client: ProjectNameSDK, entopts: any) {
     super(client, entopts)

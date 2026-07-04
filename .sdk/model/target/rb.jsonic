@@ -23,10 +23,11 @@ main: kit: feature: &: target: rb: deps: &: {
 }
 
 
-# Publication: rubygems registry (declared but not yet active).
+# Publication: rubygems registry (declared, publish pending — git-tag only).
 main: kit: target: rb: publish: {
   tag: { active: true }
   registry: {
+    state: 'pending'
     active: false
     name: 'rubygems'
     url: 'https://rubygems.org'

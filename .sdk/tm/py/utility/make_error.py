@@ -59,6 +59,6 @@ def make_error_util(ctx, err):
     ctx.ctrl.err = sdk_err
 
     if ctx.ctrl.throw_err is False:
-        return result.resdata, None
+        return result.resdata
 
-    return None, sdk_err
+    raise sdk_err

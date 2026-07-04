@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -17,7 +17,7 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const authActive = isAuthActive(model)
   const ctor = authActive
-    ? `sdk.new({\n  apikey = os.getenv("${model.NAME}_APIKEY"),\n})`
+    ? `sdk.new({\n  apikey = os.getenv("${envName(model)}_APIKEY"),\n})`
     : `sdk.new()`
 
   Content(`\`\`\`lua
@@ -35,7 +35,7 @@ local client = ${ctor}
 
     if (opnames.includes('list')) {
       Content(`-- List all ${eName.toLowerCase()}s
-local ${eName.toLowerCase()}s, err = client:${eName}():list()
+local ${eName.toLowerCase()}s, err = client:${eName.toLowerCase()}():list()
 print(${eName.toLowerCase()}s)
 `)
       hasCall = true
@@ -44,7 +44,7 @@ print(${eName.toLowerCase()}s)
     if (opnames.includes('load')) {
       Content(`
 -- Load a specific ${eName.toLowerCase()}
-local ${eName.toLowerCase()}, err = client:${eName}():load({ id = "example_id" })
+local ${eName.toLowerCase()}, err = client:${eName.toLowerCase()}():load({ id = "example_id" })
 print(${eName.toLowerCase()})
 `)
       hasCall = true

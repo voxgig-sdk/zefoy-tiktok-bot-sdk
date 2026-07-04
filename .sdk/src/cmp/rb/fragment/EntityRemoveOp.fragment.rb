@@ -3,6 +3,11 @@ require_relative '../core/helpers'
 
 # EJECT-START
 
+  # Remove an EntityName matching the given criteria.
+  #
+  # @param reqmatch [EntityNameRemoveMatch, Hash, nil] match criteria (id/query fields)
+  # @param ctrl [Object, nil] optional per-call control
+  # @return [EntityName, Hash] the removed EntityName; raises ProjectNameError on failure
   def remove(reqmatch, ctrl = nil)
     utility = @_utility
     ctx = utility.make_context.call({

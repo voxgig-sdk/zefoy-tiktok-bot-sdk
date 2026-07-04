@@ -21,10 +21,11 @@ main: kit: feature: &: target: php: deps: &: {
 }
 
 
-# Publication: packagist registry (declared but not yet active).
+# Publication: packagist registry (declared, publish pending — git-tag only).
 main: kit: target: php: publish: {
   tag: { active: true }
   registry: {
+    state: 'pending'
     active: false
     name: 'packagist'
     url: 'https://packagist.org'

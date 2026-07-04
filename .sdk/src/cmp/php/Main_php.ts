@@ -22,6 +22,7 @@ import { Package } from './Package_php'
 import { Config } from './Config_php'
 import { Gitignore } from './Gitignore_php'
 import { MainEntity } from './MainEntity_php'
+import { EntityTypes } from './EntityTypes_php'
 
 
 const Main = cmp(async function Main(props: any) {
@@ -83,6 +84,9 @@ const Main = cmp(async function Main(props: any) {
   Folder({ name: '.' }, () => {
     Config({ target })
   })
+
+  // Generate typed models (types/<Sdk>Types.php) — classmap-autoloaded.
+  EntityTypes({ target })
 
   // Generate feature factory module
   File({ name: 'features.' + target.ext }, () => {

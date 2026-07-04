@@ -329,7 +329,12 @@ class TestPrimaryUtility:
                 ctxmap = {}
             ctx = _make_ctx_from_map(ctxmap, client, utility)
             _fixctx(ctx, client)
-            return utility.done(ctx)
+            # done() returns the bare result data on success and raises on
+            # error. Adapt to the (result, err) shape the runner expects.
+            try:
+                return utility.done(ctx), None
+            except ZefoyTiktokBotError as e:
+                return None, e
 
         _runset(_get_spec(primary, "done", "basic"), subject)
 
@@ -356,7 +361,12 @@ class TestPrimaryUtility:
                 if isinstance(err_map, dict):
                     err = _err_from_map(err_map)
 
-            return utility.make_error(ctx, err)
+            # make_error() raises the constructed exception on the default
+            # (throw) path. Adapt to the (result, err) shape the runner expects.
+            try:
+                return utility.make_error(ctx, err), None
+            except ZefoyTiktokBotError as e:
+                return None, e
 
         _runset(_get_spec(primary, "makeError", "basic"), subject)
 
@@ -370,8 +380,9 @@ class TestPrimaryUtility:
             "resdata": {"id": "safe01"},
         })
 
-        out, err = utility.make_error(ctx, ctx.make_error("test_code", "test message"))
-        assert err is None
+        # throw_err is False: make_error returns the bare result data instead
+        # of raising (the result-object / no-throw escape hatch).
+        out = utility.make_error(ctx, ctx.make_error("test_code", "test message"))
         assert isinstance(out, dict)
         assert out["id"] == "safe01"
 

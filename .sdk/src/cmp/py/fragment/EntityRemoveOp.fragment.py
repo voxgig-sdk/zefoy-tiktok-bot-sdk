@@ -5,7 +5,7 @@ entity_remove_op = None
 
 # EJECT-START
 
-    def remove(self, reqmatch, ctrl=None):
+    def remove(self, reqmatch: EntityNameRemoveMatch, ctrl=None) -> EntityName:
         utility = self._utility
         ctx = utility.make_context({
             "opname": "remove",

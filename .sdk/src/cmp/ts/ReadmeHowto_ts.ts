@@ -1,21 +1,26 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
+  nom,
 } from '@voxgig/apidef'
 
 
 const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
+  const entity = getModelPath(model, `main.${KIT}.entity`)
+  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+
   const authActive = isAuthActive(model)
   const apikeyTesterCtor = authActive
     ? `new ${model.const.Name}SDK({ apikey: '...' })`
     : `new ${model.const.Name}SDK()`
   const apikeyExtendField = authActive ? `\n  apikey: '...',` : ''
-  const apikeyEnvLine = authActive ? `\n${model.NAME}_APIKEY=<your-key>` : ''
+  const apikeyEnvLine = authActive ? `\n${envName(model)}_APIKEY=<your-key>` : ''
 
   Content(`### Make a direct HTTP request
 
@@ -56,7 +61,7 @@ Create a mock client for unit testing \u2014 no server required:
 \`\`\`ts
 const client = ${model.const.Name}SDK.test()
 
-const result = await client.Planet().load({ id: 'test01' })
+const result = await client.${eName.toLowerCase()}.load({ id: 'test01' })
 // result.ok === true
 // result.data contains mock response data
 \`\`\`
@@ -73,7 +78,7 @@ const testClient = client.tester()
 Entity instances remember their last match and data:
 
 \`\`\`ts
-const entity = client.Planet()
+const entity = client.${eName.toLowerCase()}
 
 // First call sets internal match
 await entity.load({ id: 'example' })
@@ -109,7 +114,7 @@ const client = new ${model.const.Name}SDK({${apikeyExtendField}
 Create a \`.env.local\` file at the project root:
 
 \`\`\`
-${model.NAME}_TEST_LIVE=TRUE${apikeyEnvLine}
+${envName(model)}_TEST_LIVE=TRUE${apikeyEnvLine}
 \`\`\`
 
 Then run:

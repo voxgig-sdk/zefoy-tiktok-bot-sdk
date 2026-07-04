@@ -3,7 +3,16 @@ require_once __DIR__ . '/../core/Helpers.php';
 
 // EJECT-START
 
-    public function load($reqmatch, $ctrl = null): array
+    /**
+     * Load a single EntityName.
+     *
+     * @param EntityNameLoadMatch|array|null $reqmatch Match criteria (id/query
+     *   fields) as an assoc-array; a typed EntityNameLoadMatch names the shape.
+     * @param mixed $ctrl Optional per-call control overrides.
+     * @return EntityName|array The loaded EntityName as an assoc-array at the
+     *   SDK boundary; throws ProjectNameError on failure (item-5 convention).
+     */
+    public function load(?array $reqmatch = null, $ctrl = null): mixed
     {
         $utility = $this->_utility;
         $ctx = ($utility->make_context)([

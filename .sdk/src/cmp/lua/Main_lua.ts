@@ -22,6 +22,7 @@ import { Package } from './Package_lua'
 import { Config } from './Config_lua'
 import { Gitignore } from './Gitignore_lua'
 import { MainEntity } from './MainEntity_lua'
+import { EntityTypes } from './EntityTypes_lua'
 
 
 const Main = cmp(async function Main(props: any) {
@@ -78,6 +79,9 @@ self._utility.feature_hook(self._rootctx, "${name}")
         })
       })
   })
+
+  // Generate typed-model annotations (LuaLS ---@class / ---@field)
+  EntityTypes({ target })
 
   // Generate config module
   Folder({ name: '.' }, () => {

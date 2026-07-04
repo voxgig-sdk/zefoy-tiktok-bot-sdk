@@ -35,4 +35,15 @@ func (e *EntityNameEntity) Remove(reqmatch map[string]any, ctrl map[string]any) 
 	})
 }
 
+// RemoveTyped is the statically-typed variant of Remove: it takes an
+// EntityNameRemoveMatch and returns an EntityName. It delegates to the untyped
+// Remove (identical runtime) and converts at the typed boundary.
+func (e *EntityNameEntity) RemoveTyped(reqmatch EntityNameRemoveMatch, ctrl map[string]any) (EntityName, error) {
+	res, err := e.Remove(asMap(reqmatch), ctrl)
+	if err != nil {
+		return EntityName{}, err
+	}
+	return typedFrom[EntityName](res), nil
+}
+
 // EJECT-END

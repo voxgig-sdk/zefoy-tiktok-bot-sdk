@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -19,7 +19,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   ) as any
 
   const ctor = isAuthActive(model)
-    ? `sdk.new({\n  apikey = os.getenv("${model.NAME}_APIKEY"),\n})`
+    ? `sdk.new({\n  apikey = os.getenv("${envName(model)}_APIKEY"),\n})`
     : `sdk.new()`
 
   Content(`### 1. Create a client
@@ -34,13 +34,14 @@ local client = ${ctor}
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
+    const article = /^[aeiou]/i.test(eName) ? "an" : "a"
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
       Content(`### 2. List ${eName.toLowerCase()}s
 
 \`\`\`lua
-local result, err = client:${eName}():list()
+local result, err = client:${eName.toLowerCase()}():list()
 if err then error(err) end
 
 if type(result) == "table" then
@@ -55,10 +56,10 @@ end
     }
 
     if (opnames.includes('load')) {
-      Content(`### 3. Load a ${eName.toLowerCase()}
+      Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`\`\`lua
-local result, err = client:${eName}():load({ id = "example_id" })
+local result, err = client:${eName.toLowerCase()}():load({ id = "example_id" })
 if err then error(err) end
 print(result)
 \`\`\`
@@ -73,19 +74,19 @@ print(result)
 `)
       if (opnames.includes('create')) {
         Content(`-- Create
-local created, _ = client:${eName}():create({ name = "Example" })
+local created, _ = client:${eName.toLowerCase()}():create({ name = "Example" })
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`-- Update
-client:${eName}():update({ id = created["id"], name = "Example-Renamed" })
+client:${eName.toLowerCase()}():update({ id = created["id"], name = "Example-Renamed" })
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`-- Remove
-client:${eName}():remove({ id = created["id"] })
+client:${eName.toLowerCase()}():remove({ id = created["id"] })
 `)
       }
       Content(`\`\`\`

@@ -5,6 +5,10 @@ local entityUpdateOp = {}
 
 -- EJECT-START
 
+---@param reqdata EntityNameUpdateData
+---@param ctrl? table
+---@return EntityName
+---@return string? err
 function EntityNameEntity:update(reqdata, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({

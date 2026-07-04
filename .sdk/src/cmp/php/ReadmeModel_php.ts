@@ -79,8 +79,12 @@ All entities share the same interface.
 
 ### Result shape
 
-Entity operations return \`[$result, $err]\`. The first value is an
-\`array\` with these keys:
+Entity operations return the bare result data (an \`array\` for single-entity
+ops, a \`list\` for \`list\`) and throw on error. Wrap calls in
+\`try\`/\`catch\` to handle failures.
+
+The \`direct()\` escape hatch never throws — it returns a result \`array\`
+you branch on via \`$result["ok"]\`:
 
 | Key | Type | Description |
 | --- | --- | --- |

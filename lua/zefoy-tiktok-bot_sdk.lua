@@ -244,6 +244,19 @@ end
 
 
 
+-- Idiomatic facade: client:engagement():list() / client:engagement():load({ id = ... })
+function ZefoyTiktokBotSDK:engagement(data)
+  local EntityMod = require("entity.engagement_entity")
+  if data == nil then
+    if self._engagement == nil then
+      self._engagement = EntityMod.new(self, nil)
+    end
+    return self._engagement
+  end
+  return EntityMod.new(self, data)
+end
+
+-- Deprecated: use client:engagement() instead.
 function ZefoyTiktokBotSDK:Engagement(data)
   local EntityMod = require("entity.engagement_entity")
   return EntityMod.new(self, data)

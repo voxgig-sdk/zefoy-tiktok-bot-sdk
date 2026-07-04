@@ -9,6 +9,8 @@ def done_util(ctx):
             explain_result.pop("err", None)
 
     if ctx.result is not None and ctx.result.ok:
-        return ctx.result.resdata, None
+        return ctx.result.resdata
 
+    # make_error raises on the default (throw) path; only returns bare
+    # resdata when throw_err is explicitly disabled.
     return ctx.utility.make_error(ctx, None)

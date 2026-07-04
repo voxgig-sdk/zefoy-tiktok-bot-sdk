@@ -1,12 +1,22 @@
 
-import { cmp, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+
+import {
+  KIT,
+  getModelPath,
+  nom,
+} from '@voxgig/apidef'
 
 
 const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
+  const entity = getModelPath(model, `main.${KIT}.entity`)
+  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+
   const apikeyEnvLine = isAuthActive(model)
-    ? `\n${model.NAME}_APIKEY=<your-key>`
+    ? `\n${envName(model)}_APIKEY=<your-key>`
     : ''
 
   Content(`### Make a direct HTTP request
@@ -14,29 +24,28 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
 For endpoints not covered by entity methods:
 
 \`\`\`python
-result, err = client.direct({
+result = client.direct({
     "path": "/api/resource/{id}",
     "method": "GET",
     "params": {"id": "example"},
 })
-if err:
-    raise Exception(err)
 
 if result["ok"]:
     print(result["status"])  # 200
     print(result["data"])    # response body
+else:
+    print(result["err"])     # error value
 \`\`\`
 
 ### Prepare a request without sending it
 
 \`\`\`python
-fetchdef, err = client.prepare({
+# prepare() returns the fetch definition and raises on error.
+fetchdef = client.prepare({
     "path": "/api/resource/{id}",
     "method": "DELETE",
     "params": {"id": "example"},
 })
-if err:
-    raise Exception(err)
 
 print(fetchdef["url"])
 print(fetchdef["method"])
@@ -50,7 +59,7 @@ Create a mock client for unit testing — no server required:
 \`\`\`python
 client = ${model.const.Name}SDK.test()
 
-result, err = client.${model.const.Name}().load({"id": "test01"})
+result = client.${eName.toLowerCase()}.load({"id": "test01"})
 # result contains mock response data
 \`\`\`
 
@@ -80,7 +89,7 @@ client = ${model.const.Name}SDK({
 Create a \`.env.local\` file at the project root:
 
 \`\`\`
-${model.NAME}_TEST_LIVE=TRUE${apikeyEnvLine}
+${envName(model)}_TEST_LIVE=TRUE${apikeyEnvLine}
 \`\`\`
 
 Then run:

@@ -101,8 +101,8 @@ class PrimaryUtilityTest < Minitest::Test
       "resdata" => { "id" => "safe01" },
     })
 
-    out, err = @utility.make_error.call(ctx, ctx.make_error("test_code", "test message"))
-    assert_nil err, "expected no error"
+    # Opt-out path: throw_err disabled -> returns the bare result data, no raise.
+    out = @utility.make_error.call(ctx, ctx.make_error("test_code", "test message"))
     assert out.is_a?(Hash), "expected hash result, got: #{out.class}"
     assert_equal "safe01", out["id"], "expected id=safe01"
   end

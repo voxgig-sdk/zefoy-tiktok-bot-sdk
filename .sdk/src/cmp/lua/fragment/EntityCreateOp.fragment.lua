@@ -5,6 +5,10 @@ local entityCreateOp = {}
 
 -- EJECT-START
 
+---@param reqdata EntityNameCreateData
+---@param ctrl? table
+---@return EntityName
+---@return string? err
 function EntityNameEntity:create(reqdata, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({
