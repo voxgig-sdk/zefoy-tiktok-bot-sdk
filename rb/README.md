@@ -33,8 +33,8 @@ client = ZefoyTiktokBotSDK.new({
 ### 4. Create, update, and remove
 
 ```ruby
-# Create
-created = client.engagement.create({ "name" => "Example" })
+# create returns the bare created Engagement record.
+created = client.Engagement.create({ "name" => "Example" })
 
 ```
 
@@ -79,13 +79,17 @@ end
 
 ### Use test mode
 
-Create a mock client for unit testing — no server required:
+Create a mock client for unit testing — no server required. Seed fixture
+data via the `entity` option so offline calls resolve without a live server:
 
 ```ruby
-client = ZefoyTiktokBotSDK.test
+client = ZefoyTiktokBotSDK.test({
+  "entity" => { "engagement" => { "test01" => { "id" => "test01" } } },
+})
 
-result = client.engagement.load({ "id" => "test01" })
-# result contains mock response data
+# load returns the bare mock record (raises on error).
+engagement = client.Engagement.load({ "id" => "test01" })
+puts engagement
 ```
 
 ### Use a custom fetch function
@@ -163,7 +167,7 @@ Creates a test-mode client with mock transport. Both arguments may be `nil`.
 | `get_utility` | `() -> Utility` | Copy of the SDK utility object. |
 | `prepare` | `(fetchargs) -> Hash` | Build an HTTP request definition without sending. Raises on error. |
 | `direct` | `(fetchargs) -> Hash` | Build and send an HTTP request. Returns a result hash (`result["ok"]`); does not raise. |
-| `Engagement` | `(data) -> EngagementEntity` | Create a Engagement entity instance. |
+| `Engagement` | `(data) -> EngagementEntity` | Create an Engagement entity instance. |
 
 ### Entity interface
 
@@ -225,7 +229,7 @@ API path: `/api/boost`
 
 ### Engagement
 
-Create an instance: `const engagement = client.engagement`
+Create an instance: `engagement = client.Engagement`
 
 #### Operations
 
@@ -247,9 +251,9 @@ Create an instance: `const engagement = client.engagement`
 
 #### Example: Create
 
-```ts
-const engagement = await client.engagement.create({
-  url: /* `$STRING` */,
+```ruby
+engagement = client.Engagement.create({
+  "url" => nil, # `$STRING`
 })
 ```
 
@@ -325,7 +329,7 @@ Entity instances are stateful. After a successful `load`, the entity
 stores the returned data and match criteria internally.
 
 ```ruby
-engagement = client.engagement
+engagement = client.Engagement
 engagement.load({ "id" => "example_id" })
 
 # engagement.data_get now returns the loaded engagement data

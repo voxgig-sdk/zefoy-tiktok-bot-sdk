@@ -220,25 +220,15 @@ class ZefoyTiktokBotSDK:
         }
 
 
-    @property
-    def engagement(self):
-        """Idiomatic facade: client.engagement.list() / client.engagement.load({"id": ...})."""
-        from entity.engagement_entity import EngagementEntity
-        cached = getattr(self, "_engagement", None)
-        if cached is None:
-            cached = EngagementEntity(self, None)
-            self._engagement = cached
-        return cached
-
-    def Engagement(self, data=None):
-        # Deprecated: use client.engagement instead.
+    def Engagement(self, data=None) -> "EngagementEntity":
+        """Entity factory: client.Engagement().list({}) / client.Engagement().load({"id": ...})."""
         from entity.engagement_entity import EngagementEntity
         return EngagementEntity(self, data)
 
 
 
     @classmethod
-    def test(cls, testopts=None, sdkopts=None):
+    def test(cls, testopts=None, sdkopts=None) -> "ZefoyTiktokBotSDK":
         if sdkopts is None:
             sdkopts = {}
         sdkopts = vs.clone(sdkopts)
@@ -258,3 +248,9 @@ class ZefoyTiktokBotSDK:
         sdk.mode = "test"
 
         return sdk
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from entity.engagement_entity import EngagementEntity

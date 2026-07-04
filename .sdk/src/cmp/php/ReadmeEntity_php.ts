@@ -53,7 +53,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`const ${entity.name} = client.${entity.name}\`
+    Content(`Create an instance: \`$${entity.name} = $client->${entity.Name}();\`
 
 `)
 
@@ -95,8 +95,9 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     if (opnames.includes('load')) {
       Content(`#### Example: Load
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id' })
+\`\`\`php
+// load() returns the bare ${entity.Name} record (throws on error).
+$${entity.name} = $client->${entity.Name}()->load(["id" => "${entity.name}_id"]);
 \`\`\`
 
 `)
@@ -105,8 +106,9 @@ const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id
     if (opnames.includes('list')) {
       Content(`#### Example: List
 
-\`\`\`ts
-const ${entity.name}s = await client.${entity.name}.list()
+\`\`\`php
+// list() returns an array of ${entity.Name} records (throws on error).
+$${entity.name}s = $client->${entity.Name}()->list();
 \`\`\`
 
 `)
@@ -115,16 +117,16 @@ const ${entity.name}s = await client.${entity.name}.list()
     if (opnames.includes('create')) {
       Content(`#### Example: Create
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.create({
+\`\`\`php
+$${entity.name} = $client->${entity.Name}()->create([
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {
-          Content(`  ${field.name}: /* ${field.type || 'value'} */,
+          Content(`    "${field.name}" => null, // ${field.type || 'value'}
 `)
         }
       })
-      Content(`})
+      Content(`]);
 \`\`\`
 
 `)

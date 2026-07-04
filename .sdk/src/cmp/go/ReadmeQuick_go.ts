@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -8,6 +8,11 @@ import {
 } from '@voxgig/apidef'
 
 
+// Emits the go/README.md Quickstart as ONE complete, compilable program.
+// Every entity operation returns `(value, error)` where `value` is the
+// data itself — NOT a `{ok, data, ...}` envelope (only Direct returns
+// that). So examples check `err` and use the value directly. The whole
+// program is compiled by the README snippet test (readme_examples_test.go).
 const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   const { target, ctx$: { model } } = props
 
@@ -15,151 +20,121 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   // Go module path == repo path on GitHub (org from model.origin).
   const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
-  // Find the first published entity for examples
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
-  // Find a nested entity if available
-  const nestedEntity = Object.values(entity).find((e: any) =>
-    e.active !== false && e.ancestors && e.ancestors.length > 0
-  ) as any
-
   const authActive = isAuthActive(model)
-  const goImports = authActive
-    ? `    "fmt"\n    "os"\n`
-    : `    "fmt"\n`
   const ctor = authActive
     ? `sdk.New${model.const.Name}SDK(map[string]any{\n        "apikey": os.Getenv("${envName(model)}_APIKEY"),\n    })`
     : `sdk.New()`
 
-  Content(`### 1. Create a client
+  // Build the body of main() from the operations the example entity
+  // supports. Each op names a fresh value var, so `:=` always declares a
+  // new variable (reusing `err`), and every var is used (printed).
+  const body: string[] = []
+  let usesFmt = false
 
-\`\`\`go
-package main
+  if (exampleEntity) {
+    const eName = nom(exampleEntity, 'Name')
+    const eLower = eName.toLowerCase()
+    const opnames = Object.keys(exampleEntity.op || {})
+
+    if (opnames.includes('list')) {
+      body.push(`    // List ${eLower} records — the value is the array of records itself.`)
+      body.push(`    ${eLower}s, err := client.${eName}(nil).List(nil, nil)`)
+      body.push(`    if err != nil {`)
+      body.push(`        panic(err)`)
+      body.push(`    }`)
+      body.push(`    for _, item := range ${eLower}s.([]any) {`)
+      body.push(`        fmt.Println(item)`)
+      body.push(`    }`)
+      body.push(``)
+      usesFmt = true
+    }
+
+    if (opnames.includes('load')) {
+      body.push(`    // Load a single ${eLower} — the value is the loaded record.`)
+      body.push(`    ${eLower}, err := client.${eName}(nil).Load(map[string]any{"id": "example_id"}, nil)`)
+      body.push(`    if err != nil {`)
+      body.push(`        panic(err)`)
+      body.push(`    }`)
+      body.push(`    fmt.Println(${eLower})`)
+      body.push(``)
+      usesFmt = true
+    }
+
+    if (opnames.includes('create')) {
+      body.push(`    // Create a ${eLower}.`)
+      body.push(`    created, err := client.${eName}(nil).Create(map[string]any{"name": "Example"}, nil)`)
+      body.push(`    if err != nil {`)
+      body.push(`        panic(err)`)
+      body.push(`    }`)
+      body.push(`    fmt.Println(created)`)
+      body.push(``)
+      usesFmt = true
+    }
+
+    if (opnames.includes('update')) {
+      body.push(`    // Update a ${eLower}.`)
+      body.push(`    updated, err := client.${eName}(nil).Update(map[string]any{"id": "example_id", "name": "Renamed"}, nil)`)
+      body.push(`    if err != nil {`)
+      body.push(`        panic(err)`)
+      body.push(`    }`)
+      body.push(`    fmt.Println(updated)`)
+      body.push(``)
+      usesFmt = true
+    }
+
+    if (opnames.includes('remove')) {
+      body.push(`    // Remove a ${eLower}.`)
+      body.push(`    removed, err := client.${eName}(nil).Remove(map[string]any{"id": "example_id"}, nil)`)
+      body.push(`    if err != nil {`)
+      body.push(`        panic(err)`)
+      body.push(`    }`)
+      body.push(`    fmt.Println(removed)`)
+      body.push(``)
+      usesFmt = true
+    }
+  }
+
+  // Drop trailing blank lines from the body.
+  while (body.length > 0 && body[body.length - 1] === '') {
+    body.pop()
+  }
+
+  const imports: string[] = []
+  if (usesFmt) imports.push(`    "fmt"`)
+  if (authActive) imports.push(`    "os"`)
+  imports.push(`    sdk "${gomodule}"`)
+
+  let program = `package main
 
 import (
-${goImports}
-    sdk "${gomodule}"
-    "${gomodule}/core"
+${imports.join('\n')}
 )
 
 func main() {
     client := ${ctor}
-\`\`\`
 
-`)
-
-  if (exampleEntity) {
-    const eName = nom(exampleEntity, 'Name')
-    const opnames = Object.keys(exampleEntity.op || {})
-
-    if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
-
-\`\`\`go
-    result, err := client.${eName}(nil).List(nil, nil)
-    if err != nil {
-        panic(err)
-    }
-
-    rm := core.ToMapAny(result)
-    if rm["ok"] == true {
-        for _, item := range rm["data"].([]any) {
-            p := core.ToMapAny(item)
-            fmt.Println(p["id"], p["name"])
-        }
-    }
-\`\`\`
-
-`)
-    }
-
-    if (nestedEntity && opnames.includes('load')) {
-      const neName = nom(nestedEntity, 'Name')
-      const parentFields = (nestedEntity.fields || [])
-        .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
-      const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
-      const article = /^[aeiou]/i.test(neName) ? 'an' : 'a'
-
-      Content(`### 3. Load ${article} ${neName.toLowerCase()}
-
-${neName} is nested under ${eName}, so provide the \`${parentParam}\`:
-
-\`\`\`go
-    ${neName.toLowerCase()} := client.${neName}(nil)
-    result, err = ${neName.toLowerCase()}.Load(
-        map[string]any{"${parentParam}": "example", "id": "example_id"}, nil,
-    )
-    if err != nil {
-        panic(err)
-    }
-
-    rm = core.ToMapAny(result)
-    if rm["ok"] == true {
-        fmt.Println(rm["data"])
-    }
-}
-\`\`\`
-
-`)
-    }
-    else if (opnames.includes('load')) {
-      const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
-      Content(`### 3. Load ${article} ${eName.toLowerCase()}
-
-\`\`\`go
-    result, err = client.${eName}(nil).Load(
-        map[string]any{"id": "example_id"}, nil,
-    )
-    if err != nil {
-        panic(err)
-    }
-
-    rm = core.ToMapAny(result)
-    if rm["ok"] == true {
-        fmt.Println(rm["data"])
-    }
-}
-\`\`\`
-
-`)
-    }
-
-    // CRUD operations
-    if (opnames.includes('create') || opnames.includes('update') || opnames.includes('remove')) {
-      Content(`### 4. Create, update, and remove
-
-\`\`\`go
-`)
-      if (opnames.includes('create')) {
-        Content(`// Create
-created, _ := client.${eName}(nil).Create(
-    map[string]any{"name": "Example"}, nil,
-)
-cm := core.ToMapAny(created)
-newID := core.ToMapAny(cm["data"])["id"]
-
-`)
-      }
-      if (opnames.includes('update')) {
-        Content(`// Update
-client.${eName}(nil).Update(
-    map[string]any{"id": newID, "name": "Example-Renamed"}, nil,
-)
-
-`)
-      }
-      if (opnames.includes('remove')) {
-        Content(`// Remove
-client.${eName}(nil).Remove(
-    map[string]any{"id": newID}, nil,
-)
-`)
-      }
-      Content(`\`\`\`
-
-`)
-    }
+`
+  if (body.length > 0) {
+    program += body.join('\n') + '\n'
+  } else {
+    program += `    _ = client\n`
   }
+  program += `}`
+
+  Content(`### Quickstart
+
+A complete program: create a client, then call the entity operations.
+Each operation returns \`(value, error)\` — the value is the data itself
+(there is no \`{ok, data}\` wrapper), so check \`err\` and use the value
+directly.
+
+\`\`\`go
+${program}
+\`\`\`
+
+`)
 
 })
 

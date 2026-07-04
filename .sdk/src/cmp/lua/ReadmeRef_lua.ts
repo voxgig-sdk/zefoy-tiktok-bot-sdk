@@ -168,7 +168,7 @@ same parameters as \`direct()\`.
       }
 
       Content(`\`\`\`lua
-local ${ent.name} = client:${ent.name}(nil)
+local ${ent.name} = client:${ent.Name}(nil)
 \`\`\`
 
 `)
@@ -237,21 +237,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.name}():${opname}({ id = "${ent.name}_id" })
+local result, err = client:${ent.Name}():${opname}({ id = "${ent.name}_id" })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`lua
-local results, err = client:${ent.name}():list()
+local results, err = client:${ent.Name}():list()
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.name}():create({
+local result, err = client:${ent.Name}():create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -266,7 +266,7 @@ local result, err = client:${ent.name}():create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.name}():update({
+local result, err = client:${ent.Name}():update({
   id = "${ent.name}_id",
   -- Fields to update
 })

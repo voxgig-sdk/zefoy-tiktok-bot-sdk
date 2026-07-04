@@ -59,8 +59,9 @@ Create a mock client for unit testing — no server required:
 \`\`\`python
 client = ${model.const.Name}SDK.test()
 
-result = client.${eName.toLowerCase()}.load({"id": "test01"})
-# result contains mock response data
+# Entity ops return the bare record and raise on error.
+${eName.toLowerCase()} = client.${eName}().load({"id": "test01"})
+# ${eName.toLowerCase()} contains the mock response record
 \`\`\`
 
 ### Use a custom fetch function

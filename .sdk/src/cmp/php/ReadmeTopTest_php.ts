@@ -15,18 +15,23 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
 
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
-  Content(`\`\`\`php
-$client = ${model.const.Name}SDK::test();
-`)
-
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`$result = $client->${eName.toLowerCase()}()->load(["id" => "test01"]);
+    const ename = eName.toLowerCase()
+    Content(`\`\`\`php
+// Seed fixture data so offline calls resolve without a live server.
+$client = ${model.const.Name}SDK::test([
+    "entity" => ["${ename}" => ["test01" => ["id" => "test01"]]],
+]);
+$${ename} = $client->${eName}()->load(["id" => "test01"]);
+\`\`\`
+`)
+  } else {
+    Content(`\`\`\`php
+$client = ${model.const.Name}SDK::test();
+\`\`\`
 `)
   }
-
-  Content(`\`\`\`
-`)
 
 })
 

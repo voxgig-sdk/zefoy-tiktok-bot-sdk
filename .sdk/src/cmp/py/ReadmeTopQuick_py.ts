@@ -35,17 +35,18 @@ client = ${ctor}
     let hasCall = false
 
     if (opnames.includes('list')) {
-      Content(`# List all ${eName.toLowerCase()}s
-${eName.toLowerCase()}s = client.${eName.toLowerCase()}.list()
-print(${eName.toLowerCase()}s)
+      Content(`# List all ${eName.toLowerCase()}s (returns a list, raises on error)
+${eName.toLowerCase()}s = client.${eName}().list({})
+for ${eName.toLowerCase()} in ${eName.toLowerCase()}s:
+    print(${eName.toLowerCase()})
 `)
       hasCall = true
     }
 
     if (opnames.includes('load')) {
       Content(`
-# Load a specific ${eName.toLowerCase()}
-${eName.toLowerCase()} = client.${eName.toLowerCase()}.load({"id": "example_id"})
+# Load a specific ${eName.toLowerCase()} (returns the record, raises on error)
+${eName.toLowerCase()} = client.${eName}().load({"id": "example_id"})
 print(${eName.toLowerCase()})
 `)
       hasCall = true

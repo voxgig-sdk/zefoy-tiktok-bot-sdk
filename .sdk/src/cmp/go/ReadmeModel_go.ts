@@ -20,6 +20,9 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
     ? '| `"apikey"` | `string` | API key for authentication. |\n'
     : ''
 
+  // First published entity name, for the Result shape illustration.
+  const firstEntityName = (entityList[0] as any)?.Name || 'Entity'
+
   Content(`### New${model.const.Name}SDK
 
 \`\`\`go
@@ -56,7 +59,8 @@ Creates a test-mode client with mock transport. Both arguments may be \`nil\`.
 `)
 
   each(entityList, (ent: any) => {
-    Content(`| \`${ent.Name}\` | \`(data map[string]any) ${model.const.Name}Entity\` | Create a ${ent.Name} entity instance. |
+    const article = /^[aeiou]/i.test(ent.Name) ? 'an' : 'a'
+    Content(`| \`${ent.Name}\` | \`(data map[string]any) ${model.const.Name}Entity\` | Create ${article} ${ent.Name} entity instance. |
 `)
   })
 
@@ -79,17 +83,24 @@ All entities implement the \`${model.const.Name}Entity\` interface.
 
 ### Result shape
 
-Entity operations return \`(any, error)\`. The \`any\` value is a
-\`map[string]any\` with these keys:
+Entity operations return \`(value, error)\`. The \`value\` is the
+operation's data **directly** — there is no wrapper:
 
-| Key | Type | Description |
-| --- | --- | --- |
-| \`"ok"\` | \`bool\` | \`true\` if the HTTP status is 2xx. |
-| \`"status"\` | \`int\` | HTTP status code. |
-| \`"headers"\` | \`map[string]any\` | Response headers. |
-| \`"data"\` | \`any\` | Parsed JSON response body. |
+| Operation | \`value\` |
+| --- | --- |
+| \`Load\` / \`Create\` / \`Update\` / \`Remove\` | the entity record (\`map[string]any\`) |
+| \`List\` | a \`[]any\` of entity records |
 
-On error, \`"ok"\` is \`false\` and \`"err"\` contains the error value.
+Check \`err\` first, then use the value directly (or the typed
+\`...Typed\` variants, which return the entity's model struct and a typed
+slice):
+
+    ${firstEntityName.toLowerCase()}, err := client.${firstEntityName}(nil).Load(map[string]any{"id": "example_id"}, nil)
+    if err != nil { /* handle */ }
+    // ${firstEntityName.toLowerCase()} is the loaded record
+
+Only \`Direct()\` returns a response envelope — a \`map[string]any\` with
+\`"ok"\`, \`"status"\`, \`"headers"\`, and \`"data"\` keys.
 
 `)
 

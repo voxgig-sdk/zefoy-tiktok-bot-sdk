@@ -37,8 +37,8 @@ client = ZefoyTiktokBotSDK({
 ### 4. Create, update, and remove
 
 ```python
-# Create
-created = client.engagement.create({"name": "Example"})
+# Create — returns the bare created record (a dict)
+created = client.Engagement().create({"name": "Example"})
 
 ```
 
@@ -85,8 +85,9 @@ Create a mock client for unit testing — no server required:
 ```python
 client = ZefoyTiktokBotSDK.test()
 
-result = client.engagement.load({"id": "test01"})
-# result contains mock response data
+# Entity ops return the bare record and raise on error.
+engagement = client.Engagement().load({"id": "test01"})
+# engagement contains the mock response record
 ```
 
 ### Use a custom fetch function
@@ -164,7 +165,7 @@ Creates a test-mode client with mock transport. Both arguments may be `None`.
 | `get_utility` | `() -> Utility` | Copy of the SDK utility object. |
 | `prepare` | `(fetchargs) -> dict` | Build an HTTP request definition without sending. Raises on error. |
 | `direct` | `(fetchargs) -> dict` | Build and send an HTTP request. Returns a result dict (branch on `ok`). |
-| `Engagement` | `(data) -> EngagementEntity` | Create a Engagement entity instance. |
+| `Engagement` | `(data) -> EngagementEntity` | Create an Engagement entity instance. |
 
 ### Entity interface
 
@@ -227,7 +228,7 @@ API path: `/api/boost`
 
 ### Engagement
 
-Create an instance: `const engagement = client.engagement`
+Create an instance: `engagement = client.Engagement()`
 
 #### Operations
 
@@ -249,9 +250,9 @@ Create an instance: `const engagement = client.engagement`
 
 #### Example: Create
 
-```ts
-const engagement = await client.engagement.create({
-  url: /* `$STRING` */,
+```python
+engagement = client.Engagement().create({
+    "url": ...,  # `$STRING`
 })
 ```
 
@@ -326,7 +327,7 @@ Entity instances are stateful. After a successful `load`, the entity
 stores the returned data and match criteria internally.
 
 ```python
-engagement = client.engagement
+engagement = client.Engagement()
 engagement.load({"id": "example_id"})
 
 # engagement.data_get() now returns the loaded engagement data

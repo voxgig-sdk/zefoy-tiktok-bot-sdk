@@ -35,8 +35,8 @@ $client = ${ctor};
     let hasCall = false
 
     if (opnames.includes('list')) {
-      Content(`// List all ${eName.toLowerCase()}s (throws on error)
-$${eName.toLowerCase()}s = $client->${eName.toLowerCase()}()->list();
+      Content(`// List all ${eName.toLowerCase()}s (returns an array; throws on error)
+$${eName.toLowerCase()}s = $client->${eName}()->list();
 print_r($${eName.toLowerCase()}s);
 `)
       hasCall = true
@@ -44,8 +44,8 @@ print_r($${eName.toLowerCase()}s);
 
     if (opnames.includes('load')) {
       Content(`
-// Load a specific ${eName.toLowerCase()}
-$${eName.toLowerCase()} = $client->${eName.toLowerCase()}()->load(["id" => "example_id"]);
+// Load a specific ${eName.toLowerCase()} (returns the bare record; throws on error)
+$${eName.toLowerCase()} = $client->${eName}()->load(["id" => "example_id"]);
 print_r($${eName.toLowerCase()});
 `)
       hasCall = true

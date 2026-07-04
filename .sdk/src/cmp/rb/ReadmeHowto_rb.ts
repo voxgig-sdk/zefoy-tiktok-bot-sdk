@@ -57,13 +57,17 @@ end
 
 ### Use test mode
 
-Create a mock client for unit testing — no server required:
+Create a mock client for unit testing — no server required. Seed fixture
+data via the \`entity\` option so offline calls resolve without a live server:
 
 \`\`\`ruby
-client = ${model.const.Name}SDK.test
+client = ${model.const.Name}SDK.test({
+  "entity" => { "${eName.toLowerCase()}" => { "test01" => { "id" => "test01" } } },
+})
 
-result = client.${eName.toLowerCase()}.load({ "id" => "test01" })
-# result contains mock response data
+# load returns the bare mock record (raises on error).
+${eName.toLowerCase()} = client.${eName}.load({ "id" => "test01" })
+puts ${eName.toLowerCase()}
 \`\`\`
 
 ### Use a custom fetch function

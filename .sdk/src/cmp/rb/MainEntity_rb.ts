@@ -8,13 +8,7 @@ const MainEntity = cmp(async function MainEntity(props: any) {
   const { model } = props.ctx$
 
   Content(`
-  # Idiomatic facade: client.${entity.name}.list / client.${entity.name}.load({ "id" => ... })
-  def ${entity.name}
-    require_relative 'entity/${entity.name}_entity'
-    @${entity.name} ||= ${entity.Name}Entity.new(self, nil)
-  end
-
-  # Deprecated: use client.${entity.name} instead.
+  # Canonical facade: client.${entity.Name}.list / client.${entity.Name}.load({ "id" => ... })
   def ${entity.Name}(data = nil)
     require_relative 'entity/${entity.name}_entity'
     ${entity.Name}Entity.new(self, data)

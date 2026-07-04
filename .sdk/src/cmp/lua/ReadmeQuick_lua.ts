@@ -38,17 +38,17 @@ local client = ${ctor}
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
+      Content(`### 2. List ${eName.toLowerCase()} records
+
+Entity operations return \`(value, err)\`. For \`list\`, \`value\` is the
+array of records itself — iterate it directly (there is no wrapper).
 
 \`\`\`lua
-local result, err = client:${eName.toLowerCase()}():list()
+local ${eName.toLowerCase()}s, err = client:${eName}():list()
 if err then error(err) end
 
-if type(result) == "table" then
-  for _, item in ipairs(result) do
-    local d = item:data_get()
-    print(d["id"], d["name"])
-  end
+for _, item in ipairs(${eName.toLowerCase()}s) do
+  print(item["id"], item["name"])
 end
 \`\`\`
 
@@ -59,9 +59,9 @@ end
       Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`\`\`lua
-local result, err = client:${eName.toLowerCase()}():load({ id = "example_id" })
+local ${eName.toLowerCase()}, err = client:${eName}():load({ id = "example_id" })
 if err then error(err) end
-print(result)
+print(${eName.toLowerCase()})
 \`\`\`
 
 `)
@@ -74,19 +74,20 @@ print(result)
 `)
       if (opnames.includes('create')) {
         Content(`-- Create
-local created, _ = client:${eName.toLowerCase()}():create({ name = "Example" })
+local created, err = client:${eName}():create({ name = "Example" })
+if err then error(err) end
 
 `)
       }
       if (opnames.includes('update')) {
         Content(`-- Update
-client:${eName.toLowerCase()}():update({ id = created["id"], name = "Example-Renamed" })
+client:${eName}():update({ id = created["id"], name = "Example-Renamed" })
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`-- Remove
-client:${eName.toLowerCase()}():remove({ id = created["id"] })
+client:${eName}():remove({ id = created["id"] })
 `)
       }
       Content(`\`\`\`

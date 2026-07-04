@@ -171,7 +171,7 @@ same parameters as \`direct()\`. Raises on error.
       }
 
       Content(`\`\`\`ruby
-${ent.name} = client.${ent.name}
+${ent.name} = client.${ent.Name}
 \`\`\`
 
 `)
@@ -240,21 +240,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`ruby
-result = client.${ent.name}.${opname}({ "id" => "${ent.name}_id" })
+result = client.${ent.Name}.${opname}({ "id" => "${ent.name}_id" })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`ruby
-results = client.${ent.name}.list(nil)
+results = client.${ent.Name}.list(nil)
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`ruby
-result = client.${ent.name}.create({
+result = client.${ent.Name}.create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -269,7 +269,7 @@ result = client.${ent.name}.create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`ruby
-result = client.${ent.name}.update({
+result = client.${ent.Name}.update({
   "id" => "${ent.name}_id",
   # Fields to update
 })

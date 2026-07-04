@@ -59,8 +59,8 @@ Create a mock client for unit testing — no server required:
 \`\`\`lua
 local client = sdk.test()
 
-local result, err = client:${eName.toLowerCase()}():load({ id = "test01" })
--- result contains mock response data
+local result, err = client:${eName}():load({ id = "test01" })
+-- result is the loaded data; err is set on failure
 \`\`\`
 
 ### Use a custom fetch function

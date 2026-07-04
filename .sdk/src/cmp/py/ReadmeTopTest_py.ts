@@ -21,7 +21,8 @@ client = ${model.const.Name}SDK.test()
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`result = client.${eName.toLowerCase()}.load({"id": "test01"})
+    Content(`${eName.toLowerCase()} = client.${eName}().load({"id": "test01"})
+print(${eName.toLowerCase()})
 `)
   }
 

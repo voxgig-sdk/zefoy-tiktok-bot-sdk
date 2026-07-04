@@ -208,13 +208,7 @@ class ZefoyTiktokBotSDK
   end
 
 
-  # Idiomatic facade: client.engagement.list / client.engagement.load({ "id" => ... })
-  def engagement
-    require_relative 'entity/engagement_entity'
-    @engagement ||= EngagementEntity.new(self, nil)
-  end
-
-  # Deprecated: use client.engagement instead.
+  # Canonical facade: client.Engagement.list / client.Engagement.load({ "id" => ... })
   def Engagement(data = nil)
     require_relative 'entity/engagement_entity'
     EngagementEntity.new(self, data)

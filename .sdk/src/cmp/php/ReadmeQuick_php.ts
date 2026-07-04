@@ -39,18 +39,16 @@ $client = ${ctor};
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
+      Content(`### 2. List ${eName.toLowerCase()} records
 
 \`\`\`php
 try {
-    $result = $client->${eName.toLowerCase()}()->list();
-    if (is_array($result)) {
-        foreach ($result as $item) {
-            $d = $item->data_get();
-            echo $d["id"] . " " . $d["name"] . "\\n";
-        }
+    // list() returns an array of ${eName} records — iterate directly.
+    $${eName.toLowerCase()}s = $client->${eName}()->list();
+    foreach ($${eName.toLowerCase()}s as $item) {
+        echo $item["id"] . " " . $item["name"] . "\\n";
     }
-} catch (\\Exception $err) {
+} catch (\\Throwable $err) {
     echo "Error: " . $err->getMessage();
 }
 \`\`\`
@@ -63,9 +61,10 @@ try {
 
 \`\`\`php
 try {
-    $result = $client->${eName.toLowerCase()}()->load(["id" => "example_id"]);
-    print_r($result);
-} catch (\\Exception $err) {
+    // load() returns the bare ${eName} record (throws on error).
+    $${eName.toLowerCase()} = $client->${eName}()->load(["id" => "example_id"]);
+    print_r($${eName.toLowerCase()});
+} catch (\\Throwable $err) {
     echo "Error: " . $err->getMessage();
 }
 \`\`\`
@@ -79,20 +78,20 @@ try {
 \`\`\`php
 `)
       if (opnames.includes('create')) {
-        Content(`// Create
-$created = $client->${eName.toLowerCase()}()->create(["name" => "Example"]);
+        Content(`// create() returns the bare created ${eName} record.
+$created = $client->${eName}()->create(["name" => "Example"]);
 
 `)
       }
       if (opnames.includes('update')) {
-        Content(`// Update
-$client->${eName.toLowerCase()}()->update(["id" => $created["id"], "name" => "Example-Renamed"]);
+        Content(`// Update — index the bare record directly ($created["id"]).
+$client->${eName}()->update(["id" => $created["id"], "name" => "Example-Renamed"]);
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`// Remove
-$client->${eName.toLowerCase()}()->remove(["id" => $created["id"]]);
+$client->${eName}()->remove(["id" => $created["id"]]);
 `)
       }
       Content(`\`\`\`

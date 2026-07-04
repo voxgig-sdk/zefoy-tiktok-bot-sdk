@@ -13,6 +13,7 @@ import { cmp, each, Folder, File, Content } from '@voxgig/sdkgen'
 
 import { TestEntity } from './TestEntity_lua'
 import { TestDirect } from './TestDirect_lua'
+import { ReadmeExamplesTest } from './ReadmeExamplesTest_lua'
 
 
 const Test = cmp(function Test(props: any) {
@@ -40,6 +41,9 @@ end)
       TestEntity({ target, entity })
       TestDirect({ target, entity })
     })
+
+    // README ```lua example snippets: syntax-check + offline run.
+    ReadmeExamplesTest({ target })
   })
 })
 

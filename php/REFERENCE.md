@@ -86,7 +86,7 @@ Prepare a fetch definition without sending the request. Returns the
 ## EngagementEntity
 
 ```php
-$engagement = $client->engagement();
+$engagement = $client->Engagement();
 ```
 
 ### Fields
@@ -120,7 +120,7 @@ $engagement = $client->engagement();
 Create a new entity with the given data. Throws on error.
 
 ```php
-$result = $client->engagement()->create([
+$result = $client->Engagement()->create([
   "url" => /* `$STRING` */,
 ]);
 ```

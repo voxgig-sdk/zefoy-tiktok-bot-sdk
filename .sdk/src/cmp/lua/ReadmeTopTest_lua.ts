@@ -21,7 +21,7 @@ local client = sdk.test()
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    Content(`local result, err = client:${eName.toLowerCase()}():load({ id = "test01" })
+    Content(`local result, err = client:${eName}():load({ id = "test01" })
 `)
   }
 

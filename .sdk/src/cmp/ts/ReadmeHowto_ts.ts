@@ -33,6 +33,9 @@ const result = await client.direct({
   params: { id: 'example' },
 })
 
+if (result instanceof Error) {
+  throw result
+}
 if (result.ok) {
   console.log(result.status)  // 200
   console.log(result.data)    // response body
@@ -61,9 +64,9 @@ Create a mock client for unit testing \u2014 no server required:
 \`\`\`ts
 const client = ${model.const.Name}SDK.test()
 
-const result = await client.${eName.toLowerCase()}.load({ id: 'test01' })
-// result.ok === true
-// result.data contains mock response data
+const ${eName.toLowerCase()} = await client.${eName}().load({ id: 'test01' })
+// ${eName.toLowerCase()} is a bare entity populated with mock response data
+console.log(${eName.toLowerCase()})
 \`\`\`
 
 You can also use the instance method:
@@ -78,7 +81,7 @@ const testClient = client.tester()
 Entity instances remember their last match and data:
 
 \`\`\`ts
-const entity = client.${eName.toLowerCase()}
+const entity = client.${eName}()
 
 // First call sets internal match
 await entity.load({ id: 'example' })

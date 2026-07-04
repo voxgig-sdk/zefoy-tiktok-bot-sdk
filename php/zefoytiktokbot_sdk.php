@@ -233,10 +233,10 @@ class ZefoyTiktokBotSDK
 
     private $_engagement = null;
 
-    // Idiomatic facade: $client->engagement()->list() / ->load(["id" => ...]).
-    // Also serves the deprecated PascalCase alias Engagement() (PHP method
-    // names are case-insensitive).
-    public function engagement($data = null)
+    // Canonical facade: $client->Engagement()->list() / ->load(["id" => ...]).
+    // PHP method names are case-insensitive, so lowercase $client->engagement()
+    // resolves here too.
+    public function Engagement($data = null)
     {
         require_once __DIR__ . '/entity/engagement_entity.php';
         if ($data === null) {

@@ -34,8 +34,8 @@ client = ${ctor}
     let hasCall = false
 
     if (opnames.includes('list')) {
-      Content(`# List all ${eName.toLowerCase()}s
-${eName.toLowerCase()}s = client.${eName.toLowerCase()}.list
+      Content(`# List all ${eName.toLowerCase()}s (returns an Array; raises on error)
+${eName.toLowerCase()}s = client.${eName}.list
 puts ${eName.toLowerCase()}s
 `)
       hasCall = true
@@ -43,8 +43,8 @@ puts ${eName.toLowerCase()}s
 
     if (opnames.includes('load')) {
       Content(`
-# Load a specific ${eName.toLowerCase()}
-${eName.toLowerCase()} = client.${eName.toLowerCase()}.load({ "id" => "example_id" })
+# Load a specific ${eName.toLowerCase()} (returns the bare record; raises on error)
+${eName.toLowerCase()} = client.${eName}.load({ "id" => "example_id" })
 puts ${eName.toLowerCase()}
 `)
       hasCall = true

@@ -165,7 +165,7 @@ Prepare a fetch definition without sending. Returns the \`fetchdef\` and raises 
       }
 
       Content(`\`\`\`python
-${ent.name} = client.${ent.name}
+${ent.name} = client.${ent.Name}()
 \`\`\`
 
 `)
@@ -231,28 +231,31 @@ ${info.desc}
 
 `)
 
-          // Show example
+          // Show example. Entity ops return the bare result and raise on
+          // error; direct() is the only method that returns a result dict.
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`python
-result = client.${ent.name}.${opname}({"id": "${ent.name}_id"})
+result = client.${ent.Name}().${opname}({"id": "${ent.name}_id"})
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`python
-results = client.${ent.name}.list({})
+results = client.${ent.Name}().list({})
+for ${ent.name} in results:
+    print(${ent.name})
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`python
-result = client.${ent.name}.create({
+result = client.${ent.Name}().create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
-                Content(`    "${field.name}": # ${field.type || 'value'},
+                Content(`    "${field.name}": ...,  # ${field.type || 'value'}
 `)
               }
             })
@@ -263,7 +266,7 @@ result = client.${ent.name}.create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`python
-result = client.${ent.name}.update({
+result = client.${ent.Name}().update({
     "id": "${ent.name}_id",
     # Fields to update
 })

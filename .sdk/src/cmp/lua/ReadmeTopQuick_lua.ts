@@ -35,7 +35,7 @@ local client = ${ctor}
 
     if (opnames.includes('list')) {
       Content(`-- List all ${eName.toLowerCase()}s
-local ${eName.toLowerCase()}s, err = client:${eName.toLowerCase()}():list()
+local ${eName.toLowerCase()}s, err = client:${eName}():list()
 print(${eName.toLowerCase()}s)
 `)
       hasCall = true
@@ -44,7 +44,7 @@ print(${eName.toLowerCase()}s)
     if (opnames.includes('load')) {
       Content(`
 -- Load a specific ${eName.toLowerCase()}
-local ${eName.toLowerCase()}, err = client:${eName.toLowerCase()}():load({ id = "example_id" })
+local ${eName.toLowerCase()}, err = client:${eName}():load({ id = "example_id" })
 print(${eName.toLowerCase()})
 `)
       hasCall = true

@@ -12,6 +12,9 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
+  const exEnt: any = entityList[0] || {}
+  const eName = exEnt.Name || 'Entity'
+  const eLower = String(exEnt.name || 'entity').toLowerCase()
 
   const apikeyOptionRow = isAuthActive(model)
     ? '| `apikey` | `string` | API key for authentication. |\n'
@@ -54,7 +57,8 @@ Creates a test-mode client with mock transport. Both arguments may be \`nil\`.
 `)
 
   each(entityList, (ent: any) => {
-    Content(`| \`${ent.Name}\` | \`(data) -> ${ent.Name}Entity\` | Create a ${ent.Name} entity instance. |
+    const article = /^[aeiou]/i.test(ent.Name) ? 'an' : 'a'
+    Content(`| \`${ent.Name}\` | \`(data) -> ${ent.Name}Entity\` | Create ${article} ${ent.Name} entity instance. |
 `)
   })
 
@@ -79,17 +83,22 @@ All entities share the same interface.
 
 ### Result shape
 
-Entity operations return \`(any, err)\`. The first value is a
-\`table\` with these keys:
+Entity operations return \`(value, err)\`. The \`value\` is the operation's
+data **directly** — there is no wrapper:
 
-| Key | Type | Description |
-| --- | --- | --- |
-| \`ok\` | \`boolean\` | \`true\` if the HTTP status is 2xx. |
-| \`status\` | \`number\` | HTTP status code. |
-| \`headers\` | \`table\` | Response headers. |
-| \`data\` | \`any\` | Parsed JSON response body. |
+| Operation | \`value\` |
+| --- | --- |
+| \`load\` / \`create\` / \`update\` / \`remove\` | the entity record (a \`table\`) |
+| \`list\` | an array (\`table\`) of entity records |
 
-On error, \`ok\` is \`false\` and \`err\` contains the error value.
+Check \`err\` first (it is non-\`nil\` on failure), then use \`value\`:
+
+    local ${eLower}, err = client:${eName}():load({ id = "example_id" })
+    if err then error(err) end
+    -- ${eLower} is the loaded record
+
+Only \`direct()\` returns a response envelope — a \`table\` with \`ok\`,
+\`status\`, \`headers\`, and \`data\` keys.
 
 `)
 

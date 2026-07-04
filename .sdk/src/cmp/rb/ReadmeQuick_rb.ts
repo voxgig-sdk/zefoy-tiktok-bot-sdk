@@ -38,16 +38,14 @@ client = ${ctor}
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
+      Content(`### 2. List ${eName.toLowerCase()} records
 
 \`\`\`ruby
 begin
-  result = client.${eName.toLowerCase()}.list
-  if result.is_a?(Array)
-    result.each do |item|
-      d = item.data_get
-      puts "#{d["id"]} #{d["name"]}"
-    end
+  # list returns an Array of ${eName} records — iterate directly.
+  ${eName.toLowerCase()}s = client.${eName}.list
+  ${eName.toLowerCase()}s.each do |item|
+    puts "#{item["id"]} #{item["name"]}"
   end
 rescue => err
   warn "list failed: #{err}"
@@ -62,8 +60,9 @@ end
 
 \`\`\`ruby
 begin
-  result = client.${eName.toLowerCase()}.load({ "id" => "example_id" })
-  puts result
+  # load returns the bare ${eName} record (raises on error).
+  ${eName.toLowerCase()} = client.${eName}.load({ "id" => "example_id" })
+  puts ${eName.toLowerCase()}
 rescue => err
   warn "load failed: #{err}"
 end
@@ -78,20 +77,20 @@ end
 \`\`\`ruby
 `)
       if (opnames.includes('create')) {
-        Content(`# Create
-created = client.${eName.toLowerCase()}.create({ "name" => "Example" })
+        Content(`# create returns the bare created ${eName} record.
+created = client.${eName}.create({ "name" => "Example" })
 
 `)
       }
       if (opnames.includes('update')) {
-        Content(`# Update
-client.${eName.toLowerCase()}.update({ "id" => created["id"], "name" => "Example-Renamed" })
+        Content(`# Update — index the bare record directly (created["id"]).
+client.${eName}.update({ "id" => created["id"], "name" => "Example-Renamed" })
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`# Remove
-client.${eName.toLowerCase()}.remove({ "id" => created["id"] })
+client.${eName}.remove({ "id" => created["id"] })
 `)
       }
       Content(`\`\`\`

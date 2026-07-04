@@ -66,10 +66,13 @@ Create a mock client for unit testing \u2014 no server required:
 \`\`\`go
 client := sdk.Test()
 
-result, err := client.${eName}(nil).Load(
+${eName.toLowerCase()}, err := client.${eName}(nil).Load(
     map[string]any{"id": "test01"}, nil,
 )
-// result contains mock response data
+if err != nil {
+    panic(err)
+}
+fmt.Println(${eName.toLowerCase()}) // the loaded mock data
 \`\`\`
 
 ### Use a custom fetch function

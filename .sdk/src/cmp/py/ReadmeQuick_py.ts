@@ -40,14 +40,16 @@ client = ${ctor}
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
+      Content(`### 2. List ${eName.toLowerCase()} records
+
+\`list()\` returns a \`list\` of records (each a \`dict\`) and raises on
+error — iterate it directly.
 
 \`\`\`python
 try:
-    result = client.${eName.toLowerCase()}.list()
-    for item in result:
-        d = item.data_get()
-        print(d["id"], d["name"])
+    ${eName.toLowerCase()}s = client.${eName}().list({})
+    for ${eName.toLowerCase()} in ${eName.toLowerCase()}s:
+        print(${eName.toLowerCase()})
 except Exception as err:
     print(f"list failed: {err}")
 \`\`\`
@@ -58,10 +60,12 @@ except Exception as err:
     if (opnames.includes('load')) {
       Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
+\`load()\` returns the bare record (a \`dict\`) and raises on error.
+
 \`\`\`python
 try:
-    result = client.${eName.toLowerCase()}.load({"id": "example_id"})
-    print(result)
+    ${eName.toLowerCase()} = client.${eName}().load({"id": "example_id"})
+    print(${eName.toLowerCase()})
 except Exception as err:
     print(f"load failed: {err}")
 \`\`\`
@@ -75,20 +79,20 @@ except Exception as err:
 \`\`\`python
 `)
       if (opnames.includes('create')) {
-        Content(`# Create
-created = client.${eName.toLowerCase()}.create({"name": "Example"})
+        Content(`# Create — returns the bare created record (a dict)
+created = client.${eName}().create({"name": "Example"})
 
 `)
       }
       if (opnames.includes('update')) {
-        Content(`# Update
-client.${eName.toLowerCase()}.update({"id": created["id"], "name": "Example-Renamed"})
+        Content(`# Update — the created record's id is a plain dict key
+client.${eName}().update({"id": created["id"], "name": "Example-Renamed"})
 
 `)
       }
       if (opnames.includes('remove')) {
         Content(`# Remove
-client.${eName.toLowerCase()}.remove({"id": created["id"]})
+client.${eName}().remove({"id": created["id"]})
 `)
       }
       Content(`\`\`\`

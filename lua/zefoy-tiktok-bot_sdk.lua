@@ -244,8 +244,9 @@ end
 
 
 
--- Idiomatic facade: client:engagement():list() / client:engagement():load({ id = ... })
-function ZefoyTiktokBotSDK:engagement(data)
+-- Idiomatic facade: client:Engagement():list() / client:Engagement():load({ id = ... })
+-- Entity access is capitalised (PascalCase) for parity with the other SDKs.
+function ZefoyTiktokBotSDK:Engagement(data)
   local EntityMod = require("entity.engagement_entity")
   if data == nil then
     if self._engagement == nil then
@@ -253,12 +254,6 @@ function ZefoyTiktokBotSDK:engagement(data)
     end
     return self._engagement
   end
-  return EntityMod.new(self, data)
-end
-
--- Deprecated: use client:engagement() instead.
-function ZefoyTiktokBotSDK:Engagement(data)
-  local EntityMod = require("entity.engagement_entity")
   return EntityMod.new(self, data)
 end
 

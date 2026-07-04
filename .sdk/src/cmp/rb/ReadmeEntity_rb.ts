@@ -53,7 +53,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`const ${entity.name} = client.${entity.name}\`
+    Content(`Create an instance: \`${entity.name} = client.${entity.Name}\`
 
 `)
 
@@ -95,8 +95,9 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     if (opnames.includes('load')) {
       Content(`#### Example: Load
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id' })
+\`\`\`ruby
+# load returns the bare ${entity.Name} record (raises on error).
+${entity.name} = client.${entity.Name}.load({ "id" => "${entity.name}_id" })
 \`\`\`
 
 `)
@@ -105,8 +106,9 @@ const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id
     if (opnames.includes('list')) {
       Content(`#### Example: List
 
-\`\`\`ts
-const ${entity.name}s = await client.${entity.name}.list()
+\`\`\`ruby
+# list returns an Array of ${entity.Name} records (raises on error).
+${entity.name}s = client.${entity.Name}.list
 \`\`\`
 
 `)
@@ -115,12 +117,12 @@ const ${entity.name}s = await client.${entity.name}.list()
     if (opnames.includes('create')) {
       Content(`#### Example: Create
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.create({
+\`\`\`ruby
+${entity.name} = client.${entity.Name}.create({
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {
-          Content(`  ${field.name}: /* ${field.type || 'value'} */,
+          Content(`  "${field.name}" => nil, # ${field.type || 'value'}
 `)
         }
       })

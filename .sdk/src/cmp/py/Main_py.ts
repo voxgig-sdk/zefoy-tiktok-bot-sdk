@@ -78,6 +78,25 @@ self._utility.feature_hook(self._rootctx, "${name}")
           MainEntity(entprops)
         })
       })
+
+    // Type-checker-only imports for the entity factory return annotations
+    // (def <Entity>(...) -> "<Entity>Entity"). Guarded by TYPE_CHECKING so
+    // there is no eager runtime import (the factories still import lazily in
+    // their bodies); this lets mypy resolve list()/load() return types on
+    // client.<Entity>() results — e.g. flagging `.data` on a list() result.
+    const entnames = each(entity)
+    if (entnames.length > 0) {
+      Content(`
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+`)
+      each(entity, (ent: any) => {
+        Content(`    from entity.${ent.name}_entity import ${ent.Name}Entity
+`)
+      })
+    }
   })
 
   // Generate the typed-model module (<sdk>_types.py) next to the main SDK file.

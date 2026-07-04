@@ -55,7 +55,8 @@ Creates a test-mode client with mock transport. Both arguments may be \`None\`.
 `)
 
   each(entityList, (ent: any) => {
-    Content(`| \`${ent.Name}\` | \`(data) -> ${ent.Name}Entity\` | Create a ${ent.Name} entity instance. |
+    const article = /^[aeiou]/i.test(ent.Name) ? 'an' : 'a'
+    Content(`| \`${ent.Name}\` | \`(data) -> ${ent.Name}Entity\` | Create ${article} ${ent.Name} entity instance. |
 `)
   })
 

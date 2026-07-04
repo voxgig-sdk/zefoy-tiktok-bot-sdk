@@ -87,7 +87,7 @@ same parameters as `direct()`. Raises on error.
 ## EngagementEntity
 
 ```ruby
-engagement = client.engagement
+engagement = client.Engagement
 ```
 
 ### Fields
@@ -121,7 +121,7 @@ engagement = client.engagement
 Create a new entity with the given data. Raises on error.
 
 ```ruby
-result = client.engagement.create({
+result = client.Engagement.create({
   "url" => # `$STRING`,
 })
 ```

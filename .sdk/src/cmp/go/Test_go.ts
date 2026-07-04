@@ -13,6 +13,7 @@ import { cmp, each, Folder, File, Content } from '@voxgig/sdkgen'
 
 import { TestEntity } from './TestEntity_go'
 import { TestDirect } from './TestDirect_go'
+import { ReadmeExamplesTest } from './ReadmeExamplesTest_go'
 
 
 const Test = cmp(function Test(props: any) {
@@ -51,6 +52,9 @@ func TestExists(t *testing.T) {
       TestEntity({ target, entity, gomodule })
       TestDirect({ target, entity, gomodule })
     })
+
+    // README ```go example snippets must compile against the real SDK.
+    ReadmeExamplesTest({ target })
   })
 })
 

@@ -8,18 +8,8 @@ const MainEntity = cmp(async function MainEntity(props: any) {
   const { model } = props.ctx$
 
   Content(`
-    @property
-    def ${entity.name}(self):
-        """Idiomatic facade: client.${entity.name}.list() / client.${entity.name}.load({"id": ...})."""
-        from entity.${entity.name}_entity import ${entity.Name}Entity
-        cached = getattr(self, "_${entity.name}", None)
-        if cached is None:
-            cached = ${entity.Name}Entity(self, None)
-            self._${entity.name} = cached
-        return cached
-
-    def ${entity.Name}(self, data=None):
-        # Deprecated: use client.${entity.name} instead.
+    def ${entity.Name}(self, data=None) -> "${entity.Name}Entity":
+        """Entity factory: client.${entity.Name}().list({}) / client.${entity.Name}().load({"id": ...})."""
         from entity.${entity.name}_entity import ${entity.Name}Entity
         return ${entity.Name}Entity(self, data)
 

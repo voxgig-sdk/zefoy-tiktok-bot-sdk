@@ -194,7 +194,7 @@ Alias for \`${model.Name}SDK.test()\`.
       }
 
       Content(`\`\`\`ts
-const ${ent.name} = client.${ent.name}
+const ${ent.name} = client.${ent.Name}()
 \`\`\`
 
 `)
@@ -263,21 +263,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.name}.${opname}({ id: '${ent.name}_id' })
+const result = await client.${ent.Name}().${opname}({ id: '${ent.name}_id' })
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`ts
-const results = await client.${ent.name}.${opname}()
+const results = await client.${ent.Name}().${opname}()
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.name}.create({
+const result = await client.${ent.Name}().create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -292,7 +292,7 @@ const result = await client.${ent.name}.create({
           }
           else if ('update' === opname) {
             Content(`\`\`\`ts
-const result = await client.${ent.name}.update({
+const result = await client.${ent.Name}().update({
   id: '${ent.name}_id',
   // Fields to update
 })

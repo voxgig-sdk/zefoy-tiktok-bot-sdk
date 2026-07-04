@@ -42,15 +42,15 @@ const client = ${ctor}
     const opnames = Object.keys(exampleEntity.op || {})
 
     if (opnames.includes('list')) {
-      Content(`### 2. List ${eName.toLowerCase()}s
+      Content(`### 2. List ${eName.toLowerCase()} records
+
+\`list()\` resolves to an array of ${eName} objects — iterate it directly:
 
 \`\`\`ts
-const result = await client.${eName.toLowerCase()}.list()
+const ${eName.toLowerCase()}s = await client.${eName}().list()
 
-if (result.ok) {
-  for (const item of result.data) {
-    console.log(item.id, item.name)
-  }
+for (const ${eName.toLowerCase()} of ${eName.toLowerCase()}s) {
+  console.log(${eName.toLowerCase()})
 }
 \`\`\`
 
@@ -66,17 +66,18 @@ if (result.ok) {
 
       Content(`### 3. Load ${neArticle} ${neName.toLowerCase()}
 
-${neName} is nested under ${eName}, so provide the \`${parentParam}\`:
+${neName} is nested under ${eName}, so provide the \`${parentParam}\`.
+\`load()\` returns the entity directly and throws on failure:
 
 \`\`\`ts
-const ${neName.toLowerCase()} = client.${neName.toLowerCase()}
-const result = await ${neName.toLowerCase()}.load({
-  ${parentParam}: 'example',
-  id: 'example_id',
-})
-
-if (result.ok) {
-  console.log(result.data)
+try {
+  const ${neName.toLowerCase()} = await client.${neName}().load({
+    ${parentParam}: 'example',
+    id: 'example_id',
+  })
+  console.log(${neName.toLowerCase()})
+} catch (err) {
+  console.error('load failed:', err)
 }
 \`\`\`
 
@@ -85,11 +86,14 @@ if (result.ok) {
     else if (opnames.includes('load')) {
       Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
-\`\`\`ts
-const result = await client.${eName.toLowerCase()}.load({ id: 'example_id' })
+\`load()\` returns the entity directly and throws on failure:
 
-if (result.ok) {
-  console.log(result.data)
+\`\`\`ts
+try {
+  const ${eName.toLowerCase()} = await client.${eName}().load({ id: 'example_id' })
+  console.log(${eName.toLowerCase()})
+} catch (err) {
+  console.error('load failed:', err)
 }
 \`\`\`
 
@@ -103,17 +107,17 @@ if (result.ok) {
 \`\`\`ts
 `)
       if (opnames.includes('create')) {
-        Content(`// Create
-const created = await client.${eName.toLowerCase()}.create({
+        Content(`// Create — returns the created ${eName}
+const created = await client.${eName}().create({
   name: 'Example',
 })
 
 `)
       }
       if (opnames.includes('update')) {
-        Content(`// Update
-const updated = await client.${eName.toLowerCase()}.update({
-  id: created.data.id,
+        Content(`// Update — the id comes straight off the returned entity
+const updated = await client.${eName}().update({
+  id: created.id,
   name: 'Example-Renamed',
 })
 
@@ -121,8 +125,8 @@ const updated = await client.${eName.toLowerCase()}.update({
       }
       if (opnames.includes('remove')) {
         Content(`// Remove
-const removed = await client.${eName.toLowerCase()}.remove({
-  id: created.data.id,
+await client.${eName}().remove({
+  id: created.id,
 })
 `)
       }

@@ -96,7 +96,11 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
       Content(`#### Example: Load
 
 \`\`\`go
-result, err := client.${entity.Name}(nil).Load(map[string]any{"id": "${entity.name}_id"}, nil)
+${entity.name}, err := client.${entity.Name}(nil).Load(map[string]any{"id": "${entity.name}_id"}, nil)
+if err != nil {
+    panic(err)
+}
+fmt.Println(${entity.name}) // the loaded record
 \`\`\`
 
 `)
@@ -106,7 +110,11 @@ result, err := client.${entity.Name}(nil).Load(map[string]any{"id": "${entity.na
       Content(`#### Example: List
 
 \`\`\`go
-results, err := client.${entity.Name}(nil).List(nil, nil)
+${entity.name}s, err := client.${entity.Name}(nil).List(nil, nil)
+if err != nil {
+    panic(err)
+}
+fmt.Println(${entity.name}s) // the array of records
 \`\`\`
 
 `)

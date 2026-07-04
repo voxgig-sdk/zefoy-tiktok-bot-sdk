@@ -13,6 +13,7 @@ import { cmp, each, Folder, File, Content } from '@voxgig/sdkgen'
 
 import { TestEntity } from './TestEntity_php'
 import { TestDirect } from './TestDirect_php'
+import { ReadmeExamplesTest } from './ReadmeExamplesTest_php'
 
 
 const Test = cmp(function Test(props: any) {
@@ -47,6 +48,9 @@ class ExistsTest extends TestCase
       TestEntity({ target, entity })
       TestDirect({ target, entity })
     })
+
+    // README example snippet test (syntax + offline test-mode run).
+    ReadmeExamplesTest({ target })
   })
 })
 

@@ -170,7 +170,7 @@ Prepare a fetch definition without sending the request. Returns the
       }
 
       Content(`\`\`\`php
-$${ent.name} = $client->${ent.name}();
+$${ent.name} = $client->${ent.Name}();
 \`\`\`
 
 `)
@@ -239,21 +239,21 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`php
-$result = $client->${ent.name}()->${opname}(["id" => "${ent.name}_id"]);
+$result = $client->${ent.Name}()->${opname}(["id" => "${ent.name}_id"]);
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`php
-$results = $client->${ent.name}()->list([]);
+$results = $client->${ent.Name}()->list([]);
 \`\`\`
 
 `)
           }
           else if ('create' === opname) {
             Content(`\`\`\`php
-$result = $client->${ent.name}()->create([
+$result = $client->${ent.Name}()->create([
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
@@ -268,7 +268,7 @@ $result = $client->${ent.name}()->create([
           }
           else if ('update' === opname) {
             Content(`\`\`\`php
-$result = $client->${ent.name}()->update([
+$result = $client->${ent.Name}()->update([
   "id" => "${ent.name}_id",
   // Fields to update
 ]);

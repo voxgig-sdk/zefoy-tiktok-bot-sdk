@@ -53,7 +53,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`const ${entity.name} = client.${entity.name}\`
+    Content(`Create an instance: \`local ${entity.name} = client:${entity.Name}(nil)\`
 
 `)
 
@@ -95,8 +95,8 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     if (opnames.includes('load')) {
       Content(`#### Example: Load
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id' })
+\`\`\`lua
+local ${entity.name}, err = client:${entity.Name}():load({ id = "${entity.name}_id" })
 \`\`\`
 
 `)
@@ -105,8 +105,8 @@ const ${entity.name} = await client.${entity.name}.load({ id: '${entity.name}_id
     if (opnames.includes('list')) {
       Content(`#### Example: List
 
-\`\`\`ts
-const ${entity.name}s = await client.${entity.name}.list()
+\`\`\`lua
+local ${entity.name}s, err = client:${entity.Name}():list()
 \`\`\`
 
 `)
@@ -115,12 +115,12 @@ const ${entity.name}s = await client.${entity.name}.list()
     if (opnames.includes('create')) {
       Content(`#### Example: Create
 
-\`\`\`ts
-const ${entity.name} = await client.${entity.name}.create({
+\`\`\`lua
+local ${entity.name}, err = client:${entity.Name}():create({
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {
-          Content(`  ${field.name}: /* ${field.type || 'value'} */,
+          Content(`  ${field.name} = nil, -- ${field.type || 'value'}
 `)
         }
       })

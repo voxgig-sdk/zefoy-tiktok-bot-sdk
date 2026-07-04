@@ -13,20 +13,22 @@ const MainEntity = cmp(async function MainEntity(props: any) {
   const { entity } = props
   const { model } = props.ctx$
 
-  // Idiomatic facade method name is the lowercase entity name. PHP method
-  // names are case-insensitive, so `$client->${entity.Name}()` still resolves
-  // here (deprecated alias) — we cannot declare a separate PascalCase method
-  // without a "Cannot redeclare" fatal.
+  // Canonical facade method name is the PascalCase entity Name
+  // (`$client->${entity.Name}()`). PHP method names are case-insensitive, so
+  // the lowercase spelling `$client->${entity.name}()` still resolves here as
+  // a convenience — we declare it ONCE under the PascalCase name. An entity
+  // literally named 'test' would collide (case-insensitively) with the static
+  // `test()` test-mode constructor, so mangle to `<Name>_` in that case.
   const accessor = PHP_RESERVED_LOWER.has(entity.name.toLowerCase())
-    ? entity.name + '_'
-    : entity.name
+    ? entity.Name + '_'
+    : entity.Name
 
   Content(`
     private $_${entity.name} = null;
 
-    // Idiomatic facade: $client->${accessor}()->list() / ->load(["id" => ...]).
-    // Also serves the deprecated PascalCase alias ${entity.Name}() (PHP method
-    // names are case-insensitive).
+    // Canonical facade: $client->${accessor}()->list() / ->load(["id" => ...]).
+    // PHP method names are case-insensitive, so lowercase $client->${entity.name}()
+    // resolves here too.
     public function ${accessor}($data = null)
     {
         require_once __DIR__ . '/entity/${entity.name}_entity.php';

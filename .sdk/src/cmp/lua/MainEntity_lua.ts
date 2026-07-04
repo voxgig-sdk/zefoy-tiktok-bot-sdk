@@ -8,8 +8,9 @@ const MainEntity = cmp(async function MainEntity(props: any) {
   const { model } = props.ctx$
 
   Content(`
--- Idiomatic facade: client:${entity.name}():list() / client:${entity.name}():load({ id = ... })
-function ${model.const.Name}SDK:${entity.name}(data)
+-- Idiomatic facade: client:${entity.Name}():list() / client:${entity.Name}():load({ id = ... })
+-- Entity access is capitalised (PascalCase) for parity with the other SDKs.
+function ${model.const.Name}SDK:${entity.Name}(data)
   local EntityMod = require("entity.${entity.name}_entity")
   if data == nil then
     if self._${entity.name} == nil then
@@ -17,12 +18,6 @@ function ${model.const.Name}SDK:${entity.name}(data)
     end
     return self._${entity.name}
   end
-  return EntityMod.new(self, data)
-end
-
--- Deprecated: use client:${entity.name}() instead.
-function ${model.const.Name}SDK:${entity.Name}(data)
-  local EntityMod = require("entity.${entity.name}_entity")
   return EntityMod.new(self, data)
 end
 
