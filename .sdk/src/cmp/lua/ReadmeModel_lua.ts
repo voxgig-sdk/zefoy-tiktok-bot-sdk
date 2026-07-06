@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -12,9 +12,40 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
+
+  // Model-driven op rows for the shared entity interface: emit a
+  // load/list/create/update/remove row only for operations at least one active
+  // entity actually exposes (a read-only entity has just list+load) — never
+  // document an operation no entity has.
+  const opUnion = new Set<string>()
+  entityList.forEach((e: any) => Object.keys(e.op || {})
+    .forEach((o: string) => { if (e.op[o] && e.op[o].active !== false) opUnion.add(o) }))
+  const opRowDefs: Record<string, string> = {
+    load: '| `load` | `(reqmatch, ctrl) -> any, err` | Load a single entity by match criteria. |',
+    list: '| `list` | `(reqmatch, ctrl) -> any, err` | List entities matching the criteria. |',
+    create: '| `create` | `(reqdata, ctrl) -> any, err` | Create a new entity. |',
+    update: '| `update` | `(reqdata, ctrl) -> any, err` | Update an existing entity. |',
+    remove: '| `remove` | `(reqmatch, ctrl) -> any, err` | Remove an entity. |',
+  }
+  const opRows = ['load', 'list', 'create', 'update', 'remove']
+    .filter((o) => opUnion.has(o)).map((o) => opRowDefs[o]).join('\n')
+
+  // Model-driven Result-shape rows: only describe the operations that
+  // actually exist. Record-returning ops (load/create/update/remove) share
+  // one row; list has its own — never name a missing op.
+  const recordOps = ['load', 'create', 'update', 'remove'].filter((o) => opUnion.has(o))
+    .map((o) => '`' + o + '`')
+  const resultRows: string[] = []
+  if (recordOps.length) resultRows.push('| ' + recordOps.join(' / ') + ' | the entity record (a `table`) |')
+  if (opUnion.has('list')) resultRows.push('| `list` | an array (`table`) of entity records |')
+  const resultShapeRows = resultRows.join('\n')
+
   const exEnt: any = entityList[0] || {}
   const eName = exEnt.Name || 'Entity'
   const eLower = String(exEnt.name || 'entity').toLowerCase()
+  // Model-driven id key: null when the example entity has no id-like field, so
+  // the Result-shape load illustration takes no match argument.
+  const idF = entityIdField(exEnt)
 
   const apikeyOptionRow = isAuthActive(model)
     ? '| `apikey` | `string` | API key for authentication. |\n'
@@ -69,11 +100,7 @@ All entities share the same interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| \`load\` | \`(reqmatch, ctrl) -> any, err\` | Load a single entity by match criteria. |
-| \`list\` | \`(reqmatch, ctrl) -> any, err\` | List entities matching the criteria. |
-| \`create\` | \`(reqdata, ctrl) -> any, err\` | Create a new entity. |
-| \`update\` | \`(reqdata, ctrl) -> any, err\` | Update an existing entity. |
-| \`remove\` | \`(reqmatch, ctrl) -> any, err\` | Remove an entity. |
+${opRows}
 | \`data_get\` | \`() -> table\` | Get entity data. |
 | \`data_set\` | \`(data)\` | Set entity data. |
 | \`match_get\` | \`() -> table\` | Get entity match criteria. |
@@ -88,12 +115,11 @@ data **directly** — there is no wrapper:
 
 | Operation | \`value\` |
 | --- | --- |
-| \`load\` / \`create\` / \`update\` / \`remove\` | the entity record (a \`table\`) |
-| \`list\` | an array (\`table\`) of entity records |
+${resultShapeRows}
 
 Check \`err\` first (it is non-\`nil\` on failure), then use \`value\`:
 
-    local ${eLower}, err = client:${eName}():load({ id = "example_id" })
+    local ${eLower}, err = client:${eName}():load(${idF ? `{ ${idF} = "example_id" }` : ''})
     if err then error(err) end
     -- ${eLower} is the loaded record
 

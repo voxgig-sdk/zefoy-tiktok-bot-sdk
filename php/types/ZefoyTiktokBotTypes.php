@@ -24,7 +24,7 @@ class Engagement
     public string $url;
 }
 
-/** Match filter for Engagement#create (any subset of Engagement fields). */
+/** Request payload for Engagement#create. */
 class EngagementCreateData
 {
     public ?int $amount = null;
@@ -33,6 +33,6 @@ class EngagementCreateData
     public ?string $status = null;
     public ?bool $success = null;
     public ?string $type = null;
-    public ?string $url = null;
+    public string $url;
 }
 

@@ -1,5 +1,5 @@
 
-import { cmp, each, Content } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, entityIdField, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -41,6 +41,10 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
   publishedEntities.map((entity: any) => {
     const opnames = Object.keys(entity.op || {})
     const fields = entity.fields || []
+    // Model-driven id key: null when this entity has no id-like field.
+    const idF = entityIdField(entity)
+    // Variable-safe lowercase name (a `Type`/`Range` entity must not bind a Go keyword).
+    const eVar = safeVarName(entity.name, 'go')
 
     Content(`
 ### ${entity.Name}
@@ -53,7 +57,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`${entity.name} := client.${entity.Name}(nil)\`
+    Content(`Create an instance: \`${eVar} := client.${entity.Name}(nil)\`
 
 `)
 
@@ -84,7 +88,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 
       each(fields, (field: any) => {
         const desc = field.short || ''
-        Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${desc} |
+        Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${desc} |
 `)
       })
 
@@ -96,11 +100,11 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
       Content(`#### Example: Load
 
 \`\`\`go
-${entity.name}, err := client.${entity.Name}(nil).Load(map[string]any{"id": "${entity.name}_id"}, nil)
+${eVar}, err := client.${entity.Name}(nil).Load(${idF ? `map[string]any{"${idF}": "${entity.name}_id"}` : 'nil'}, nil)
 if err != nil {
     panic(err)
 }
-fmt.Println(${entity.name}) // the loaded record
+fmt.Println(${eVar}) // the loaded record
 \`\`\`
 
 `)
@@ -110,11 +114,11 @@ fmt.Println(${entity.name}) // the loaded record
       Content(`#### Example: List
 
 \`\`\`go
-${entity.name}s, err := client.${entity.Name}(nil).List(nil, nil)
+${eVar}s, err := client.${entity.Name}(nil).List(nil, nil)
 if err != nil {
     panic(err)
 }
-fmt.Println(${entity.name}s) // the array of records
+fmt.Println(${eVar}s) // the array of records
 \`\`\`
 
 `)
@@ -128,7 +132,7 @@ result, err := client.${entity.Name}(nil).Create(map[string]any{
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {
-          Content(`    "${field.name}": /* ${field.type || 'value'} */,
+          Content(`    "${field.name}": /* ${canonToType(field.type, target.name)} */,
 `)
         }
       })

@@ -1,10 +1,22 @@
 
-import { cmp, each, Content, File, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+
+// A type-correct Ruby literal for a field's canonical type — the create body
+// is EXECUTED by the doc test, so it must carry a real value per field.
+function rbLit(type: any): string {
+  const k = canonKey(type)
+  if ('INTEGER' === k || 'NUMBER' === k) return '1'
+  if ('BOOLEAN' === k) return 'true'
+  if ('ARRAY' === k) return '[]'
+  if ('OBJECT' === k) return '{}'
+  return '"example"'
+}
 
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
@@ -14,9 +26,9 @@ const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string
     desc: 'Load a single entity matching the given criteria. Raises on error.',
   },
   list: {
-    sig: 'list(reqmatch, ctrl = nil) -> Array',
+    sig: 'list(reqmatch = nil, ctrl = nil) -> Array',
     returns: 'Array',
-    desc: 'List entities matching the given criteria. Returns an array. Raises on error.',
+    desc: 'List entities matching the given criteria (call with no argument to list all). Returns an array. Raises on error.',
   },
   create: {
     sig: 'create(reqdata, ctrl = nil) -> result',
@@ -60,7 +72,7 @@ Complete API reference for the ${model.Name} ${target.title} SDK.
 `)
 
     Content(`\`\`\`ruby
-require_relative '${model.name}_sdk'
+require_relative '${model.const.Name}_sdk'
 
 client = ${model.const.Name}SDK.new(options)
 \`\`\`
@@ -156,6 +168,9 @@ same parameters as \`direct()\`. Raises on error.
     publishedEntities.map((ent: any) => {
       const opnames = Object.keys(ent.op || {})
       const fields = ent.fields || []
+      // Model-driven id key: null when this entity has no id-like field, in
+      // which case load/remove match on no argument and update omits the id.
+      const idF = entityIdField(ent)
 
       Content(`
 ---
@@ -187,7 +202,7 @@ ${ent.name} = client.${ent.Name}
         each(fields, (field: any) => {
           const req = field.req ? 'Yes' : 'No'
           const desc = field.short || ''
-          Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${req} | ${desc} |
+          Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${req} | ${desc} |
 `)
         })
 
@@ -197,15 +212,18 @@ ${ent.name} = client.${ent.Name}
         // Field operations breakdown
         const hasFieldOps = fields.some((f: any) => f.op && Object.keys(f.op).length > 0)
         if (hasFieldOps) {
+          // Only emit columns for operations this entity actually exposes —
+          // never advertise a create/update/remove column the entity lacks.
+          const opcols = ['load', 'list', 'create', 'update', 'remove']
+            .filter((op: string) => opnames.includes(op) && ent.op[op]?.active !== false)
           Content(`### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
+| Field | ${opcols.join(' | ')} |
+| --- | ${opcols.map(() => '---').join(' | ')} |
 `)
           each(fields, (field: any) => {
             const fops = field.op || {}
-            const cols = ['load', 'list', 'create', 'update', 'remove'].map((op: string) => {
-              if (!opnames.includes(op)) return '-'
+            const cols = opcols.map((op: string) => {
               const fop = fops[op]
               if (null == fop) return '-'
               if (fop.active === false) return '-'
@@ -240,14 +258,14 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`ruby
-result = client.${ent.Name}.${opname}({ "id" => "${ent.name}_id" })
+result = client.${ent.Name}.${opname}(${idF ? `{ "${idF}" => "${ent.name}_id" }` : ''})
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`ruby
-results = client.${ent.Name}.list(nil)
+results = client.${ent.Name}.list
 \`\`\`
 
 `)
@@ -258,7 +276,7 @@ result = client.${ent.Name}.create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
-                Content(`  "${field.name}" => # ${field.type || 'value'},
+                Content(`  "${field.name}" => ${rbLit(field.type)}, # ${canonToType(field.type, target.name)}
 `)
               }
             })
@@ -268,10 +286,10 @@ result = client.${ent.Name}.create({
 `)
           }
           else if ('update' === opname) {
+            const updateIdLine = idF ? `  "${idF}" => "${ent.name}_id",\n` : ''
             Content(`\`\`\`ruby
 result = client.${ent.Name}.update({
-  "id" => "${ent.name}_id",
-  # Fields to update
+${updateIdLine}  # Fields to update
 })
 \`\`\`
 

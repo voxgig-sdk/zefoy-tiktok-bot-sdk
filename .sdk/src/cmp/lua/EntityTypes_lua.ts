@@ -21,7 +21,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -32,50 +32,10 @@ import {
 const LANG = 'lua'
 
 
-// The five ops, and whether their request payload is a `Match` (query/id) or
-// `Data` (body) — this fixes the generated type-name suffix per op.
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match',
-  list: 'Match',
-  remove: 'Match',
-  create: 'Data',
-  update: 'Data',
-}
-
-
 // A bare LuaLS field key, or a bracketed string literal for anything that is
 // not a plain Lua identifier.
 function propKey(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : '[' + JSON.stringify(name) + ']'
-}
-
-
-function cap(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-
-// The generated class name for an op's request payload, e.g. AdviceLoadMatch.
-function opTypeName(Name: string, opname: string): string {
-  return Name + cap(opname) + (OP_SUFFIX[opname] || 'Match')
-}
-
-
-// Collect an op's params, deduped by name across all of its points.
-function opParams(op: any): any[] {
-  const points = op && op.points ? each(op.points) : []
-  const seen: Record<string, boolean> = {}
-  const out: any[] = []
-  points.forEach((pt: any) => {
-    const params = pt && pt.args && pt.args.params ? each(pt.args.params) : []
-    params.forEach((p: any) => {
-      if (p && null != p.name && !seen[p.name]) {
-        seen[p.name] = true
-        out.push(p)
-      }
-    })
-  })
-  return out
 }
 
 
@@ -114,23 +74,23 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
       Content(`
 `)
 
-      // Per active op: a request/match class. With params -> typed fields;
-      // without params -> an empty class (a field filter over the entity).
+      // Per active op: a request/match class. Members and their optionality
+      // come from the shared partiality policy (opRequestShape); this file only
+      // renders them as LuaLS ---@field lines.
       const ops = ent.op || {}
       ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
-        const op = ops[opname]
-        if (null == op) {
+        if (null == ops[opname]) {
           return
         }
 
         const typeName = opTypeName(Name, opname)
-        const params = opParams(op)
+        const { items } = opRequestShape(ent, opname)
 
         Content(`---@class ${typeName}
 `)
-        params.forEach((p: any) => {
-          const opt = false === p.reqd ? '?' : ''
-          Content(`---@field ${propKey(p.name)}${opt} ${canonToType(p.type, LANG)}
+        items.forEach((it: any) => {
+          const opt = it.optional ? '?' : ''
+          Content(`---@field ${propKey(it.name)}${opt} ${canonToType(it.type, LANG)}
 `)
         })
         Content(`

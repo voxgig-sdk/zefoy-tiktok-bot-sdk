@@ -40,7 +40,51 @@ const Main = cmp(function Main(props: any) {
 
   // README.md — usage guide for the AQL-driven CLI.
   const entityList = entityNames.length > 0 ? entityNames.join(' ') : '(none)'
-  const firstEntity = entityNames[0] || 'entity'
+
+  // MODEL-DRIVEN verbs. The CLI implements three AQL words (list / load /
+  // update; see words.fragment.go + runOp). Each README verb row is
+  // advertised ONLY when at least one active entity actually exposes that
+  // op (op.<name>.active !== false) — never document an operation no entity
+  // supports.
+  const CLI_VERB_ROWS: Record<string, string> = {
+    list:   '| `list`   | `[entity]` · `[query entity]`                | List records               |',
+    load:   '| `load`   | `[entity]` · `[query entity]`                | Load a single record       |',
+    update: '| `update` | `[entity]` · `[query entity]`                | Update a record            |',
+  }
+  const supportedOps = new Set<string>()
+  each(entityMap, (entity: any) => {
+    if (entity && entity.active === false) return
+    const ops = (entity && entity.op) || {}
+    for (const opname of Object.keys(ops)) {
+      if (ops[opname] && ops[opname].active !== false) supportedOps.add(opname)
+    }
+  })
+  const verbRows = ['list', 'load', 'update']
+    .filter(op => supportedOps.has(op))
+    .map(op => CLI_VERB_ROWS[op])
+    .join('\n')
+
+  // MODEL-DRIVEN run examples, gated on the first entity's own ops so the
+  // Run section never demonstrates a verb the example entity lacks.
+  const firstEntityObj: any =
+    Object.values(entityMap).find((e: any) => e && e.active !== false)
+  const firstEntity = firstEntityObj
+    ? String(firstEntityObj.name).toLowerCase()
+    : (entityNames[0] || 'entity')
+  const firstOps: any = (firstEntityObj && firstEntityObj.op) || {}
+  const firstHas = (op: string) => !!(firstOps[op] && firstOps[op].active !== false)
+  const runLines: string[] = ['# One-shot: arguments form a single AQL expression']
+  if (firstHas('list')) {
+    runLines.push(`./${model.name}-cli list ${firstEntity}`)
+  }
+  if (firstHas('load')) {
+    runLines.push(`./${model.name}-cli load 1 ${firstEntity}`)
+    runLines.push(`./${model.name}-cli load '{id:1}' ${firstEntity}`)
+  }
+  if (firstHas('update')) {
+    runLines.push(`./${model.name}-cli update '{id:1}' ${firstEntity}`)
+  }
+
   File({ name: 'README.md' }, () => Content(`# ${model.name}-cli
 
 AQL-driven CLI and REPL for the ${model.Name} SDK. Positional arguments are
@@ -58,10 +102,7 @@ go build -o ${model.name}-cli ./...
 ## Run
 
 \`\`\`sh
-# One-shot: arguments form a single AQL expression
-./${model.name}-cli list ${firstEntity}
-./${model.name}-cli load 1 ${firstEntity}
-./${model.name}-cli load '{id:1}' ${firstEntity}
+${runLines.join('\n')}
 
 # REPL
 ./${model.name}-cli
@@ -71,9 +112,7 @@ go build -o ${model.name}-cli ./...
 
 | Word     | Signatures                                   | Description                |
 |----------|----------------------------------------------|----------------------------|
-| \`list\`   | \`[entity]\` · \`[query entity]\`                | List records               |
-| \`load\`   | \`[entity]\` · \`[query entity]\`                | Load a single record       |
-| \`update\` | \`[entity]\` · \`[query entity]\`                | Update a record            |
+${verbRows}
 
 \`query\` is either a Map (\`{id:1}\`) or a Scalar (\`1\`, treated as \`{id:1}\`).
 \`entity\` is one of the SDK's entity names (auto-quoted as an atom).

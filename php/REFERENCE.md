@@ -8,7 +8,7 @@ Complete API reference for the ZefoyTiktokBot PHP SDK.
 ### Constructor
 
 ```php
-require_once __DIR__ . '/zefoy-tiktok-bot_sdk.php';
+require_once __DIR__ . '/zefoytiktokbot_sdk.php';
 
 $client = new ZefoyTiktokBotSDK($options);
 ```
@@ -46,11 +46,11 @@ $client = ZefoyTiktokBotSDK::test();
 
 Create a new `EngagementEntity` instance. Pass `null` for no initial data.
 
-#### `optionsMap(): array`
+#### `options_map(): array`
 
 Return a deep copy of the current SDK options.
 
-#### `getUtility(): ProjectNameUtility`
+#### `get_utility(): ZefoyTiktokBotUtility`
 
 Return a copy of the SDK utility object.
 
@@ -93,25 +93,25 @@ $engagement = $client->Engagement();
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | ``$INTEGER`` | No |  |
-| `estimated_time` | ``$INTEGER`` | No |  |
-| `message` | ``$STRING`` | No |  |
-| `status` | ``$STRING`` | No |  |
-| `success` | ``$BOOLEAN`` | No |  |
-| `type` | ``$STRING`` | No |  |
-| `url` | ``$STRING`` | Yes |  |
+| `amount` | `int` | No |  |
+| `estimated_time` | `int` | No |  |
+| `message` | `string` | No |  |
+| `status` | `string` | No |  |
+| `success` | `bool` | No |  |
+| `type` | `string` | No |  |
+| `url` | `string` | Yes |  |
 
 ### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
-| `amount` | - | - | - | - | - |
-| `estimated_time` | - | - | - | - | - |
-| `message` | - | - | - | - | - |
-| `status` | - | - | - | - | - |
-| `success` | - | - | - | - | - |
-| `type` | - | - | Yes | - | - |
-| `url` | - | - | - | - | - |
+| Field | create |
+| --- | --- |
+| `amount` | - |
+| `estimated_time` | - |
+| `message` | - |
+| `status` | - |
+| `success` | - |
+| `type` | Yes |
+| `url` | - |
 
 ### Operations
 
@@ -121,25 +121,25 @@ Create a new entity with the given data. Throws on error.
 
 ```php
 $result = $client->Engagement()->create([
-  "url" => /* `$STRING` */,
+  "url" => null, // string
 ]);
 ```
 
 ### Common Methods
 
-#### `dataGet(): array`
+#### `data_get(): array`
 
 Get the entity data. Returns a copy of the current data.
 
-#### `dataSet($data): void`
+#### `data_set($data): void`
 
 Set the entity data.
 
-#### `matchGet(): array`
+#### `match_get(): array`
 
 Get the entity match criteria.
 
-#### `matchSet($match): void`
+#### `match_set($match): void`
 
 Set the entity match criteria.
 
@@ -148,7 +148,7 @@ Set the entity match criteria.
 Create a new `EngagementEntity` instance with the same client and
 options.
 
-#### `getName(): string`
+#### `get_name(): string`
 
 Return the entity name.
 

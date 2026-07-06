@@ -31,7 +31,7 @@ import {
   File, Content, Folder,
 } from '@voxgig/sdkgen'
 
-import { canonToType } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -40,18 +40,6 @@ import {
 
 
 const LANG = 'go'
-
-
-// The five ops, and whether their request payload is a `Match` (query/id) or
-// `Data` (body) — this fixes the generated type-name suffix per op (kept
-// IDENTICAL to EntityTypes_ts.ts).
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match',
-  list: 'Match',
-  remove: 'Match',
-  create: 'Data',
-  update: 'Data',
-}
 
 
 function cap(s: string): string {
@@ -71,30 +59,6 @@ function goField(name: string): string {
     .join('')
   // Go identifiers can't start with a digit.
   return /^[A-Za-z_]/.test(out) ? out : 'F' + out
-}
-
-
-// The generated type name for an op's request payload, e.g. AdviceLoadMatch.
-function opTypeName(Name: string, opname: string): string {
-  return Name + cap(opname) + (OP_SUFFIX[opname] || 'Match')
-}
-
-
-// Collect an op's params, deduped by name across all of its points.
-function opParams(op: any): any[] {
-  const points = op && op.points ? each(op.points) : []
-  const seen: Record<string, boolean> = {}
-  const out: any[] = []
-  points.forEach((pt: any) => {
-    const params = pt && pt.args && pt.args.params ? each(pt.args.params) : []
-    params.forEach((p: any) => {
-      if (p && null != p.name && !seen[p.name]) {
-        seen[p.name] = true
-        out.push(p)
-      }
-    })
-  })
-  return out
 }
 
 
@@ -151,42 +115,27 @@ type ${Name} struct {
 `)
 
         // Per active op: a request/match struct (same package as the entity
-        // methods, so no import is needed there). With params -> a struct of
-        // those params; without params -> a struct mirroring the entity fields
-        // with every field optional (Go analog of TS `Partial<${Name}>`).
+        // methods, so no import is needed there). Members and their optionality
+        // come from the shared partiality policy (opRequestShape); this file
+        // only renders them as a Go struct (optional -> pointer + ,omitempty).
         const ops = ent.op || {}
         ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
-          const op = ops[opname]
-          if (null == op) {
+          if (null == ops[opname]) {
             return
           }
 
           const typeName = opTypeName(Name, opname)
-          const params = opParams(op)
+          const { items } = opRequestShape(ent, opname)
 
-          if (0 < params.length) {
-            Content(`// ${typeName} is the typed request payload for ${Name}.${cap(opname)}Typed.
+          Content(`// ${typeName} is the typed request payload for ${Name}.${cap(opname)}Typed.
 type ${typeName} struct {
 `)
-            params.forEach((p: any) => {
-              Content(fieldLine(p.name, p.type, false === p.reqd))
-            })
-            Content(`}
+          items.forEach((it: any) => {
+            Content(fieldLine(it.name, it.type, it.optional))
+          })
+          Content(`}
 
 `)
-          }
-          else {
-            Content(`// ${typeName} mirrors the ${ent.name} fields as an all-optional match
-// filter (Go analog of Partial<${Name}>).
-type ${typeName} struct {
-`)
-            fields.forEach((f: any) => {
-              Content(fieldLine(f.name, f.type, true))
-            })
-            Content(`}
-
-`)
-          }
         })
       })
 

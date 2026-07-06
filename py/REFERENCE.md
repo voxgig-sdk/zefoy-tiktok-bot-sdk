@@ -8,7 +8,7 @@ Complete API reference for the ZefoyTiktokBot Python SDK.
 ### Constructor
 
 ```python
-from zefoy-tiktok-bot_sdk import ZefoyTiktokBotSDK
+from zefoytiktokbot_sdk import ZefoyTiktokBotSDK
 
 client = ZefoyTiktokBotSDK(options)
 ```
@@ -88,25 +88,25 @@ engagement = client.Engagement()
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | ``$INTEGER`` | No |  |
-| `estimated_time` | ``$INTEGER`` | No |  |
-| `message` | ``$STRING`` | No |  |
-| `status` | ``$STRING`` | No |  |
-| `success` | ``$BOOLEAN`` | No |  |
-| `type` | ``$STRING`` | No |  |
-| `url` | ``$STRING`` | Yes |  |
+| `amount` | `int` | No |  |
+| `estimated_time` | `int` | No |  |
+| `message` | `str` | No |  |
+| `status` | `str` | No |  |
+| `success` | `bool` | No |  |
+| `type` | `str` | No |  |
+| `url` | `str` | Yes |  |
 
 ### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
-| `amount` | - | - | - | - | - |
-| `estimated_time` | - | - | - | - | - |
-| `message` | - | - | - | - | - |
-| `status` | - | - | - | - | - |
-| `success` | - | - | - | - | - |
-| `type` | - | - | Yes | - | - |
-| `url` | - | - | - | - | - |
+| Field | create |
+| --- | --- |
+| `amount` | - |
+| `estimated_time` | - |
+| `message` | - |
+| `status` | - |
+| `success` | - |
+| `type` | Yes |
+| `url` | - |
 
 ### Operations
 
@@ -116,7 +116,7 @@ Create a new entity with the given data. Returns the created entity data and rai
 
 ```python
 result = client.Engagement().create({
-    "url": ...,  # `$STRING`
+    "url": "example",  # str
 })
 ```
 

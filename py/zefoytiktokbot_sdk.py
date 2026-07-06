@@ -221,7 +221,7 @@ class ZefoyTiktokBotSDK:
 
 
     def Engagement(self, data=None) -> "EngagementEntity":
-        """Entity factory: client.Engagement().list({}) / client.Engagement().load({"id": ...})."""
+        """Entity factory: client.Engagement().list() / client.Engagement().load({"id": ...})."""
         from entity.engagement_entity import EngagementEntity
         return EngagementEntity(self, data)
 

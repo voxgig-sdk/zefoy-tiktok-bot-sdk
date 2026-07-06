@@ -136,7 +136,14 @@ class ProjectNameSDK
     _, err = utility.prepare_auth.call(ctx)
     raise err if err
 
-    utility.make_fetch_def.call(ctx)
+    # make_fetch_def returns a (fetchdef, err) tuple; destructure it and
+    # return just the fetchdef Hash (raising on error) so callers — including
+    # direct(), which indexes fetchdef["url"] — receive a Hash, mirroring the
+    # ts/py prepare().
+    fetchdef, fd_err = utility.make_fetch_def.call(ctx)
+    raise fd_err if fd_err
+
+    fetchdef
   end
 
   def direct(fetchargs = {})

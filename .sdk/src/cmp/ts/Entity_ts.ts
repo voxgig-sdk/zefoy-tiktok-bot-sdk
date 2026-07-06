@@ -3,17 +3,12 @@ import * as Path from 'node:path'
 
 import {
   cmp, each, camelify, names,
-  File, Content, Folder, Fragment, Line, FeatureHook, Slot
+  File, Content, Folder, Fragment, Line, FeatureHook, Slot,
+  opTypeName,
 } from '@voxgig/sdkgen'
 
 import { EntityOperation } from './EntityOperation_ts'
 // import { EntityTest } from './EntityTest_ts'
-
-
-// Op -> generated request-type suffix (keep in sync with EntityTypes_ts.ts).
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match', list: 'Match', remove: 'Match', create: 'Data', update: 'Data',
-}
 
 
 const Entity = cmp(function Entity(props: any) {
@@ -32,9 +27,7 @@ const Entity = cmp(function Entity(props: any) {
   const opnamesAll = Object.keys(entity.op || {})
   ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
     if (opnamesAll.includes(opname)) {
-      const suffix = OP_SUFFIX[opname] || 'Match'
-      const cap = opname.charAt(0).toUpperCase() + opname.slice(1)
-      typeNames.push(entity.Name + cap + suffix)
+      typeNames.push(opTypeName(entity.Name, opname))
     }
   })
   const typeImport =

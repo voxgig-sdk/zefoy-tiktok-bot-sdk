@@ -15,5 +15,13 @@ export interface Engagement {
   url: string
 }
 
-export type EngagementCreateData = Partial<Engagement>
+export interface EngagementCreateData {
+  amount?: number
+  estimated_time?: number
+  message?: string
+  status?: string
+  success?: boolean
+  type?: string
+  url: string
+}
 

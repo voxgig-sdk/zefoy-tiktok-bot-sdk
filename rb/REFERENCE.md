@@ -8,7 +8,7 @@ Complete API reference for the ZefoyTiktokBot Ruby SDK.
 ### Constructor
 
 ```ruby
-require_relative 'zefoy-tiktok-bot_sdk'
+require_relative 'ZefoyTiktokBot_sdk'
 
 client = ZefoyTiktokBotSDK.new(options)
 ```
@@ -94,25 +94,25 @@ engagement = client.Engagement
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | ``$INTEGER`` | No |  |
-| `estimated_time` | ``$INTEGER`` | No |  |
-| `message` | ``$STRING`` | No |  |
-| `status` | ``$STRING`` | No |  |
-| `success` | ``$BOOLEAN`` | No |  |
-| `type` | ``$STRING`` | No |  |
-| `url` | ``$STRING`` | Yes |  |
+| `amount` | `Integer` | No |  |
+| `estimated_time` | `Integer` | No |  |
+| `message` | `String` | No |  |
+| `status` | `String` | No |  |
+| `success` | `Boolean` | No |  |
+| `type` | `String` | No |  |
+| `url` | `String` | Yes |  |
 
 ### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
-| `amount` | - | - | - | - | - |
-| `estimated_time` | - | - | - | - | - |
-| `message` | - | - | - | - | - |
-| `status` | - | - | - | - | - |
-| `success` | - | - | - | - | - |
-| `type` | - | - | Yes | - | - |
-| `url` | - | - | - | - | - |
+| Field | create |
+| --- | --- |
+| `amount` | - |
+| `estimated_time` | - |
+| `message` | - |
+| `status` | - |
+| `success` | - |
+| `type` | Yes |
+| `url` | - |
 
 ### Operations
 
@@ -122,7 +122,7 @@ Create a new entity with the given data. Raises on error.
 
 ```ruby
 result = client.Engagement.create({
-  "url" => # `$STRING`,
+  "url" => "example", # String
 })
 ```
 

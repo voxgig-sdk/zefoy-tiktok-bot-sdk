@@ -1,10 +1,22 @@
 
-import { cmp, each, Content } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+
+// A type-correct Ruby literal for a field's canonical type — the create body
+// is EXECUTED by the doc test, so it must carry a real value per field.
+function rbLit(type: any): string {
+  const k = canonKey(type)
+  if ('INTEGER' === k || 'NUMBER' === k) return '1'
+  if ('BOOLEAN' === k) return 'true'
+  if ('ARRAY' === k) return '[]'
+  if ('OBJECT' === k) return '{}'
+  return '"example"'
+}
 
 
 // Operation method spelling differs between Go and other languages — Go
@@ -41,6 +53,8 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
   publishedEntities.map((entity: any) => {
     const opnames = Object.keys(entity.op || {})
     const fields = entity.fields || []
+    // Model-driven id key: null when this entity has no id-like field.
+    const idF = entityIdField(entity)
 
     Content(`
 ### ${entity.Name}
@@ -84,7 +98,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 
       each(fields, (field: any) => {
         const desc = field.short || ''
-        Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${desc} |
+        Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${desc} |
 `)
       })
 
@@ -97,7 +111,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 
 \`\`\`ruby
 # load returns the bare ${entity.Name} record (raises on error).
-${entity.name} = client.${entity.Name}.load({ "id" => "${entity.name}_id" })
+${entity.name} = client.${entity.Name}.load(${idF ? `{ "${idF}" => "${entity.name}_id" }` : ''})
 \`\`\`
 
 `)
@@ -122,7 +136,7 @@ ${entity.name} = client.${entity.Name}.create({
 `)
       each(fields, (field: any) => {
         if ('id' !== field.name && field.req) {
-          Content(`  "${field.name}" => nil, # ${field.type || 'value'}
+          Content(`  "${field.name}" => ${rbLit(field.type)}, # ${canonToType(field.type, target.name)}
 `)
         }
       })

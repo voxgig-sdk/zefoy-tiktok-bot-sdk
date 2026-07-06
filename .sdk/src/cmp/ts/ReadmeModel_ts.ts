@@ -13,6 +13,43 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
 
+  // Model-driven op rows for the shared entity interface: emit a
+  // load/list/create/update/remove row only for operations at least one active
+  // entity actually exposes (a read-only entity has just list+load) — never
+  // document an operation no entity has.
+  const opUnion = new Set<string>()
+  entityList.forEach((e: any) => Object.keys(e.op || {})
+    .forEach((o: string) => { if (e.op[o] && e.op[o].active !== false) opUnion.add(o) }))
+  const opRowDefs: Record<string, string> = {
+    load: '| `load` | `load(reqmatch?, ctrl?): Promise<Entity>` | Load a single entity by match criteria. |',
+    list: '| `list` | `list(reqmatch?, ctrl?): Promise<Entity[]>` | List entities matching the criteria. |',
+    create: '| `create` | `create(reqdata?, ctrl?): Promise<Entity>` | Create a new entity. |',
+    update: '| `update` | `update(reqdata?, ctrl?): Promise<Entity>` | Update an existing entity. |',
+    remove: '| `remove` | `remove(reqmatch?, ctrl?): Promise<void>` | Remove an entity. |',
+  }
+  const opRows = ['load', 'list', 'create', 'update', 'remove']
+    .filter((o) => opUnion.has(o)).map((o) => opRowDefs[o]).join('\n')
+
+  // Model-driven return-value bullets: describe only the operations that
+  // actually exist (single-object ops among load/create/update, plus
+  // list/remove) — never document return semantics for a missing op.
+  const singleOps = ['load', 'create', 'update'].filter((o) => opUnion.has(o))
+    .map((o) => '`' + o + '`')
+  const retBullets: string[] = []
+  if (singleOps.length) {
+    const joined = singleOps.length > 1
+      ? singleOps.slice(0, -1).join(', ') + ' and ' + singleOps[singleOps.length - 1]
+      : singleOps[0]
+    retBullets.push(`- ${joined} ${singleOps.length > 1 ? 'resolve' : 'resolves'} to a single entity object.`)
+  }
+  if (opUnion.has('list')) {
+    retBullets.push('- `list` resolves to an **array** of entity objects (iterate it directly;\n  there is no `.data` and no `.ok`).')
+  }
+  if (opUnion.has('remove')) {
+    retBullets.push('- `remove` resolves to `void`.')
+  }
+  const returnBullets = retBullets.join('\n')
+
   const authActive = isAuthActive(model)
   const apikeyOptionType = authActive ? `\n  apikey?: string` : ''
   const apikeyOptionRow = authActive
@@ -73,13 +110,9 @@ All entities share the same interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| \`load\` | \`load(reqmatch?, ctrl?): Promise<Entity>\` | Load a single entity by match criteria. |
-| \`list\` | \`list(reqmatch?, ctrl?): Promise<Entity[]>\` | List entities matching the criteria. |
-| \`create\` | \`create(reqdata?, ctrl?): Promise<Entity>\` | Create a new entity. |
-| \`update\` | \`update(reqdata?, ctrl?): Promise<Entity>\` | Update an existing entity. |
-| \`remove\` | \`remove(reqmatch?, ctrl?): Promise<void>\` | Remove an entity. |
-| \`data\` | \`data(data?): any\` | Get or set entity data. |
-| \`match\` | \`match(match?): any\` | Get or set entity match criteria. |
+${opRows}
+| \`data\` | \`data(data?: Partial<Entity>): Entity\` | Get or set entity data. |
+| \`match\` | \`match(match?: Partial<Entity>): Partial<Entity>\` | Get or set entity match criteria. |
 | \`make\` | \`make(): Entity\` | Create a new instance with the same options. |
 | \`client\` | \`client(): ${model.const.Name}SDK\` | Return the parent SDK client. |
 | \`entopts\` | \`entopts(): object\` | Return a copy of the entity options. |
@@ -89,10 +122,7 @@ All entities share the same interface.
 Entity operations resolve to the entity data directly — there is no
 result envelope:
 
-- \`load\`, \`create\` and \`update\` resolve to a single entity object.
-- \`list\` resolves to an **array** of entity objects (iterate it directly;
-  there is no \`.data\` and no \`.ok\`).
-- \`remove\` resolves to \`void\`.
+${returnBullets}
 
 On a failed request these methods **throw**, so wrap calls in
 \`try\`/\`catch\` to handle errors. Only \`direct()\` returns the result

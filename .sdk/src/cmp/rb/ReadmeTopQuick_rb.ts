@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -30,6 +30,9 @@ client = ${ctor}
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
     const opnames = Object.keys(exampleEntity.op || {})
+    // Model-driven id key: null when the entity has no id-like field, in which
+    // case the load example takes no match argument.
+    const idF = entityIdField(exampleEntity)
 
     let hasCall = false
 
@@ -44,7 +47,7 @@ puts ${eName.toLowerCase()}s
     if (opnames.includes('load')) {
       Content(`
 # Load a specific ${eName.toLowerCase()} (returns the bare record; raises on error)
-${eName.toLowerCase()} = client.${eName}.load({ "id" => "example_id" })
+${eName.toLowerCase()} = client.${eName}.load(${idF ? `{ "${idF}" => "example_id" }` : ''})
 puts ${eName.toLowerCase()}
 `)
       hasCall = true

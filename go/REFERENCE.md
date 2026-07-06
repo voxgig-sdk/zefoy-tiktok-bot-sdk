@@ -98,25 +98,25 @@ engagement := client.Engagement(nil)
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | ``$INTEGER`` | No |  |
-| `estimated_time` | ``$INTEGER`` | No |  |
-| `message` | ``$STRING`` | No |  |
-| `status` | ``$STRING`` | No |  |
-| `success` | ``$BOOLEAN`` | No |  |
-| `type` | ``$STRING`` | No |  |
-| `url` | ``$STRING`` | Yes |  |
+| `amount` | `int` | No |  |
+| `estimated_time` | `int` | No |  |
+| `message` | `string` | No |  |
+| `status` | `string` | No |  |
+| `success` | `bool` | No |  |
+| `type` | `string` | No |  |
+| `url` | `string` | Yes |  |
 
 ### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
-| `amount` | - | - | - | - | - |
-| `estimated_time` | - | - | - | - | - |
-| `message` | - | - | - | - | - |
-| `status` | - | - | - | - | - |
-| `success` | - | - | - | - | - |
-| `type` | - | - | Yes | - | - |
-| `url` | - | - | - | - | - |
+| Field | create |
+| --- | --- |
+| `amount` | - |
+| `estimated_time` | - |
+| `message` | - |
+| `status` | - |
+| `success` | - |
+| `type` | Yes |
+| `url` | - |
 
 ### Operations
 
@@ -126,7 +126,7 @@ Create a new entity with the given data.
 
 ```go
 result, err := client.Engagement(nil).Create(map[string]any{
-    "url": /* `$STRING` */,
+    "url": /* string */,
 }, nil)
 ```
 

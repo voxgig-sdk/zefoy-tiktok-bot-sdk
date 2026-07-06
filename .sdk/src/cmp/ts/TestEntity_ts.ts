@@ -398,7 +398,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
       const fieldvalue = spec.def.mark
       Content(`
     const ${markdefvar} = { name: '${fieldname}', value: '${fieldvalue}_' + setup.now }
-    ${datavar} [${markdefvar}.name] = ${markdefvar}.value
+    ;(${datavar} as any)[${markdefvar}.name] = ${markdefvar}.value
 `)
     }
   }
@@ -419,7 +419,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
     const spec = step.spec[sI]
     if ('TextFieldMark' === spec.apply && null != step.input.textfield) {
       Content(`
-    assert(${resdatavar}[${markdefvar}.name] === ${markdefvar}.value)
+    assert((${resdatavar} as any)[${markdefvar}.name] === ${markdefvar}.value)
 `)
     }
   }

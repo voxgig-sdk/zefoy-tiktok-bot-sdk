@@ -13,6 +13,23 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
 
+  // Model-driven op rows for the shared entity interface: emit a
+  // load/list/create/update/remove row only for operations at least one active
+  // entity actually exposes (a read-only entity has just list+load) — never
+  // document an operation no entity has.
+  const opUnion = new Set<string>()
+  entityList.forEach((e: any) => Object.keys(e.op || {})
+    .forEach((o: string) => { if (e.op[o] && e.op[o].active !== false) opUnion.add(o) }))
+  const opRowDefs: Record<string, string> = {
+    load: '| `load` | `(reqmatch, ctrl) -> any` | Load a single entity by match criteria. Raises on error. |',
+    list: '| `list` | `(reqmatch = nil, ctrl) -> Array` | List entities matching the criteria (call with no argument to list all). Raises on error. |',
+    create: '| `create` | `(reqdata, ctrl) -> any` | Create a new entity. Raises on error. |',
+    update: '| `update` | `(reqdata, ctrl) -> any` | Update an existing entity. Raises on error. |',
+    remove: '| `remove` | `(reqmatch, ctrl) -> any` | Remove an entity. Raises on error. |',
+  }
+  const opRows = ['load', 'list', 'create', 'update', 'remove']
+    .filter((o) => opUnion.has(o)).map((o) => opRowDefs[o]).join('\n')
+
   const apikeyOptionRow = isAuthActive(model)
     ? '| `apikey` | `String` | API key for authentication. |\n'
     : ''
@@ -66,11 +83,7 @@ All entities share the same interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| \`load\` | \`(reqmatch, ctrl) -> any\` | Load a single entity by match criteria. Raises on error. |
-| \`list\` | \`(reqmatch, ctrl) -> Array\` | List entities matching the criteria. Raises on error. |
-| \`create\` | \`(reqdata, ctrl) -> any\` | Create a new entity. Raises on error. |
-| \`update\` | \`(reqdata, ctrl) -> any\` | Update an existing entity. Raises on error. |
-| \`remove\` | \`(reqmatch, ctrl) -> any\` | Remove an entity. Raises on error. |
+${opRows}
 | \`data_get\` | \`() -> Hash\` | Get entity data. |
 | \`data_set\` | \`(data)\` | Set entity data. |
 | \`match_get\` | \`() -> Hash\` | Get entity match criteria. |

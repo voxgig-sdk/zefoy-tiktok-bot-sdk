@@ -16,9 +16,6 @@ go build -o zefoy-tiktok-bot-cli ./...
 
 ```sh
 # One-shot: arguments form a single AQL expression
-./zefoy-tiktok-bot-cli list engagement
-./zefoy-tiktok-bot-cli load 1 engagement
-./zefoy-tiktok-bot-cli load '{id:1}' engagement
 
 # REPL
 ./zefoy-tiktok-bot-cli
@@ -28,9 +25,7 @@ go build -o zefoy-tiktok-bot-cli ./...
 
 | Word     | Signatures                                   | Description                |
 |----------|----------------------------------------------|----------------------------|
-| `list`   | `[entity]` · `[query entity]`                | List records               |
-| `load`   | `[entity]` · `[query entity]`                | Load a single record       |
-| `update` | `[entity]` · `[query entity]`                | Update a record            |
+
 
 `query` is either a Map (`{id:1}`) or a Scalar (`1`, treated as `{id:1}`).
 `entity` is one of the SDK's entity names (auto-quoted as an atom).

@@ -1,10 +1,22 @@
 
-import { cmp, each, Content, File, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+
+// A type-correct, JSON-serialisable Python literal — never an Ellipsis (`...`),
+// which is not JSON-serialisable when a create body is executed by the doc test.
+function pyLit(type: any): string {
+  const k = canonKey(type)
+  if ('INTEGER' === k || 'NUMBER' === k) return '1'
+  if ('BOOLEAN' === k) return 'True'
+  if ('ARRAY' === k) return '[]'
+  if ('OBJECT' === k) return '{}'
+  return '"example"'
+}
 
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
@@ -14,9 +26,9 @@ const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string
     desc: 'Load a single entity matching the given criteria. Returns the entity data and raises on error.',
   },
   list: {
-    sig: 'list(reqmatch, ctrl=None) -> list',
+    sig: 'list(reqmatch=None, ctrl=None) -> list',
     returns: 'a list of entities',
-    desc: 'List entities matching the given criteria. Returns a list and raises on error.',
+    desc: 'List entities matching the given criteria. The match is optional — call `list()` with no argument to list all records. Returns a list and raises on error.',
   },
   create: {
     sig: 'create(reqdata, ctrl=None) -> dict',
@@ -60,7 +72,7 @@ Complete API reference for the ${model.Name} ${target.title} SDK.
 `)
 
     Content(`\`\`\`python
-from ${model.name}_sdk import ${model.const.Name}SDK
+from ${model.const.Name.toLowerCase()}_sdk import ${model.const.Name}SDK
 
 client = ${model.const.Name}SDK(options)
 \`\`\`
@@ -150,6 +162,9 @@ Prepare a fetch definition without sending. Returns the \`fetchdef\` and raises 
     publishedEntities.map((ent: any) => {
       const opnames = Object.keys(ent.op || {})
       const fields = ent.fields || []
+      // Model-driven id key: null when this entity has no id-like field, in
+      // which case load/remove match on no argument and update omits the id.
+      const idF = entityIdField(ent)
 
       Content(`
 ---
@@ -181,7 +196,7 @@ ${ent.name} = client.${ent.Name}()
         each(fields, (field: any) => {
           const req = field.req ? 'Yes' : 'No'
           const desc = field.short || ''
-          Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${req} | ${desc} |
+          Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${req} | ${desc} |
 `)
         })
 
@@ -191,15 +206,18 @@ ${ent.name} = client.${ent.Name}()
         // Field operations breakdown
         const hasFieldOps = fields.some((f: any) => f.op && Object.keys(f.op).length > 0)
         if (hasFieldOps) {
+          // Only emit columns for operations this entity actually exposes —
+          // never advertise a create/update/remove column the entity lacks.
+          const opcols = ['load', 'list', 'create', 'update', 'remove']
+            .filter((op: string) => opnames.includes(op) && ent.op[op]?.active !== false)
           Content(`### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
+| Field | ${opcols.join(' | ')} |
+| --- | ${opcols.map(() => '---').join(' | ')} |
 `)
           each(fields, (field: any) => {
             const fops = field.op || {}
-            const cols = ['load', 'list', 'create', 'update', 'remove'].map((op: string) => {
-              if (!opnames.includes(op)) return '-'
+            const cols = opcols.map((op: string) => {
               const fop = fops[op]
               if (null == fop) return '-'
               if (fop.active === false) return '-'
@@ -235,14 +253,14 @@ ${info.desc}
           // error; direct() is the only method that returns a result dict.
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`python
-result = client.${ent.Name}().${opname}({"id": "${ent.name}_id"})
+result = client.${ent.Name}().${opname}(${idF ? `{"${idF}": "${ent.name}_id"}` : ''})
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`python
-results = client.${ent.Name}().list({})
+results = client.${ent.Name}().list()
 for ${ent.name} in results:
     print(${ent.name})
 \`\`\`
@@ -255,7 +273,7 @@ result = client.${ent.Name}().create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
-                Content(`    "${field.name}": ...,  # ${field.type || 'value'}
+                Content(`    "${field.name}": ${pyLit(field.type)},  # ${canonToType(field.type, target.name)}
 `)
               }
             })
@@ -265,10 +283,10 @@ result = client.${ent.Name}().create({
 `)
           }
           else if ('update' === opname) {
+            const updateIdLine = idF ? `    "${idF}": "${ent.name}_id",\n` : ''
             Content(`\`\`\`python
 result = client.${ent.Name}().update({
-    "id": "${ent.name}_id",
-    # Fields to update
+${updateIdLine}    # Fields to update
 })
 \`\`\`
 

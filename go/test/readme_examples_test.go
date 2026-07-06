@@ -10,23 +10,15 @@ import (
 	"testing"
 )
 
+// testSeed is a test-mode fixture seeded for every entity. It is spliced as
+// literal Go source into fragment wrappers and into the test-mode variant of
+// complete programs, so the offline mock transport has data to return.
+const testSeed = `map[string]any{"entity": map[string]any{"engagement": map[string]any{"example_id": map[string]any{"id": "example_id"}}}}`
+
 // TestReadmeGoSnippets extracts every ```go fenced block from the module
-// README (../README.md) and compiles them with `go build`. This is a
-// static, offline check: it does not run any snippet, only proves the
-// example code type-checks against the real generated SDK.
-//
-//   - Complete programs (a block containing `func main`) are built as-is.
-//   - Statement fragments are wrapped in a function with a test-mode
-//     `client` in scope, then built.
-//
-// A snippet that calls a method that does not exist, passes the wrong
-// argument types, or accesses a field the value does not have — e.g.
-// `.data` / `.ok` on an entity-op result, which is the bare data value,
-// NOT a `{ok,data,...}` envelope (only Direct returns that) — fails to
-// compile, and so fails this test.
-//
-// Illustrative blocks are skipped: bare signatures (a `func` line with no
-// body) and blocks that contain a `/* ... */` placeholder value.
+// README (../README.md) and exercises it. Fragments are `go build`-checked
+// with a seeded test client injected; complete programs are built as-is and
+// their test-mode variant is run with `go run`.
 func TestReadmeGoSnippets(t *testing.T) {
 	_, thisFile, _, _ := runtime.Caller(0)
 	testDir := filepath.Dir(thisFile)
@@ -63,6 +55,7 @@ func TestReadmeGoSnippets(t *testing.T) {
 	fragDir := filepath.Join(work, "frag")
 	fragFiles := map[string]string{}
 	var progDirs []string
+	var runDirs []string
 	progCount := 0
 
 	for _, block := range blocks {
@@ -70,6 +63,8 @@ func TestReadmeGoSnippets(t *testing.T) {
 			continue
 		}
 		if strings.Contains(block, "func main") {
+			// The documented program (possibly using the live sdk.New) must
+			// compile as-is.
 			dir := filepath.Join(work, "prog"+strconv.Itoa(progCount))
 			if err := os.MkdirAll(dir, 0o755); err != nil {
 				t.Fatal(err)
@@ -78,6 +73,23 @@ func TestReadmeGoSnippets(t *testing.T) {
 				t.Fatal(err)
 			}
 			progDirs = append(progDirs, "./"+rel+"/prog"+strconv.Itoa(progCount))
+
+			// A test-mode variant — client constructor rewritten to a seeded
+			// sdk.TestSDK(...) — is run offline to prove the program executes.
+			if variant, ok := rewriteCtorsToTest(block); ok {
+				if !strings.Contains(variant, "os.") {
+					variant = removeImportLine(variant, "os")
+				}
+				runDir := filepath.Join(work, "run"+strconv.Itoa(progCount))
+				if err := os.MkdirAll(runDir, 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(runDir, "main.go"), []byte(variant), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				runDirs = append(runDirs, "./"+rel+"/run"+strconv.Itoa(progCount))
+			}
+
 			progCount++
 			continue
 		}
@@ -101,6 +113,7 @@ func TestReadmeGoSnippets(t *testing.T) {
 	// wrapped fragments: blank them out and rebuild. Any OTHER error is a
 	// genuine snippet bug and fails the test.
 	var lastOut string
+	built := false
 	for attempt := 0; attempt < 15; attempt++ {
 		for name, content := range fragFiles {
 			if err := os.WriteFile(filepath.Join(fragDir, name+".go"), []byte(content), 0o644); err != nil {
@@ -109,14 +122,123 @@ func TestReadmeGoSnippets(t *testing.T) {
 		}
 		out, buildErr := runGoBuild(moduleRoot, binDir, progDirs, fragPkg)
 		if buildErr == nil {
-			return
+			built = true
+			break
 		}
 		lastOut = out
 		if !applyFixes(out, fragFiles) {
 			t.Fatalf("README go snippet failed to compile:\n%s", out)
 		}
 	}
-	t.Fatalf("README go snippets did not converge to a clean build:\n%s", lastOut)
+	if !built {
+		t.Fatalf("README go snippets did not converge to a clean build:\n%s", lastOut)
+	}
+
+	// Everything compiled. Now RUN the test-mode variants of the complete
+	// programs and fail on a genuine runtime panic.
+	if fail := runProgs(moduleRoot, runDirs); fail != "" {
+		t.Fatal(fail)
+	}
+}
+
+// runProgs executes each test-mode program variant with `go run` and reports
+// a genuine runtime panic (nil pointer / nil map / index / interface
+// conversion). A tolerated not-found domain error (panic(err) on an offline
+// fixture miss) is not a failure. A run-variant that fails to even compile is
+// skipped — the documented program already passed the strict build check, so
+// a rewrite artefact must not manufacture a false failure.
+func runProgs(moduleRoot string, dirs []string) string {
+	runtimeSigs := []string{
+		"runtime error",
+		"invalid memory address",
+		"nil pointer dereference",
+		"index out of range",
+		"slice bounds out of range",
+		"interface conversion",
+		"assignment to entry in nil map",
+	}
+	for _, d := range dirs {
+		cmd := exec.Command("go", "run", d)
+		cmd.Dir = moduleRoot
+		out, err := cmd.CombinedOutput()
+		if err == nil {
+			continue
+		}
+		s := string(out)
+		if !strings.Contains(s, "panic:") {
+			// Did not run (compile artefact of the rewrite) — tolerate.
+			continue
+		}
+		for _, sig := range runtimeSigs {
+			if strings.Contains(s, sig) {
+				return "README go complete program panicked at runtime " +
+					"(nil / type bug in a documented call):\n" + s
+			}
+		}
+		// Domain-error panic (e.g. offline fixture miss) — tolerated.
+	}
+	return ""
+}
+
+// rewriteCtorsToTest replaces every sdk.New.../sdk.Test... constructor call
+// in src with a seeded test-mode client, so a documented (possibly live)
+// program runs offline against the mock. Single left-to-right pass with
+// balanced-paren matching; returns the rewritten source and whether any
+// replacement was made.
+func rewriteCtorsToTest(src string) (string, bool) {
+	repl := "sdk.TestSDK(" + testSeed + ", nil)"
+	var b strings.Builder
+	changed := false
+	i := 0
+	for i < len(src) {
+		matched := ""
+		if strings.HasPrefix(src[i:], "sdk.New") {
+			matched = "sdk.New"
+		} else if strings.HasPrefix(src[i:], "sdk.Test") {
+			matched = "sdk.Test"
+		}
+		if matched == "" {
+			b.WriteByte(src[i])
+			i++
+			continue
+		}
+		// Consume the rest of the identifier (e.g. NewAdviceSlipSDK, TestSDK).
+		j := i + len(matched)
+		for j < len(src) && isIdentByte(src[j]) {
+			j++
+		}
+		if j >= len(src) || src[j] != '(' {
+			b.WriteString(src[i:j])
+			i = j
+			continue
+		}
+		// Scan the balanced ( ... ) argument list.
+		depth := 0
+		k := j
+		for k < len(src) {
+			switch src[k] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+			}
+			k++
+			if depth == 0 {
+				break
+			}
+		}
+		b.WriteString(repl)
+		changed = true
+		i = k
+	}
+	return b.String(), changed
+}
+
+func isIdentByte(c byte) bool {
+	return c == '_' ||
+		(c >= 'a' && c <= 'z') ||
+		(c >= 'A' && c <= 'Z') ||
+		(c >= '0' && c <= '9')
 }
 
 // runGoBuild type-checks the fragment package with a plain `go build`
@@ -221,7 +343,8 @@ func wrapFragment(name, block, modulePath string) string {
 	}
 	b.WriteString("func " + name + "() {\n")
 	if injectClient {
-		b.WriteString("\tclient := sdk.Test()\n")
+		// Seeded test client so the fragment's documented calls have data.
+		b.WriteString("\tclient := sdk.TestSDK(" + testSeed + ", nil)\n")
 	}
 	b.WriteString(block)
 	b.WriteString("\n}\n")

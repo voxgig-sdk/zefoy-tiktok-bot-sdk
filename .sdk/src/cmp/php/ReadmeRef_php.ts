@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, File, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -14,9 +14,9 @@ const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string
     desc: 'Load a single entity matching the given criteria. Throws on error.',
   },
   list: {
-    sig: 'list(array $reqmatch, ?array $ctrl = null): mixed',
+    sig: 'list(?array $reqmatch = null, ?array $ctrl = null): mixed',
     returns: 'array — the list of results; throws on error',
-    desc: 'List entities matching the given criteria. Returns an array. Throws on error.',
+    desc: 'List entities matching the given criteria (call with no argument to list all). Returns an array. Throws on error.',
   },
   create: {
     sig: 'create(array $reqdata, ?array $ctrl = null): mixed',
@@ -60,7 +60,7 @@ Complete API reference for the ${model.Name} ${target.title} SDK.
 `)
 
     Content(`\`\`\`php
-require_once __DIR__ . '/${model.name}_sdk.php';
+require_once __DIR__ . '/${model.const.Name.toLowerCase()}_sdk.php';
 
 $client = new ${model.const.Name}SDK($options);
 \`\`\`
@@ -114,11 +114,11 @@ Create a new \`${ent.Name}Entity\` instance. Pass \`null\` for no initial data.
     })
 
 
-    Content(`#### \`optionsMap(): array\`
+    Content(`#### \`options_map(): array\`
 
 Return a deep copy of the current SDK options.
 
-#### \`getUtility(): ProjectNameUtility\`
+#### \`get_utility(): ${model.const.Name}Utility\`
 
 Return a copy of the SDK utility object.
 
@@ -155,6 +155,9 @@ Prepare a fetch definition without sending the request. Returns the
     publishedEntities.map((ent: any) => {
       const opnames = Object.keys(ent.op || {})
       const fields = ent.fields || []
+      // Model-driven id key: null when this entity has no id-like field, in
+      // which case load/remove match on no argument and update omits the id.
+      const idF = entityIdField(ent)
 
       Content(`
 ---
@@ -186,7 +189,7 @@ $${ent.name} = $client->${ent.Name}();
         each(fields, (field: any) => {
           const req = field.req ? 'Yes' : 'No'
           const desc = field.short || ''
-          Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${req} | ${desc} |
+          Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${req} | ${desc} |
 `)
         })
 
@@ -196,15 +199,18 @@ $${ent.name} = $client->${ent.Name}();
         // Field operations breakdown
         const hasFieldOps = fields.some((f: any) => f.op && Object.keys(f.op).length > 0)
         if (hasFieldOps) {
+          // Only emit columns for operations this entity actually exposes —
+          // never advertise a create/update/remove column the entity lacks.
+          const opcols = ['load', 'list', 'create', 'update', 'remove']
+            .filter((op: string) => opnames.includes(op) && ent.op[op]?.active !== false)
           Content(`### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
+| Field | ${opcols.join(' | ')} |
+| --- | ${opcols.map(() => '---').join(' | ')} |
 `)
           each(fields, (field: any) => {
             const fops = field.op || {}
-            const cols = ['load', 'list', 'create', 'update', 'remove'].map((op: string) => {
-              if (!opnames.includes(op)) return '-'
+            const cols = opcols.map((op: string) => {
               const fop = fops[op]
               if (null == fop) return '-'
               if (fop.active === false) return '-'
@@ -239,14 +245,14 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`php
-$result = $client->${ent.Name}()->${opname}(["id" => "${ent.name}_id"]);
+$result = $client->${ent.Name}()->${opname}(${idF ? `["${idF}" => "${ent.name}_id"]` : ''});
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`php
-$results = $client->${ent.Name}()->list([]);
+$results = $client->${ent.Name}()->list();
 \`\`\`
 
 `)
@@ -257,7 +263,7 @@ $result = $client->${ent.Name}()->create([
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
-                Content(`  "${field.name}" => /* ${field.type || 'value'} */,
+                Content(`  "${field.name}" => null, // ${canonToType(field.type, target.name)}
 `)
               }
             })
@@ -267,10 +273,10 @@ $result = $client->${ent.Name}()->create([
 `)
           }
           else if ('update' === opname) {
+            const updateIdLine = idF ? `  "${idF}" => "${ent.name}_id",\n` : ''
             Content(`\`\`\`php
 $result = $client->${ent.Name}()->update([
-  "id" => "${ent.name}_id",
-  // Fields to update
+${updateIdLine}  // Fields to update
 ]);
 \`\`\`
 
@@ -283,19 +289,19 @@ $result = $client->${ent.Name}()->update([
       // Common methods
       Content(`### Common Methods
 
-#### \`dataGet(): array\`
+#### \`data_get(): array\`
 
 Get the entity data. Returns a copy of the current data.
 
-#### \`dataSet($data): void\`
+#### \`data_set($data): void\`
 
 Set the entity data.
 
-#### \`matchGet(): array\`
+#### \`match_get(): array\`
 
 Get the entity match criteria.
 
-#### \`matchSet($match): void\`
+#### \`match_set($match): void\`
 
 Set the entity match criteria.
 
@@ -304,7 +310,7 @@ Set the entity match criteria.
 Create a new \`${ent.Name}Entity\` instance with the same client and
 options.
 
-#### \`getName(): string\`
+#### \`get_name(): string\`
 
 Return the entity name.
 

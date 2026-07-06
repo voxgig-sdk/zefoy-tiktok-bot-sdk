@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -35,8 +35,40 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    const eLower = eName.toLowerCase()
+    // Variable-safe lowercase name — a `Type`/`Range` entity must not bind a Go
+    // keyword (`type, err := ...` fails `go build`).
+    const eLower = safeVarName(eName.toLowerCase(), 'go')
     const opnames = Object.keys(exampleEntity.op || {})
+
+    // Model-driven example fields (from the same op shape the request types are
+    // built from) so create/update reference REAL writable fields, not a
+    // hardcoded "name", and ids use a type-correct literal.
+    const idField = (exampleEntity.id && exampleEntity.id.field) || 'id'
+    // Model-driven id key: null when the entity has no id-like field (a
+    // response-wrapped spec). When null, load/remove pass a nil match and
+    // update omits the id member.
+    const idF = entityIdField(exampleEntity)
+    const goLit = (type: any): string => {
+      const k = canonKey(type)
+      if ('INTEGER' === k || 'NUMBER' === k) return '1'
+      if ('BOOLEAN' === k) return 'true'
+      if ('ARRAY' === k) return '[]any{}'
+      if ('OBJECT' === k) return 'map[string]any{}'
+      return '"example"'
+    }
+    const examplePairs = (opname: string): string[] => {
+      const items = opRequestShape(exampleEntity, opname).items
+        .filter((it: any) => it.name !== idField && it.name !== 'id')
+      const required = items.filter((it: any) => !it.optional)
+      const chosen = 'create' === opname
+        ? (required.length ? required : items.slice(0, 2))
+        : items.slice(0, 2)
+      return chosen.map((it: any) => `"${it.name}": ${goLit(it.type)}`)
+    }
+    const idOp = opnames.includes('load') ? 'load' : (opnames.includes('update') ? 'update' : 'remove')
+    const idShape = opRequestShape(exampleEntity, idOp)
+      .items.find((it: any) => it.name === idField || it.name === 'id')
+    const idLit = idShape ? goLit(idShape.type) : '"example_id"'
 
     if (opnames.includes('list')) {
       body.push(`    // List ${eLower} records — the value is the array of records itself.`)
@@ -53,7 +85,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('load')) {
       body.push(`    // Load a single ${eLower} — the value is the loaded record.`)
-      body.push(`    ${eLower}, err := client.${eName}(nil).Load(map[string]any{"id": "example_id"}, nil)`)
+      body.push(`    ${eLower}, err := client.${eName}(nil).Load(${idF ? `map[string]any{"${idF}": ${idLit}}` : 'nil'}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -64,7 +96,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('create')) {
       body.push(`    // Create a ${eLower}.`)
-      body.push(`    created, err := client.${eName}(nil).Create(map[string]any{"name": "Example"}, nil)`)
+      body.push(`    created, err := client.${eName}(nil).Create(map[string]any{${examplePairs('create').join(', ')}}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -75,7 +107,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('update')) {
       body.push(`    // Update a ${eLower}.`)
-      body.push(`    updated, err := client.${eName}(nil).Update(map[string]any{"id": "example_id", "name": "Renamed"}, nil)`)
+      body.push(`    updated, err := client.${eName}(nil).Update(map[string]any{${(idF ? [`"${idF}": ${idLit}`] : []).concat(examplePairs('update')).join(', ')}}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -86,7 +118,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('remove')) {
       body.push(`    // Remove a ${eLower}.`)
-      body.push(`    removed, err := client.${eName}(nil).Remove(map[string]any{"id": "example_id"}, nil)`)
+      body.push(`    removed, err := client.${eName}(nil).Remove(${idF ? `map[string]any{"${idF}": ${idLit}}` : 'nil'}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)

@@ -29,11 +29,14 @@ class Engagement(EngagementRequired, total=False):
     type: str
 
 
-class EngagementCreateData(TypedDict, total=False):
+class EngagementCreateDataRequired(TypedDict):
+    url: str
+
+
+class EngagementCreateData(EngagementCreateDataRequired, total=False):
     amount: int
     estimated_time: int
     message: str
     status: str
     success: bool
     type: str
-    url: str

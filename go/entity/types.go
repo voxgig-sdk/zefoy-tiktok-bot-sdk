@@ -19,8 +19,7 @@ type Engagement struct {
 	Url string `json:"url"`
 }
 
-// EngagementCreateData mirrors the engagement fields as an all-optional match
-// filter (Go analog of Partial<Engagement>).
+// EngagementCreateData is the typed request payload for Engagement.CreateTyped.
 type EngagementCreateData struct {
 	Amount *int `json:"amount,omitempty"`
 	EstimatedTime *int `json:"estimated_time,omitempty"`
@@ -28,7 +27,7 @@ type EngagementCreateData struct {
 	Status *string `json:"status,omitempty"`
 	Success *bool `json:"success,omitempty"`
 	Type *string `json:"type,omitempty"`
-	Url *string `json:"url,omitempty"`
+	Url string `json:"url"`
 }
 
 // asMap turns a typed request/data struct into the map[string]any the

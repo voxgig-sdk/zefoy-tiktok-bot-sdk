@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, File, isAuthActive } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -153,6 +153,9 @@ same parameters as \`direct()\`.
     publishedEntities.map((ent: any) => {
       const opnames = Object.keys(ent.op || {})
       const fields = ent.fields || []
+      // Model-driven id key: null when this entity has no id-like field, in
+      // which case load/remove match on no argument and update omits the id.
+      const idF = entityIdField(ent)
 
       Content(`
 ---
@@ -184,7 +187,7 @@ local ${ent.name} = client:${ent.Name}(nil)
         each(fields, (field: any) => {
           const req = field.req ? 'Yes' : 'No'
           const desc = field.short || ''
-          Content(`| \`${field.name}\` | \`${field.type || 'any'}\` | ${req} | ${desc} |
+          Content(`| \`${field.name}\` | \`${canonToType(field.type, target.name)}\` | ${req} | ${desc} |
 `)
         })
 
@@ -194,15 +197,18 @@ local ${ent.name} = client:${ent.Name}(nil)
         // Field operations breakdown
         const hasFieldOps = fields.some((f: any) => f.op && Object.keys(f.op).length > 0)
         if (hasFieldOps) {
+          // Only emit columns for operations this entity actually exposes —
+          // never advertise a create/update/remove column the entity lacks.
+          const opcols = ['load', 'list', 'create', 'update', 'remove']
+            .filter((op: string) => opnames.includes(op) && ent.op[op]?.active !== false)
           Content(`### Field Usage by Operation
 
-| Field | load | list | create | update | remove |
-| --- | --- | --- | --- | --- | --- |
+| Field | ${opcols.join(' | ')} |
+| --- | ${opcols.map(() => '---').join(' | ')} |
 `)
           each(fields, (field: any) => {
             const fops = field.op || {}
-            const cols = ['load', 'list', 'create', 'update', 'remove'].map((op: string) => {
-              if (!opnames.includes(op)) return '-'
+            const cols = opcols.map((op: string) => {
               const fop = fops[op]
               if (null == fop) return '-'
               if (fop.active === false) return '-'
@@ -237,7 +243,7 @@ ${info.desc}
           // Show example
           if ('load' === opname || 'remove' === opname) {
             Content(`\`\`\`lua
-local result, err = client:${ent.Name}():${opname}({ id = "${ent.name}_id" })
+local result, err = client:${ent.Name}():${opname}(${idF ? `{ ${idF} = "${ent.name}_id" }` : ''})
 \`\`\`
 
 `)
@@ -255,7 +261,7 @@ local result, err = client:${ent.Name}():create({
 `)
             each(fields, (field: any) => {
               if ('id' !== field.name && field.req) {
-                Content(`  ${field.name} = --[[ ${field.type || 'value'} ]],
+                Content(`  ${field.name} = --[[ ${canonToType(field.type, target.name)} ]],
 `)
               }
             })
@@ -265,10 +271,10 @@ local result, err = client:${ent.Name}():create({
 `)
           }
           else if ('update' === opname) {
+            const updateIdLine = idF ? `  ${idF} = "${ent.name}_id",\n` : ''
             Content(`\`\`\`lua
 local result, err = client:${ent.Name}():update({
-  id = "${ent.name}_id",
-  -- Fields to update
+${updateIdLine}  -- Fields to update
 })
 \`\`\`
 

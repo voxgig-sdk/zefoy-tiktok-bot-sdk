@@ -4,6 +4,8 @@
 
 The Golang SDK for the ZefoyTiktokBot API — an entity-oriented client using standard Go conventions. No generics required; data flows as `map[string]any`.
 
+It exposes the API as capitalised, semantic **Entities** — e.g. `client.Engagement(nil)` — each with the same small set of operations (`Create`) instead of raw URL paths and query strings. You call meaning, not endpoints, which keeps the cognitive load low.
+
 > Other languages, the CLI, and MCP server live alongside this one — see
 > the [top-level README](../README.md).
 
@@ -52,12 +54,41 @@ func main() {
     })
 
     // Create a engagement.
-    created, err := client.Engagement(nil).Create(map[string]any{"name": "Example"}, nil)
+    created, err := client.Engagement(nil).Create(map[string]any{"url": "example"}, nil)
     if err != nil {
         panic(err)
     }
     fmt.Println(created)
 }
+```
+
+
+## Error handling
+
+Every entity operation returns `(value, error)`. Check `err` before
+using the value — there is no exception to catch:
+
+```go
+engagement, err := client.Engagement(nil).Create(map[string]any{"url": "example"}, nil)
+if err != nil {
+    // handle err
+    return
+}
+_ = engagement
+```
+
+`Direct` follows the same `(value, error)` convention:
+
+```go
+result, err := client.Direct(map[string]any{
+    "path":   "/api/resource/{id}",
+    "method": "GET",
+    "params": map[string]any{"id": "example_id"},
+})
+if err != nil {
+    // handle err
+}
+_ = result
 ```
 
 
@@ -107,13 +138,13 @@ Create a mock client for unit testing — no server required:
 ```go
 client := sdk.Test()
 
-engagement, err := client.Engagement(nil).Load(
-    map[string]any{"id": "test01"}, nil,
+engagement, err := client.Engagement(nil).Create(
+    map[string]any{"url": "example"}, nil,
 )
 if err != nil {
     panic(err)
 }
-fmt.Println(engagement) // the loaded mock data
+fmt.Println(engagement) // the returned mock data
 ```
 
 ### Use a custom fetch function
@@ -200,11 +231,7 @@ All entities implement the `ZefoyTiktokBotEntity` interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| `Load` | `(reqmatch, ctrl map[string]any) (any, error)` | Load a single entity by match criteria. |
-| `List` | `(reqmatch, ctrl map[string]any) (any, error)` | List entities matching the criteria. |
 | `Create` | `(reqdata, ctrl map[string]any) (any, error)` | Create a new entity. |
-| `Update` | `(reqdata, ctrl map[string]any) (any, error)` | Update an existing entity. |
-| `Remove` | `(reqmatch, ctrl map[string]any) (any, error)` | Remove an entity. |
 | `Data` | `(args ...any) any` | Get or set entity data. |
 | `Match` | `(args ...any) any` | Get or set entity match criteria. |
 | `Make` | `() Entity` | Create a new instance with the same options. |
@@ -217,16 +244,15 @@ operation's data **directly** — there is no wrapper:
 
 | Operation | `value` |
 | --- | --- |
-| `Load` / `Create` / `Update` / `Remove` | the entity record (`map[string]any`) |
-| `List` | a `[]any` of entity records |
+| `Create` | the entity record (`map[string]any`) |
 
 Check `err` first, then use the value directly (or the typed
 `...Typed` variants, which return the entity's model struct and a typed
 slice):
 
-    engagement, err := client.Engagement(nil).Load(map[string]any{"id": "example_id"}, nil)
+    engagement, err := client.Engagement(nil).Create(map[string]any{/* fields */}, nil)
     if err != nil { /* handle */ }
-    // engagement is the loaded record
+    // engagement is the returned record
 
 Only `Direct()` returns a response envelope — a `map[string]any` with
 `"ok"`, `"status"`, `"headers"`, and `"data"` keys.
@@ -268,29 +294,33 @@ Create an instance: `engagement := client.Engagement(nil)`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | ``$INTEGER`` |  |
-| `estimated_time` | ``$INTEGER`` |  |
-| `message` | ``$STRING`` |  |
-| `status` | ``$STRING`` |  |
-| `success` | ``$BOOLEAN`` |  |
-| `type` | ``$STRING`` |  |
-| `url` | ``$STRING`` |  |
+| `amount` | `int` |  |
+| `estimated_time` | `int` |  |
+| `message` | `string` |  |
+| `status` | `string` |  |
+| `success` | `bool` |  |
+| `type` | `string` |  |
+| `url` | `string` |  |
 
 #### Example: Create
 
 ```go
 result, err := client.Engagement(nil).Create(map[string]any{
-    "url": /* `$STRING` */,
+    "url": /* string */,
 }, nil)
 ```
 
 
-## Explanation
+## Advanced
+
+> The sections above cover everyday use. The material below explains the
+> SDK's internals — useful when extending it with custom features, but not
+> needed for normal use.
 
 ### The operation pipeline
 
-Every entity operation (load, list, create, update, remove) follows a
-six-stage pipeline. Each stage fires a feature hook before executing:
+Every entity operation follows a six-stage pipeline. Each stage fires a
+feature hook before executing:
 
 ```
 PrePoint → PreSpec → PreRequest → PreResponse → PreResult → PreDone
@@ -307,9 +337,9 @@ PrePoint → PreSpec → PreRequest → PreResponse → PreResult → PreDone
 - **PreDone**: Final stage before returning to the caller. Entity
   state (match, data) is updated here.
 
-If any stage returns an error, the pipeline short-circuits and the
-error is returned to the caller. An unexpected panic triggers the
-`PreUnexpected` hook.
+If any stage errors, the pipeline short-circuits and the error surfaces
+to the caller — see [Error handling](#error-handling) for how that looks
+in this language.
 
 ### Features and hooks
 
@@ -350,14 +380,14 @@ like `core.ToMapAny`.
 
 ### Entity state
 
-Entity instances are stateful. After a successful `Load`, the entity
+Entity instances are stateful. After a successful `Create`, the entity
 stores the returned data and match criteria internally.
 
 ```go
 engagement := client.Engagement(nil)
-engagement.Load(map[string]any{"id": "example_id"}, nil)
+engagement.Create(map[string]any{"url": "example"}, nil)
 
-// engagement.Data() now returns the loaded engagement data
+// engagement.Data() now returns the engagement data from the last create
 // engagement.Match() returns the last match criteria
 ```
 

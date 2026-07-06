@@ -13,6 +13,23 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
 
+  // Model-driven op rows for the shared entity interface: emit a
+  // load/list/create/update/remove row only for operations at least one active
+  // entity actually exposes (a read-only entity has just list+load) — never
+  // document an operation no entity has.
+  const opUnion = new Set<string>()
+  entityList.forEach((e: any) => Object.keys(e.op || {})
+    .forEach((o: string) => { if (e.op[o] && e.op[o].active !== false) opUnion.add(o) }))
+  const opRowDefs: Record<string, string> = {
+    load: '| `load` | `($reqmatch, $ctrl): array` | Load a single entity by match criteria. |',
+    list: '| `list` | `(?array $reqmatch = null, $ctrl): array` | List entities matching the criteria (call with no argument to list all). |',
+    create: '| `create` | `($reqdata, $ctrl): array` | Create a new entity. |',
+    update: '| `update` | `($reqdata, $ctrl): array` | Update an existing entity. |',
+    remove: '| `remove` | `($reqmatch, $ctrl): array` | Remove an entity. |',
+  }
+  const opRows = ['load', 'list', 'create', 'update', 'remove']
+    .filter((o) => opUnion.has(o)).map((o) => opRowDefs[o]).join('\n')
+
   const apikeyOptionRow = isAuthActive(model)
     ? '| `apikey` | `string` | API key for authentication. |\n'
     : ''
@@ -66,11 +83,7 @@ All entities share the same interface.
 
 | Method | Signature | Description |
 | --- | --- | --- |
-| \`load\` | \`($reqmatch, $ctrl): array\` | Load a single entity by match criteria. |
-| \`list\` | \`($reqmatch, $ctrl): array\` | List entities matching the criteria. |
-| \`create\` | \`($reqdata, $ctrl): array\` | Create a new entity. |
-| \`update\` | \`($reqdata, $ctrl): array\` | Update an existing entity. |
-| \`remove\` | \`($reqmatch, $ctrl): array\` | Remove an entity. |
+${opRows}
 | \`data_get\` | \`(): array\` | Get entity data. |
 | \`data_set\` | \`($data): void\` | Set entity data. |
 | \`match_get\` | \`(): array\` | Get entity match criteria. |

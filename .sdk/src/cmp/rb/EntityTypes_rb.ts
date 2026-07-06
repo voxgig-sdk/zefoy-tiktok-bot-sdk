@@ -27,7 +27,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -38,49 +38,9 @@ import {
 const LANG = 'rb'
 
 
-// The five ops, and whether their request payload is a `Match` (query/id) or
-// `Data` (body) — this fixes the generated type-name suffix per op.
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match',
-  list: 'Match',
-  remove: 'Match',
-  create: 'Data',
-  update: 'Data',
-}
-
-
-function cap(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-
-// The generated type name for an op's request payload, e.g. ActivityLoadMatch.
-function opTypeName(Name: string, opname: string): string {
-  return Name + cap(opname) + (OP_SUFFIX[opname] || 'Match')
-}
-
-
 // A Ruby symbol literal for a member name: bare for identifiers, quoted otherwise.
 function symName(name: string): string {
   return /^[A-Za-z_][A-Za-z0-9_]*[?!=]?$/.test(name) ? ':' + name : ':"' + name + '"'
-}
-
-
-// Collect an op's params, deduped by name across all of its points.
-function opParams(op: any): any[] {
-  const points = op && op.points ? each(op.points) : []
-  const seen: Record<string, boolean> = {}
-  const out: any[] = []
-  points.forEach((pt: any) => {
-    const params = pt && pt.args && pt.args.params ? each(pt.args.params) : []
-    params.forEach((p: any) => {
-      if (p && null != p.name && !seen[p.name]) {
-        seen[p.name] = true
-        out.push(p)
-      }
-    })
-  })
-  return out
 }
 
 
@@ -148,33 +108,23 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
         fields.map((f: any) => ({ name: f.name, type: f.type, optional: false === f.req })),
       )
 
-      // Per active op: a request/match Struct. With params -> a Struct of those
-      // params; without params -> a Struct over the entity fields (all nilable,
-      // the Ruby stand-in for TS Partial<${Name}>).
+      // Per active op: a request/match Struct. Members and their optionality
+      // come from the shared partiality policy (opRequestShape); this file only
+      // renders them as a keyword-init Struct.
       const ops = ent.op || {}
       ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
-        const op = ops[opname]
-        if (null == op) {
+        if (null == ops[opname]) {
           return
         }
 
         const typeName = opTypeName(Name, opname)
-        const params = opParams(op)
+        const { items } = opRequestShape(ent, opname)
 
-        if (0 < params.length) {
-          emitStruct(
-            typeName,
-            `Request payload for ${Name}#${opname}.`,
-            params.map((p: any) => ({ name: p.name, type: p.type, optional: false === p.reqd })),
-          )
-        }
-        else {
-          emitStruct(
-            typeName,
-            `Match filter for ${Name}#${opname} (any subset of ${Name} fields).`,
-            fields.map((f: any) => ({ name: f.name, type: f.type, optional: true })),
-          )
-        }
+        emitStruct(
+          typeName,
+          `Request payload for ${Name}#${opname}.`,
+          items,
+        )
       })
     })
   })

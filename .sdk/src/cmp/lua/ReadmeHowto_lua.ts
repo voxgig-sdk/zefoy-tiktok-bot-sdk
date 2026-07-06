@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -8,12 +8,42 @@ import {
 } from '@voxgig/apidef'
 
 
+// A type-correct Lua literal for a field's canonical type.
+function luaLit(type: any): string {
+  const k = canonKey(type)
+  if ('INTEGER' === k || 'NUMBER' === k) return '1'
+  if ('BOOLEAN' === k) return 'true'
+  if ('ARRAY' === k || 'OBJECT' === k) return '{}'
+  return '"example"'
+}
+
+function luaKey(name: string): string {
+  return /^[A-Za-z_]\w*$/.test(name) ? name : `["${name}"]`
+}
+
+
 const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+  // Model-driven id key: null when the entity has no id-like field.
+  const idF = exampleEntity ? entityIdField(exampleEntity) : null
+  // Drive the test-mode example off the entity's PRIMARY op — never a hardcoded
+  // `load` a create-only entity lacks.
+  const primaryOp = exampleEntity ? (entityPrimaryOp(exampleEntity) || 'load') : 'load'
+  const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
+  let testCallArg = ''
+  if (exampleEntity && isMatchOp) {
+    testCallArg = idF ? `{ ${idF} = "test01" }` : ''
+  } else if (exampleEntity && ('create' === primaryOp || 'update' === primaryOp)) {
+    const items = opRequestShape(exampleEntity, primaryOp).items
+      .filter((it: any) => it.name !== idF && it.name !== 'id')
+    const required = items.filter((it: any) => !it.optional)
+    const chosen = required.length ? required : items.slice(0, 3)
+    testCallArg = `{ ${chosen.map((it: any) => `${luaKey(it.name)} = ${luaLit(it.type)}`).join(', ')} }`
+  }
 
   const apikeyEnvLine = isAuthActive(model)
     ? `\n${envName(model)}_APIKEY=<your-key>`
@@ -59,8 +89,8 @@ Create a mock client for unit testing — no server required:
 \`\`\`lua
 local client = sdk.test()
 
-local result, err = client:${eName}():load({ id = "test01" })
--- result is the loaded data; err is set on failure
+local result, err = client:${eName}():${primaryOp}(${testCallArg})
+-- result is the returned data; err is set on failure
 \`\`\`
 
 ### Use a custom fetch function

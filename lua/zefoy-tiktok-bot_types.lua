@@ -16,6 +16,13 @@
 ---@field url string
 
 ---@class EngagementCreateData
+---@field amount? number
+---@field estimated_time? number
+---@field message? string
+---@field status? string
+---@field success? boolean
+---@field type? string
+---@field url string
 
 local M = {}
 

@@ -36,7 +36,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -45,17 +45,6 @@ import {
 
 
 const LANG = 'py'
-
-
-// The five ops, and whether their request payload is a `Match` (query/id) or
-// `Data` (body) — this fixes the generated type-name suffix per op.
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match',
-  list: 'Match',
-  remove: 'Match',
-  create: 'Data',
-  update: 'Data',
-}
 
 
 // Python keywords that cannot be used as class-syntax TypedDict field names.
@@ -75,54 +64,22 @@ function pyIdent(name: string): boolean {
 }
 
 
-function cap(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-
-// The generated type name for an op's request payload, e.g. FactLoadMatch.
-function opTypeName(Name: string, opname: string): string {
-  return Name + cap(opname) + (OP_SUFFIX[opname] || 'Match')
-}
-
-
-// Collect an op's params, deduped by name across all of its points.
-function opParams(op: any): any[] {
-  const points = op && op.points ? each(op.points) : []
-  const seen: Record<string, boolean> = {}
-  const out: any[] = []
-  points.forEach((pt: any) => {
-    const params = pt && pt.args && pt.args.params ? each(pt.args.params) : []
-    params.forEach((p: any) => {
-      if (p && null != p.name && !seen[p.name]) {
-        seen[p.name] = true
-        out.push(p)
-      }
-    })
-  })
-  return out
-}
-
-
-// Emit a TypedDict named `typeName` from a list of {name, type} items. `reqKey`
-// names the per-item required flag ('req' for fields, 'reqd' for params).
-// Required items (flag !== false) become required keys; optional items
-// (flag === false) become not-required keys via a `total=False` extension.
-// `allOptional` forces every item optional (the match-mirror types).
+// Emit a TypedDict named `typeName` from a list of {name, type, optional}
+// items (optionality already decided by the caller — the shared partiality
+// policy for op types, or `req` for the entity data type). Required items
+// become required keys; optional items become not-required keys via a
+// `total=False` extension.
 //
 // Shape selection (see file header for the rationale):
 //   both required + optional -> `<typeName>Required` base + `total=False` sub
 //   only required            -> single `class <typeName>(TypedDict):`
 //   only optional            -> single `class <typeName>(TypedDict, total=False):`
 //   no usable keys           -> single `class <typeName>(TypedDict): pass`
-function emitTypedDict(
-  typeName: string, items: any[], reqKey: string, allOptional: boolean
-): void {
+function emitTypedDict(typeName: string, items: any[]): void {
   const usable = items.filter((it: any) => it && null != it.name && pyIdent(it.name))
 
-  const isOpt = (it: any) => allOptional || false === it[reqKey]
-  const required = usable.filter((it: any) => !isOpt(it))
-  const optional = usable.filter((it: any) => isOpt(it))
+  const required = usable.filter((it: any) => !it.optional)
+  const optional = usable.filter((it: any) => it.optional)
 
   const field = (it: any) => `    ${it.name}: ${canonToType(it.type, LANG)}
 `
@@ -196,30 +153,26 @@ from typing import TypedDict, Any
       Content(`
 
 `)
-      emitTypedDict(Name, fields, 'req', false)
+      emitTypedDict(Name, fields.map((f: any) => ({
+        name: f.name, type: f.type, optional: false === f.req,
+      })))
 
-      // Per active op: a request/match type. With params -> a TypedDict of
-      // those params; without params -> a TypedDict mirroring the entity fields
-      // as all-optional keys (the Python analogue of TS `Partial<${Name}>`).
+      // Per active op: a request/match type. Members and their optionality come
+      // from the shared partiality policy (opRequestShape); this file only
+      // renders them as a TypedDict.
       const ops = ent.op || {}
       ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
-        const op = ops[opname]
-        if (null == op) {
+        if (null == ops[opname]) {
           return
         }
 
         const typeName = opTypeName(Name, opname)
-        const params = opParams(op)
+        const { items } = opRequestShape(ent, opname)
 
         Content(`
 
 `)
-        if (0 < params.length) {
-          emitTypedDict(typeName, params, 'reqd', false)
-        }
-        else {
-          emitTypedDict(typeName, fields, 'req', true)
-        }
+        emitTypedDict(typeName, items)
       })
     })
   })
