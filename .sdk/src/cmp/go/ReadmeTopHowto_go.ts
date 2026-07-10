@@ -12,6 +12,10 @@ result, err := client.Direct(map[string]any{
     "method": "GET",
     "params": map[string]any{"id": "example"},
 })
+if err != nil {
+    panic(err)
+}
+fmt.Println(result)
 \`\`\`
 
 `)

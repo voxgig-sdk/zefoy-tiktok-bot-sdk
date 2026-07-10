@@ -122,7 +122,7 @@ Create a new entity with the given data. Raises on error.
 
 ```ruby
 result = client.Engagement.create({
-  "url" => "example", # String
+  "url" => "example_url", # String
 })
 ```
 

@@ -25,7 +25,9 @@ module ZefoyTiktokBotUtilities
     else
       auth_prefix = VoxgigStruct.getpath(options, "auth.prefix") || ""
       apikey_val = apikey.is_a?(String) ? apikey : ""
-      headers[HEADER_AUTH] = "#{auth_prefix} #{apikey_val}"
+      # Empty prefix (raw apiKey credential) must not add a leading space.
+      headers[HEADER_AUTH] =
+        auth_prefix.empty? ? apikey_val : "#{auth_prefix} #{apikey_val}"
     end
 
     return spec, nil

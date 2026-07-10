@@ -1,0 +1,20 @@
+# SDK Configuration
+
+main: kit: config: {
+
+  # The Authorization credential prefix is derived from the OpenAPI
+  # security scheme (see api/api-info.aontu: main.kit.info.security,
+  # set by apidef) and defaults to 'Bearer' when the spec gives no
+  # signal. Uncomment to override per-SDK:
+  # auth: prefix: 'Bearer'
+
+
+  headers: {
+    'content-type': 'application/json'
+  }
+
+}
+
+# Metadata provenance: sourced from the freepublicapis.com catalogue;
+# sdkgen's ReadmeTop renders an attribution note from this field.
+main: kit: info: meta_source: 'https://www.freepublicapis.com'

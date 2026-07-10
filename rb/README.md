@@ -36,7 +36,7 @@ client = ZefoyTiktokBotSDK.new({
 
 ```ruby
 # create returns the bare created Engagement record.
-created = client.Engagement.create({ "url" => "example" })
+created = client.Engagement.create({ "url" => "example_url" })
 
 ```
 
@@ -277,7 +277,7 @@ Create an instance: `engagement = client.Engagement`
 
 ```ruby
 engagement = client.Engagement.create({
-  "url" => "example", # String
+  "url" => "example_url", # String
 })
 ```
 

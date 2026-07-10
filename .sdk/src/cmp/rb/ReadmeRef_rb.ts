@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -9,13 +9,14 @@ import {
 
 // A type-correct Ruby literal for a field's canonical type — the create body
 // is EXECUTED by the doc test, so it must carry a real value per field.
-function rbLit(type: any): string {
+// Strings render the quoted placeholder.
+function rbLit(type: any, placeholder: string = 'example'): string {
   const k = canonKey(type)
   if ('INTEGER' === k || 'NUMBER' === k) return '1'
   if ('BOOLEAN' === k) return 'true'
   if ('ARRAY' === k) return '[]'
   if ('OBJECT' === k) return '{}'
-  return '"example"'
+  return `"${placeholder}"`
 }
 
 
@@ -171,6 +172,9 @@ same parameters as \`direct()\`. Raises on error.
       // Model-driven id key: null when this entity has no id-like field, in
       // which case load/remove match on no argument and update omits the id.
       const idF = entityIdField(ent)
+      // Sanitise the local variable name — an entity whose lowercased name is
+      // a Ruby keyword (e.g. `self`) would otherwise emit uncompilable code.
+      const eVar = safeVarName(ent.name, 'rb')
 
       Content(`
 ---
@@ -186,7 +190,7 @@ same parameters as \`direct()\`. Raises on error.
       }
 
       Content(`\`\`\`ruby
-${ent.name} = client.${ent.Name}
+${eVar} = client.${ent.Name}
 \`\`\`
 
 `)
@@ -257,8 +261,20 @@ ${info.desc}
 
           // Show example
           if ('load' === opname || 'remove' === opname) {
+            // The id key plus every REQUIRED match key (parent path params
+            // like page_id) — the same shape the runtime resolves path
+            // params from, so the example always works.
+            const matchItems = opRequestShape(ent, opname).items
+              .filter((it: any) => !it.optional || it.name === idF)
+              .sort((a: any, b: any) =>
+                (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+            const arg = 0 < matchItems.length
+              ? `{ ${matchItems.map((it: any) =>
+                `"${it.name}" => ${rbLit(it.type,
+                  it.name === idF ? ent.name + '_id' : it.name)}`).join(', ')} }`
+              : ''
             Content(`\`\`\`ruby
-result = client.${ent.Name}.${opname}(${idF ? `{ "${idF}" => "${ent.name}_id" }` : ''})
+result = client.${ent.Name}.${opname}(${arg})
 \`\`\`
 
 `)
@@ -271,14 +287,19 @@ results = client.${ent.Name}.list
 `)
           }
           else if ('create' === opname) {
+            // Members come from the SAME shape the runtime validates
+            // (opRequestShape): every required member must appear — including
+            // a required id and parent keys like page_id — with a real,
+            // executable literal (the doc test RUNS this block, so a comment
+            // placeholder would break it).
+            const createItems = opRequestShape(ent, 'create').items
+              .filter((it: any) => !it.optional)
             Content(`\`\`\`ruby
 result = client.${ent.Name}.create({
 `)
-            each(fields, (field: any) => {
-              if ('id' !== field.name && field.req) {
-                Content(`  "${field.name}" => ${rbLit(field.type)}, # ${canonToType(field.type, target.name)}
+            createItems.map((it: any) => {
+              Content(`  "${it.name}" => ${rbLit(it.type, 'example_' + it.name)}, # ${canonToType(it.type, target.name)}
 `)
-              }
             })
             Content(`})
 \`\`\`
@@ -286,10 +307,18 @@ result = client.${ent.Name}.create({
 `)
           }
           else if ('update' === opname) {
-            const updateIdLine = idF ? `  "${idF}" => "${ent.name}_id",\n` : ''
+            // The id key plus every REQUIRED data member — the same shape the
+            // runtime validates — then the patch-fields note.
+            const updateItems = opRequestShape(ent, 'update').items
+              .filter((it: any) => !it.optional || it.name === idF)
+              .sort((a: any, b: any) =>
+                (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+            const updateLines = updateItems.map((it: any) =>
+              `  "${it.name}" => ${rbLit(it.type,
+                it.name === idF ? ent.name + '_id' : it.name)},\n`).join('')
             Content(`\`\`\`ruby
 result = client.${ent.Name}.update({
-${updateIdLine}  # Fields to update
+${updateLines}  # Fields to update
 })
 \`\`\`
 

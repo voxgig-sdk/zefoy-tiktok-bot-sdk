@@ -37,7 +37,7 @@ $client = new ZefoyTiktokBotSDK([
 
 ```php
 // create() returns the bare created Engagement record.
-$created = $client->Engagement()->create(["url" => "example"]);
+$created = $client->Engagement()->create(["url" => "example_url"]);
 
 ```
 

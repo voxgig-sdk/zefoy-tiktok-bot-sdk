@@ -4,6 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
+  entityClassName,
 } from '@voxgig/sdkgen'
 
 
@@ -93,7 +94,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 `)
       each(entity, (ent: any) => {
-        Content(`    from entity.${ent.name}_entity import ${ent.Name}Entity
+        Content(`    from entity.${ent.name}_entity import ${entityClassName(ent, entity)}
 `)
       })
     }

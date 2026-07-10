@@ -9,7 +9,7 @@ local entityCreateOp = {}
 ---@param ctrl? table
 ---@return EntityName
 ---@return string? err
-function EntityNameEntity:create(reqdata, ctrl)
+function EntyClass:create(reqdata, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({
     opname = "create",

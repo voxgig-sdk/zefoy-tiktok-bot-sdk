@@ -6,7 +6,7 @@ import (
 	vs "github.com/voxgig/struct"
 )
 
-type EntityNameEntity struct {
+type EntyClass struct {
 	name    string
 	client  *core.ProjectNameSDK
 	utility *core.Utility
@@ -16,7 +16,7 @@ type EntityNameEntity struct {
 	entctx  *core.Context
 }
 
-func NewEntityNameEntity(client *core.ProjectNameSDK, entopts map[string]any) *EntityNameEntity {
+func NewEntyClass(client *core.ProjectNameSDK, entopts map[string]any) *EntyClass {
 	if entopts == nil {
 		entopts = map[string]any{}
 	}
@@ -28,7 +28,7 @@ func NewEntityNameEntity(client *core.ProjectNameSDK, entopts map[string]any) *E
 		entopts["active"] = true
 	}
 
-	e := &EntityNameEntity{
+	e := &EntyClass{
 		name:    "entityname",
 		client:  client,
 		utility: client.GetUtility(),
@@ -47,17 +47,17 @@ func NewEntityNameEntity(client *core.ProjectNameSDK, entopts map[string]any) *E
 	return e
 }
 
-func (e *EntityNameEntity) GetName() string { return e.name }
+func (e *EntyClass) GetName() string { return e.name }
 
-func (e *EntityNameEntity) Make() core.Entity {
+func (e *EntyClass) Make() core.Entity {
 	opts := map[string]any{}
 	for k, v := range e.entopts {
 		opts[k] = v
 	}
-	return NewEntityNameEntity(e.client, opts)
+	return NewEntyClass(e.client, opts)
 }
 
-func (e *EntityNameEntity) Data(args ...any) any {
+func (e *EntyClass) Data(args ...any) any {
 	if len(args) > 0 && args[0] != nil {
 		e.data = core.ToMapAny(vs.Clone(args[0]))
 		if e.data == nil {
@@ -71,7 +71,7 @@ func (e *EntityNameEntity) Data(args ...any) any {
 	return out
 }
 
-func (e *EntityNameEntity) Match(args ...any) any {
+func (e *EntyClass) Match(args ...any) any {
 	if len(args) > 0 && args[0] != nil {
 		e.match = core.ToMapAny(vs.Clone(args[0]))
 		if e.match == nil {
@@ -89,7 +89,7 @@ func (e *EntityNameEntity) Match(args ...any) any {
 // argument it returns the current data as an EntityName; with an argument it
 // sets the data and returns the stored value. It delegates to the untyped Data
 // (identical runtime) and converts at the typed boundary.
-func (e *EntityNameEntity) DataTyped(data ...EntityName) EntityName {
+func (e *EntyClass) DataTyped(data ...EntityName) EntityName {
 	if len(data) > 0 {
 		return typedFrom[EntityName](e.Data(asMap(data[0])))
 	}
@@ -99,7 +99,7 @@ func (e *EntityNameEntity) DataTyped(data ...EntityName) EntityName {
 // MatchTyped mirrors DataTyped for the entity's match filter. The match is a
 // partial of the entity, so it round-trips through EntityName (all fields
 // optional at the wire level).
-func (e *EntityNameEntity) MatchTyped(match ...EntityName) EntityName {
+func (e *EntyClass) MatchTyped(match ...EntityName) EntityName {
 	if len(match) > 0 {
 		return typedFrom[EntityName](e.Match(asMap(match[0])))
 	}
@@ -116,7 +116,7 @@ func (e *EntityNameEntity) MatchTyped(match ...EntityName) EntityName {
 
 // #RemoveOp
 
-func (e *EntityNameEntity) runOp(ctx *core.Context, postDone func()) (any, error) {
+func (e *EntyClass) runOp(ctx *core.Context, postDone func()) (any, error) {
 	utility := e.utility
 
 	// #PrePoint-Hook

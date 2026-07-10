@@ -6,7 +6,7 @@ local entityListOp = {}
 ---@param ctrl? table
 ---@return EntityName[]
 ---@return string? err
-function EntityNameEntity:list(reqmatch, ctrl)
+function EntyClass:list(reqmatch, ctrl)
   local utility = self._utility
   local ctx = utility.make_context({
     opname = "list",

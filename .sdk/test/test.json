@@ -634,7 +634,7 @@
               "ctx": {
                 "spec": {
                   "headers": {
-                    "authorization": " APIKEY01"
+                    "authorization": "APIKEY01"
                   }
                 }
               }

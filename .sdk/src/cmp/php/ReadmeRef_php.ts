@@ -1,10 +1,23 @@
 
-import { cmp, each, Content, canonToType, File, isAuthActive, entityIdField } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+
+// A type-correct, executable PHP literal for a param: numeric/boolean/array
+// params render a typed literal; strings render the quoted placeholder (the
+// doc test EXECUTES runnable blocks, so a comment placeholder would not
+// parse).
+function phpLit(type: any, placeholder: string = 'example'): string {
+  const k = canonKey(type)
+  if ('INTEGER' === k || 'NUMBER' === k) return '1'
+  if ('BOOLEAN' === k) return 'true'
+  if ('ARRAY' === k || 'OBJECT' === k) return '[]'
+  return `"${placeholder}"`
+}
 
 
 const OP_SIGNATURES: Record<string, { sig: string, returns: string, desc: string }> = {
@@ -244,8 +257,20 @@ ${info.desc}
 
           // Show example
           if ('load' === opname || 'remove' === opname) {
+            // The id key plus every REQUIRED match key (parent path params
+            // like page_id) — the same shape the runtime resolves path
+            // params from, so the example always works.
+            const matchItems = opRequestShape(ent, opname).items
+              .filter((it: any) => !it.optional || it.name === idF)
+              .sort((a: any, b: any) =>
+                (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+            const arg = 0 < matchItems.length
+              ? `[${matchItems.map((it: any) =>
+                `"${it.name}" => ${phpLit(it.type,
+                  it.name === idF ? ent.name + '_id' : it.name)}`).join(', ')}]`
+              : ''
             Content(`\`\`\`php
-$result = $client->${ent.Name}()->${opname}(${idF ? `["${idF}" => "${ent.name}_id"]` : ''});
+$result = $client->${ent.Name}()->${opname}(${arg});
 \`\`\`
 
 `)
@@ -258,14 +283,17 @@ $results = $client->${ent.Name}()->list();
 `)
           }
           else if ('create' === opname) {
+            // Members come from the SAME shape the runtime validates
+            // (opRequestShape): every required member must appear — including
+            // a required id and parent keys like page_id.
+            const createItems = opRequestShape(ent, 'create').items
+              .filter((it: any) => !it.optional)
             Content(`\`\`\`php
 $result = $client->${ent.Name}()->create([
 `)
-            each(fields, (field: any) => {
-              if ('id' !== field.name && field.req) {
-                Content(`  "${field.name}" => null, // ${canonToType(field.type, target.name)}
+            createItems.map((it: any) => {
+              Content(`  "${it.name}" => null, // ${canonToType(it.type, target.name)}
 `)
-              }
             })
             Content(`]);
 \`\`\`
@@ -273,10 +301,18 @@ $result = $client->${ent.Name}()->create([
 `)
           }
           else if ('update' === opname) {
-            const updateIdLine = idF ? `  "${idF}" => "${ent.name}_id",\n` : ''
+            // The id key plus every REQUIRED data member — the same shape the
+            // runtime validates — then the patch-fields note.
+            const updateItems = opRequestShape(ent, 'update').items
+              .filter((it: any) => !it.optional || it.name === idF)
+              .sort((a: any, b: any) =>
+                (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+            const updateLines = updateItems.map((it: any) =>
+              `  "${it.name}" => ${phpLit(it.type,
+                it.name === idF ? ent.name + '_id' : it.name)},\n`).join('')
             Content(`\`\`\`php
 $result = $client->${ent.Name}()->update([
-${updateIdLine}  // Fields to update
+${updateLines}  // Fields to update
 ]);
 \`\`\`
 

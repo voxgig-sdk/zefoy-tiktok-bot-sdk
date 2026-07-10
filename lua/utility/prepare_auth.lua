@@ -38,7 +38,12 @@ local function prepare_auth_util(ctx)
     if type(apikey) == "string" then
       apikey_val = apikey
     end
-    headers[HEADER_AUTH] = auth_prefix .. " " .. apikey_val
+    -- Empty prefix (raw apiKey credential) must not add a leading space.
+    if auth_prefix == "" then
+      headers[HEADER_AUTH] = apikey_val
+    else
+      headers[HEADER_AUTH] = auth_prefix .. " " .. apikey_val
+    end
   end
 
   return spec, nil

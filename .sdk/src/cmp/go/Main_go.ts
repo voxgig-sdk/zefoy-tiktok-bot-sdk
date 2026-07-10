@@ -4,6 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
+  entityClassName,
 } from '@voxgig/sdkgen'
 
 
@@ -187,7 +188,7 @@ func init() {
     // Register entity constructors
     each(entity, (ent: any) => {
       Content(`	core.New${ent.Name}EntityFunc = func(client *core.${model.const.Name}SDK, entopts map[string]any) core.${model.const.Name}Entity {
-		return entity.New${ent.Name}Entity(client, entopts)
+		return entity.New${entityClassName(ent, entity)}(client, entopts)
 	}
 `)
     })

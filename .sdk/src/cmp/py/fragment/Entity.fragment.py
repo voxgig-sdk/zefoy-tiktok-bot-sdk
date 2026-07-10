@@ -7,7 +7,7 @@ from core import helpers
 # #TypeImports
 
 
-class EntityNameEntity:
+class EntyClass:
 
     def __init__(self, client, entopts=None):
         if entopts is None:
@@ -40,7 +40,7 @@ class EntityNameEntity:
         opts = {}
         for k, v in self._entopts.items():
             opts[k] = v
-        return EntityNameEntity(self._client, opts)
+        return EntyClass(self._client, opts)
 
     def data_set(self, args=None):
         if args is not None:

@@ -79,6 +79,11 @@ jobs:
           node-version: '24'
       - if: hashFiles('ts/package.json') != ''
         run: cd ts && npm install --no-audit --no-fund
+      # npm test runs the compiled dist-test/ suite, which is gitignored —
+      # without a build first, node --test matches zero files and exits 0,
+      # leaving CI green while testing nothing.
+      - if: hashFiles('ts/package.json') != ''
+        run: cd ts && npm run build
       - if: hashFiles('ts/package.json') != ''
         run: cd ts && npm test
 

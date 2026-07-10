@@ -12,6 +12,7 @@ import {
   Entity,
   Feature,
   Readme,
+  AgentGuide,
   Test,
 
 } from '@voxgig/sdkgen'
@@ -83,20 +84,21 @@ const Root = cmp(function Root(props: any) {
 
       Folder({ name: target.name }, () => {
 
-        // Per-generation-phase activation. A target's jsonic carries
+        // Per-generation-phase activation. A target's aontu model carries
         // a `phase` map mirroring the feature pattern:
         //
         //   phase: {
-        //     entity:  { active: false }
-        //     feature: { active: false }
-        //     readme:  { active: false }
-        //     test:    { active: false }
+        //     entity:     { active: false }
+        //     feature:    { active: false }
+        //     readme:     { active: false }
+        //     agentguide: { active: false }
+        //     test:       { active: false }
         //   }
         //
         // Defaults are inclusive — when a phase entry is absent (or
         // active is not explicitly false), the phase runs. Existing
         // standard targets don't declare `phase` and keep current
-        // behaviour. A CLI-style target switches all four off and
+        // behaviour. A CLI-style target switches all five off and
         // only emits Main.
         const phase = target.phase || {}
         const phaseActive = (name: string): boolean =>
@@ -120,6 +122,13 @@ const Root = cmp(function Root(props: any) {
 
         if (phaseActive('readme')) {
           Readme({ target })
+        }
+
+        // Per-target agent guides: <lang>/AGENTS.md + CLAUDE.md, and (driven
+        // internally by AgentGuide) a guide per active feature under
+        // <lang>/src/feature/<name>/. Placement mirrors Readme.
+        if (phaseActive('agentguide')) {
+          AgentGuide({ target })
         }
 
         if (phaseActive('test')) {

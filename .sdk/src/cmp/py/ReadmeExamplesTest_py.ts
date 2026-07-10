@@ -8,26 +8,32 @@ import {
 } from '@voxgig/apidef'
 
 
-// Emits py/test/test_readme_examples.py — a pytest module that validates
+// Emits py/test/test_readme_examples.py — a pytest COMPLETENESS GATE over
 // every ```python fenced block in the repository ROOT README.md, in the
 // per-language py/README.md, AND in the per-language py/REFERENCE.md.
 //
-// What the generated test checks (documented in its own module docstring):
-//   1. compile / ast.parse EVERY python block           -> catches SYNTAX errors.
-//   2. if mypy is importable: concatenate the ROOT README blocks and
-//      type-check them (the SDK ships py.typed + TypedDicts, so entity ops are
-//      typed and e.g. `.data` on a list() result is a real error) -> TYPE errors.
-//   3. EXECUTE every runnable python block offline: each block that builds a
-//      client is rewritten into seeded TEST mode (so load/list resolve against
-//      the in-memory mock) and run in a subprocess. For the per-language
-//      py/README.md — which reads as a narrative where an early snippet builds
-//      `client` and later how-to/error-handling snippets drive it — a block
-//      that uses `client` without building one gets a seeded test client
-//      injected first, so it too runs. A programming error
-//      (Name/Attribute/Type/Key/Index/Import/Syntax) FAILS the test; a domain
-//      error (e.g. not-found for an unseeded id) is tolerated. This is what
-//      surfaces a bug like `result["err"]` indexing on a direct() envelope
-//      that has no err key (a KeyError at runtime).
+// The gate GUARANTEES every documented python example is unit-tested. For each
+// of the three docs it:
+//   1. extracts every ```python block (tagged by source doc + index);
+//   2. ast.parse + compile()s EVERY block                 -> SYNTAX gate;
+//   3. EXECUTEs every RUNNABLE block (one that constructs the SDK, or drives a
+//      `client`/`sdk` the narrative built earlier) in a seeded, offline
+//      TEST-mode subprocess. A PROGRAMMING error
+//      (Name/Attribute/Type/Key/Index/Import/Syntax) FAILS; ONLY a
+//      not-found/404 domain error is tolerated. Any other error also FAILS;
+//   4. asserts COMPLETENESS: it partitions every block into exactly one of
+//      {executed, compiled-nonrunnable, illustration} and asserts
+//      total == executed + compiled + illustration. "illustration" is a NARROW
+//      explicit class (a non-runnable block that is only imports / signature
+//      stubs / bare references / literal assignments — a pure signature/table
+//      snippet) and can NEVER absorb a runnable example. A block that looks
+//      runnable (references the SDK/client) but was not executed FAILS the
+//      test; a block that fails to compile FAILS the test. A per-doc summary
+//      (total/executed/compiled/illustration) is printed.
+//
+// If mypy is importable it also type-checks the concatenated ROOT README blocks
+// (the SDK ships py.typed + TypedDicts) — a bonus TYPE gate over the primary
+// EXECUTE gate.
 //
 // The emitted Python is written WITHOUT backticks or backslashes (chr(96) is
 // the fence marker, chr(10) is newline) so this TS template literal stays
@@ -52,51 +58,53 @@ const ReadmeExamplesTest = cmp(function ReadmeExamplesTest(props: any) {
       .join('\n') + '\n}'
 
   File({ name: 'test_readme_examples.' + target.ext }, () => {
-    Content(`# ${Name} SDK — documentation python-examples test.
+    Content(`# ${Name} SDK — documentation python-examples COMPLETENESS gate.
 #
-# Validates every python fenced code block in three documents:
+# GUARANTEE: every python example in the docs is unit-tested. This module is a
+# completeness gate over every python fenced code block in three documents:
 #   - the repository ROOT README.md (one directory above the py/ package),
 #   - the per-language py/README.md (tutorial, how-to, error-handling,
 #     testing and entity-op examples — in the package root),
 #   - the per-language py/REFERENCE.md (in the package root).
-# It exists to keep the documented examples honest as the generator evolves.
+# It exists to keep the documented examples honest as the generator evolves:
+# no runnable example may be silently skipped, and no block may be dropped.
 #
-# Checks, in order:
+# Checks, in order, PER DOCUMENT:
 #
 #   1. COMPILE: every python block is parsed with ast.parse + compile(). This
-#      catches syntax errors in the docs (e.g. a dict key with no value).
+#      catches syntax errors in the docs (e.g. a dict key with no value, or a
+#      hyphenated import module name that is not valid Python).
 #
-#   2. TYPECHECK (if mypy is importable): all blocks are concatenated into a
-#      single module — they read as one sequential narrative, so the "client"
-#      defined in the quickstart carries through — and type-checked with mypy.
-#      The SDK ships py.typed and TypedDicts, so entity operations are typed
-#      (list() -> list[Entity], load() -> Entity). mypy therefore flags bogus
-#      access such as ".data" on a list result or a wrong-typed match dict.
-#      Only errors attributed to the concatenated snippet file fail the test;
-#      import-resolution noise is treated as inconclusive.
+#   2. EXECUTE (the primary safety net): every RUNNABLE block is run offline in
+#      a seeded TEST-mode subprocess. A block is RUNNABLE when it constructs the
+#      SDK (mentions ${sdkClass}) OR drives a client/sdk variable the narrative
+#      built earlier ("client." / "sdk."). A constructing block is rewritten so
+#      both ${sdkClass}(...) and ${sdkClass}.test(...) become
+#      ${sdkClass}.test({"entity": {...}}) seeding one mock record (id "test01")
+#      per referenced entity; a client-driving block gets that seeded test
+#      client injected first, then runs verbatim. Any PROGRAMMING error
+#      (NameError / AttributeError / TypeError / KeyError / IndexError /
+#      ImportError / SyntaxError / IndentationError) FAILS the test. ONLY a
+#      not-found / 404 domain error is tolerated (it proves the snippet is
+#      structurally valid Python that drives the SDK against an unseeded id).
+#      Any other runtime error also FAILS. This surfaces real bugs — a snippet
+#      calling a method that does not exist raises AttributeError; indexing
+#      result["err"] on a direct() envelope with no err key raises KeyError.
 #
-#   3. EXECUTE (always runs; the real safety net): every python block that
-#      constructs a client is rewritten into offline TEST mode — the live
-#      constructor and any existing .test(...) call both become
-#      .test({"entity": {...}}) seeding one mock record (id "test01") for each
-#      entity the block references — and then run in a subprocess. Any
-#      PROGRAMMING error (NameError / AttributeError / TypeError / KeyError /
-#      IndexError / ImportError / SyntaxError) fails the test. A domain-level
-#      SDK error (for instance a 404 because a referenced id is not seeded) is
-#      tolerated: it proves the snippet is structurally valid Python that
-#      drives the SDK. This catches real bugs — a snippet calling a method
-#      that does not exist raises AttributeError and fails here.
+#   3. COMPLETENESS: every block is partitioned into exactly one of
+#      {executed, compiled-nonrunnable, illustration} and the test asserts
+#      total == executed + compiled + illustration. "illustration" is a NARROW
+#      explicit class — a non-runnable block whose every top-level statement is
+#      an import, a signature stub, a bare reference, or a literal assignment (a
+#      pure signature/table snippet). It can never absorb a runnable example: a
+#      block that references the SDK/client is classified RUNNABLE first and
+#      MUST execute. If a runnable block is not executed, the test FAILS. A
+#      per-doc summary line (total/executed/compiled/illustration) is printed.
 #
-# The per-language py/README.md and py/REFERENCE.md are held to the COMPILE
-# and EXECUTE gates (checks 1 and 3) by the parallel test_local_readme_* and
-# test_reference_* functions below. The compile gate catches a bad constructor
-# import such as a hyphenated module name ("from my-slug_sdk import ..."),
-# which is a Python SyntaxError. For py/README.md the examples read as one
-# narrative — an early snippet builds "client", later how-to/error-handling
-# snippets drive it — so the execute gate injects a seeded test "client"
-# before any block that uses it without building one. That is what would
-# surface, e.g., a KeyError from indexing result["err"] on a direct() envelope
-# that has no err key.
+#   4. TYPECHECK (only if mypy is importable): the ROOT README blocks are
+#      concatenated and type-checked with mypy as a bonus gate over the primary
+#      EXECUTE gate. Only errors mypy attributes to the snippet file fail;
+#      import-resolution noise is inconclusive.
 
 import ast
 import os
@@ -120,15 +128,21 @@ _WS = (chr(32), chr(9), chr(13), chr(10))   # space, tab, CR, LF
 _SDK_MODULE = "${sdkModule}"
 _SDK_CLASS = "${sdkClass}"
 
-# The variable the generated narrative examples bind the client to. A
-# per-language README reads as a sequence: an early snippet builds "client",
-# later snippets drive it. A block that uses "client." without building one
-# gets a seeded test client injected so it can run standalone (see
-# _execute_blocks(..., inject_client=True)).
-_CLIENT_VAR = "client"
+# The variable names the generated narrative examples bind the client to. A doc
+# reads as a sequence: an early snippet builds the client, later snippets drive
+# it. A block that uses "client." or "sdk." without building one gets a seeded
+# test client injected under those names so it runs standalone.
+_CLIENT_VARS = ("client", "sdk")
 
 # The API's capitalised semantic entities -> lowercase fixture key.
 _ENTITIES = ${entitiesLiteral}
+
+# The three documents held to the gate, tagged by human label.
+_DOCS = (
+    ("root README", _README),
+    ("py README.md", _LOCAL_README),
+    ("py REFERENCE.md", _REFERENCE),
+)
 
 
 def _read_doc(path, label):
@@ -167,42 +181,52 @@ def _local_readme_blocks():
     return _blocks_in(_read_doc(_LOCAL_README, "py README.md"))
 
 
+# ----------------------------------------------------------------------------
+# Presence + COMPILE (syntax) gate
+# ----------------------------------------------------------------------------
+
 def test_readme_has_python_blocks():
     assert len(_python_blocks()) > 0, "expected at least one python block in the root README"
-
-
-def test_readme_python_blocks_compile():
-    # Syntax gate: every documented python block must parse and compile.
-    for i, block in enumerate(_python_blocks()):
-        try:
-            ast.parse(block)
-            compile(block, "<readme-block-" + str(i) + ">", "exec")
-        except SyntaxError as err:
-            pytest.fail(
-                "root README python block #" + str(i)
-                + " is not valid Python: " + str(err) + _NL + _NL + block
-            )
 
 
 def test_reference_has_python_blocks():
     assert len(_reference_blocks()) > 0, "expected at least one python block in py/REFERENCE.md"
 
 
-def test_reference_python_blocks_compile():
-    # Syntax gate for the per-language REFERENCE.md. Its constructor example
-    # imports the SDK module; if the emitted module name were hyphenated
-    # (e.g. "from my-slug_sdk import ...") ast.parse would raise here. The doc
-    # module name must match the real ${sdkModule}.py file.
-    for i, block in enumerate(_reference_blocks()):
+def test_local_readme_has_python_blocks():
+    assert len(_local_readme_blocks()) > 0, "expected at least one python block in py/README.md"
+
+
+def _assert_blocks_compile(blocks, label):
+    # Syntax gate: every documented python block must parse and compile. Catches
+    # a bad constructor import such as a hyphenated module name
+    # ("from my-slug_sdk import ...") which is a Python SyntaxError.
+    for i, block in enumerate(blocks):
         try:
             ast.parse(block)
-            compile(block, "<reference-block-" + str(i) + ">", "exec")
+            compile(block, "<" + label + "-block-" + str(i) + ">", "exec")
         except SyntaxError as err:
             pytest.fail(
-                "py/REFERENCE.md python block #" + str(i)
+                label + " python block #" + str(i)
                 + " is not valid Python: " + str(err) + _NL + _NL + block
             )
 
+
+def test_readme_python_blocks_compile():
+    _assert_blocks_compile(_python_blocks(), "root README")
+
+
+def test_reference_python_blocks_compile():
+    _assert_blocks_compile(_reference_blocks(), "py REFERENCE.md")
+
+
+def test_local_readme_python_blocks_compile():
+    _assert_blocks_compile(_local_readme_blocks(), "py README.md")
+
+
+# ----------------------------------------------------------------------------
+# TYPECHECK (bonus, root README only, if mypy is importable)
+# ----------------------------------------------------------------------------
 
 def _mypy_available():
     try:
@@ -264,6 +288,108 @@ def test_readme_python_blocks_typecheck():
                 + _NL + _NL.join(errors) + _NL + _NL + "--- snippets ---" + _NL + source
             )
 
+
+# ----------------------------------------------------------------------------
+# Classification: runnable / illustration / compiled-nonrunnable
+# ----------------------------------------------------------------------------
+
+def _uses_var(block, var):
+    # True if the block reads an attribute off the whole-word variable "var"
+    # (i.e. contains "var." with a non-identifier char, or nothing, before it).
+    # This distinguishes a client-driving "sdk." from the "_sdk." tail of an
+    # import module name.
+    needle = var + "."
+    start = 0
+    while True:
+        j = block.find(needle, start)
+        if j < 0:
+            return False
+        ok_before = True
+        if j > 0:
+            ch = block[j - 1]
+            if ch.isalnum() or ch == "_":
+                ok_before = False
+        if ok_before:
+            return True
+        start = j + 1
+
+
+def _is_runnable(block):
+    # A block is RUNNABLE — and therefore MUST be executed — when it constructs
+    # the SDK (mentions the class) or drives a client/sdk the narrative built.
+    if _SDK_CLASS in block:
+        return True
+    for var in _CLIENT_VARS:
+        if _uses_var(block, var):
+            return True
+    return False
+
+
+def _is_literalish(value):
+    # A right-hand side that performs no function call (a literal, name, or
+    # collection display). Keeps the "illustration" class narrow.
+    for sub in ast.walk(value):
+        if isinstance(sub, ast.Call):
+            return False
+    return True
+
+
+def _is_illustration_node(node):
+    # A single "shape only" statement: an import, a bare reference/literal
+    # (not a call), a signature stub (def/class whose body is only pass /
+    # docstring / ...), or a literal assignment.
+    if isinstance(node, (ast.Import, ast.ImportFrom)):
+        return True
+    if isinstance(node, ast.Expr):
+        return not isinstance(node.value, ast.Call)
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        for b in node.body:
+            if isinstance(b, ast.Pass):
+                continue
+            if isinstance(b, ast.Expr) and isinstance(b.value, ast.Constant):
+                continue
+            return False
+        return True
+    if isinstance(node, ast.AnnAssign):
+        return node.value is None or _is_literalish(node.value)
+    if isinstance(node, ast.Assign):
+        return _is_literalish(node.value)
+    return False
+
+
+def _is_illustration(block):
+    # NARROW, explicit: a non-runnable block whose every top-level statement is
+    # a benign "shape" node — an import, a bare reference/literal, a signature
+    # stub, or a literal assignment (a pure signature/table snippet). Anything
+    # that does work (a call, a loop, a with/try) is NOT an illustration; it
+    # falls to the compiled-nonrunnable bucket. A runnable block (references the
+    # SDK/client) is never an illustration, so this class can never silently
+    # absorb a runnable example.
+    if _is_runnable(block):
+        return False
+    try:
+        tree = ast.parse(block)
+    except SyntaxError:
+        return False
+    if not tree.body:
+        return True
+    for node in tree.body:
+        if not _is_illustration_node(node):
+            return False
+    return True
+
+
+def _classify(block):
+    if _is_runnable(block):
+        return "runnable"
+    if _is_illustration(block):
+        return "illustration"
+    return "compiled"
+
+
+# ----------------------------------------------------------------------------
+# EXECUTE gate
+# ----------------------------------------------------------------------------
 
 # Exception TYPE names that signal a programming (not domain) error. Matched
 # against the last line of a failed subprocess's traceback.
@@ -329,113 +455,166 @@ def _rewrite_to_test_mode(block):
     return "".join(out)
 
 
-def _execute_blocks(blocks, label, inject_client=False):
-    # Runtime gate (offline): every python block that constructs a client is
-    # rewritten into seeded test mode and executed in a subprocess. A
-    # programming error fails the test; a domain error is tolerated. Returns
-    # the number of blocks actually executed.
-    #
-    # inject_client=True (the per-language README narrative): a block that
-    # drives "client." without building one gets a seeded test client injected
-    # first, so error-handling/how-to snippets run rather than being merely
-    # compiled. That is what surfaces, e.g., a KeyError from indexing
-    # result["err"] on a direct() envelope that has no err key.
+def _build_exec_source(block):
+    # Return runnable python source for a RUNNABLE block, else None. A block
+    # that constructs the SDK is rewritten into seeded test mode; a block that
+    # only drives a client/sdk gets a seeded test client injected under those
+    # names first, then runs verbatim. The set of blocks for which this returns
+    # a source is exactly the set _is_runnable() flags — the completeness gate
+    # asserts that, so no runnable block is ever silently skipped.
+    preamble = "import os" + _NL + "from " + _SDK_MODULE + " import " + _SDK_CLASS + _NL
+    if _SDK_CLASS in block:
+        return preamble + _rewrite_to_test_mode(block)
+    inject = ""
+    used = False
+    seed = repr(_seed_literal(block))
+    for var in _CLIENT_VARS:
+        if _uses_var(block, var):
+            inject += var + " = " + _SDK_CLASS + ".test(" + seed + ")" + _NL
+            used = True
+    if used:
+        return preamble + inject + block
+    return None
+
+
+def _is_not_found_error(last):
+    # The ONLY tolerated domain error: a not-found / 404 raised because a
+    # referenced id was not seeded. Detected by the SDK error message text.
+    low = last.lower()
+    return ("404" in last) or ("not found" in low) or ("notfound" in low)
+
+
+def _run_source(source, label, index):
+    # Run one rewritten block in a subprocess. Returns None when it exits 0 or
+    # fails with the single tolerated not-found/404 domain error; otherwise
+    # returns a failure message (a programming error, or any other runtime
+    # error — both fail the gate).
     env = dict(os.environ)
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["PYTHONPATH"] = _PY_ROOT + os.pathsep + env.get("PYTHONPATH", "")
 
-    preamble = "import os" + _NL + "from " + _SDK_MODULE + " import " + _SDK_CLASS + _NL
+    proc = subprocess.run(
+        [sys.executable, "-c", source],
+        cwd=_PY_ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode == 0:
+        return None
 
+    stderr = proc.stderr or ""
+    errlines = [ln for ln in stderr.split(_NL) if ln.strip()]
+    last = errlines[-1] if errlines else ""
+    # Traceback's final line is "ExceptionType: message"; the type may be
+    # dotted (module-qualified) so compare the short name.
+    exc_type = last.split(":", 1)[0].strip().split(".")[-1]
+
+    detail = (
+        label + " python block #" + str(index) + ": " + last + _NL + _NL
+        + "--- executed source ---" + _NL + source
+        + _NL + _NL + "--- stderr ---" + _NL + stderr
+    )
+
+    if exc_type in _PROGRAMMING_ERROR_NAMES:
+        return "PROGRAMMING ERROR in " + detail
+    if _is_not_found_error(last):
+        return None   # tolerated domain error
+    return "UNEXPECTED (non not-found/404) ERROR in " + detail
+
+
+# ----------------------------------------------------------------------------
+# COMPLETENESS gate (the guarantee)
+# ----------------------------------------------------------------------------
+
+def _completeness_gate(label, blocks):
+    # Partition every block, execute every runnable one, and assert the
+    # partition is complete. Returns the per-doc stats dict.
+    total = len(blocks)
     executed = 0
+    runnable = 0
+    illustration = 0
+    compiled = 0
+    failures = []
+
     for i, block in enumerate(blocks):
-        if _SDK_CLASS in block:
-            # Self-contained: the block builds its own client.
-            source = preamble + _rewrite_to_test_mode(block)
-        elif inject_client and (_CLIENT_VAR + ".") in block:
-            # Narrative block: it drives a "client" an earlier snippet built.
-            # Inject a seeded test client (mock records for the entities this
-            # block references) and run the block verbatim.
-            seed = repr(_seed_literal(block))
-            inject = _CLIENT_VAR + " = " + _SDK_CLASS + ".test(" + seed + ")" + _NL
-            source = preamble + inject + block
+        kind = _classify(block)
+        if kind == "runnable":
+            runnable += 1
+            source = _build_exec_source(block)
+            if source is None:
+                # Should be impossible: _is_runnable and _build_exec_source key
+                # off the same markers. If it ever happens a runnable example
+                # would be silently skipped — fail loudly.
+                failures.append(
+                    label + " python block #" + str(i) + " is runnable-looking "
+                    "(references the SDK/client) but produced no executable "
+                    "source; it would be silently skipped:" + _NL + _NL + block
+                )
+                continue
+            executed += 1
+            msg = _run_source(source, label, i)
+            if msg is not None:
+                failures.append(msg)
+        elif kind == "illustration":
+            illustration += 1
         else:
-            # Neither builds nor drives a client (a signature/illustration
-            # block); the compile gate already covered it — nothing to run.
-            continue
+            compiled += 1
 
-        proc = subprocess.run(
-            [sys.executable, "-c", source],
-            cwd=_PY_ROOT,
-            env=env,
-            capture_output=True,
-            text=True,
+    print(
+        _NL + "[readme-examples] " + label + " python blocks: total="
+        + str(total) + " executed=" + str(executed) + " compiled="
+        + str(compiled) + " illustration=" + str(illustration)
+    )
+
+    if failures:
+        pytest.fail(
+            label + ": " + str(len(failures))
+            + " documented python example(s) failed the completeness gate:"
+            + _NL + _NL + (_NL + _NL).join(failures)
         )
-        executed += 1
 
-        if proc.returncode == 0:
-            continue
-
-        stderr = proc.stderr or ""
-        errlines = [ln for ln in stderr.split(_NL) if ln.strip()]
-        last = errlines[-1] if errlines else ""
-        # Traceback's final line is "ExceptionType: message"; the type may be
-        # dotted (module-qualified) so compare the short name.
-        exc_type = last.split(":", 1)[0].strip().split(".")[-1]
-
-        if exc_type in _PROGRAMMING_ERROR_NAMES:
-            pytest.fail(
-                label + " python block #" + str(i)
-                + " raised a programming error: " + last + _NL + _NL
-                + "--- rewritten source ---" + _NL + source
-                + _NL + _NL + "--- stderr ---" + _NL + stderr
-            )
-        # else: domain-level SDK error (e.g. unseeded id) — tolerated.
-
-    return executed
-
-
-def test_readme_python_blocks_execute():
-    executed = _execute_blocks(_python_blocks(), "root README")
-    assert executed > 0, "expected at least one client-constructing python block to execute"
+    # Every runnable (SDK/client-referencing) block MUST have executed.
+    assert executed == runnable, (
+        label + ": " + str(runnable - executed) + " runnable python block(s) "
+        "were not executed — a documented example that drives the SDK/client "
+        "must run, never be silently skipped (executed=" + str(executed)
+        + ", runnable=" + str(runnable) + ")"
+    )
+    # Every block is accounted for by exactly one bucket.
+    assert total == executed + compiled + illustration, (
+        label + ": python-block accounting does not add up — total=" + str(total)
+        + " but executed+compiled+illustration="
+        + str(executed + compiled + illustration)
+        + ". Every block must be executed, compiled-nonrunnable, or a narrow "
+        "illustration; none may be dropped."
+    )
+    return {
+        "total": total,
+        "executed": executed,
+        "compiled": compiled,
+        "illustration": illustration,
+    }
 
 
-def test_reference_python_blocks_execute():
-    executed = _execute_blocks(_reference_blocks(), "py REFERENCE.md")
-    assert executed > 0, (
-        "expected at least one client-constructing python block in py/REFERENCE.md to execute"
+def test_readme_completeness_gate():
+    stats = _completeness_gate("root README", _python_blocks())
+    assert stats["executed"] > 0, (
+        "expected at least one runnable python block in the root README to execute"
     )
 
 
-def test_local_readme_has_python_blocks():
-    assert len(_local_readme_blocks()) > 0, (
-        "expected at least one python block in py/README.md"
+def test_local_readme_completeness_gate():
+    stats = _completeness_gate("py README.md", _local_readme_blocks())
+    assert stats["executed"] > 0, (
+        "expected at least one runnable python block in py/README.md to execute"
     )
 
 
-def test_local_readme_python_blocks_compile():
-    # Syntax gate for the per-language py/README.md — the tutorial, how-to,
-    # error-handling, testing and entity-op examples that no other test
-    # compiled until now.
-    for i, block in enumerate(_local_readme_blocks()):
-        try:
-            ast.parse(block)
-            compile(block, "<local-readme-block-" + str(i) + ">", "exec")
-        except SyntaxError as err:
-            pytest.fail(
-                "py/README.md python block #" + str(i)
-                + " is not valid Python: " + str(err) + _NL + _NL + block
-            )
-
-
-def test_local_readme_python_blocks_execute():
-    # Runtime gate for py/README.md. Blocks that build a client run in seeded
-    # test mode; blocks that only drive an earlier snippet's "client" get a
-    # seeded test client injected (inject_client=True) so they run too. A
-    # programming error (e.g. result["err"] KeyError on a direct() envelope
-    # with no err key) fails; a not-found domain error is tolerated.
-    executed = _execute_blocks(_local_readme_blocks(), "py README.md", inject_client=True)
-    assert executed > 0, (
-        "expected at least one python block in py/README.md to execute"
+def test_reference_completeness_gate():
+    stats = _completeness_gate("py REFERENCE.md", _reference_blocks())
+    assert stats["executed"] > 0, (
+        "expected at least one runnable python block in py/REFERENCE.md to execute"
     )
 `)
   })

@@ -1,11 +1,13 @@
 
-import { cmp, Content, isAuthActive, envName, entityIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, entityIdField, entityOps, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
   nom,
 } from '@voxgig/apidef'
+
+import { exampleValue, goVarName } from './utility_go'
 
 
 const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
@@ -31,42 +33,61 @@ client := ${ctor}
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    const eVar = safeVarName(eName.toLowerCase(), 'go')
-    const opnames = Object.keys(exampleEntity.op || {})
+    // camelCase Go identifier (never snake_case, never a Go keyword).
+    const eVar = goVarName(exampleEntity.name)
+    // ACTIVE ops only — an inactive op generates no method, so an example
+    // calling it would not compile.
+    const opnames = entityOps(exampleEntity)
 
     let hasCall = false
 
     if (opnames.includes('list')) {
       Content(`// List all ${eName.toLowerCase()}s
 ${eVar}s, err := client.${eName}(nil).List(nil, nil)
+if err != nil {
+    panic(err)
+}
 fmt.Println(${eVar}s)
 `)
       hasCall = true
     }
 
-    // Find a nested entity for a more interesting example
+    // Find a nested entity for a more interesting example: one with a parent
+    // chain (relations.ancestors), an active load op, and a required non-id
+    // load param to demonstrate (the parent key, e.g. page_id).
     const nestedEntity = Object.values(entity).find((e: any) =>
-      e.active !== false && e.ancestors && e.ancestors.length > 0
+      e.active !== false &&
+      e.relations && e.relations.ancestors && 0 < e.relations.ancestors.length &&
+      entityOps(e).includes('load') &&
+      opRequestShape(e, 'load').items.some((it: any) =>
+        !it.optional && it.name !== entityIdField(e))
     ) as any
 
-    if (nestedEntity && opnames.includes('load')) {
+    if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
-      const neVar = safeVarName(neName.toLowerCase(), 'go')
-      const parentFields = (nestedEntity.fields || [])
-        .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
-      const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
-      // Model-driven id key: only include the nested entity's id if it has one.
+      const neVar = goVarName(nestedEntity.name)
+      // Model-driven match: every REQUIRED load-match key — the same shape
+      // that generates the op's request match, so the example always carries
+      // the keys the route needs. Parent keys (e.g. page_id) first, the
+      // entity's own id last, each value a type-correct Go literal.
       const neIdF = entityIdField(nestedEntity)
-      const neMatchPairs = [`"${parentParam}": "example"`]
-      if (neIdF) {
-        neMatchPairs.push(`"${neIdF}": "example_id"`)
-      }
+      const neLoadOp = nestedEntity.op && nestedEntity.op.load
+      const neMatchPairs = opRequestShape(nestedEntity, 'load').items
+        .filter((it: any) => !it.optional)
+        .sort((a: any, b: any) =>
+          (a.name === neIdF ? 1 : 0) - (b.name === neIdF ? 1 : 0))
+        .map((it: any) =>
+          `"${it.name}": ${exampleValue(nestedEntity, neLoadOp, it.name,
+            it.name === neIdF ? 'example_id' : 'example_' + it.name)}`)
 
       Content(`
 // Load a specific ${neName.toLowerCase()}
 ${neVar}, err := client.${neName}(nil).Load(
     map[string]any{${neMatchPairs.join(', ')}}, nil,
 )
+if err != nil {
+    panic(err)
+}
 fmt.Println(${neVar})
 `)
       hasCall = true
@@ -74,8 +95,22 @@ fmt.Println(${neVar})
 
     // Fallback: APIs with only `load` (no list, no nested) — still show one call.
     if (!hasCall && opnames.includes('load')) {
+      // Every REQUIRED load-match key (id first) — nil when there are none.
+      const idF = entityIdField(exampleEntity)
+      const loadItems = opRequestShape(exampleEntity, 'load').items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      const loadArg = 0 < loadItems.length
+        ? `map[string]any{${loadItems.map((it: any) =>
+          `"${it.name}": ${exampleValue(exampleEntity, exampleEntity.op && exampleEntity.op.load, it.name,
+            it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')}}`
+        : 'nil'
       Content(`// Load ${eName.toLowerCase()} data
-${eVar}, err := client.${eName}(nil).Load(map[string]any{}, nil)
+${eVar}, err := client.${eName}(nil).Load(${loadArg}, nil)
+if err != nil {
+    panic(err)
+}
 fmt.Println(${eVar})
 `)
       hasCall = true

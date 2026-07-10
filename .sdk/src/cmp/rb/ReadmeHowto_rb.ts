@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -23,15 +23,20 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
-  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `load` on an op-less entity like Cloudsmith's `Abort`. primaryOp is null
+  // only when NO entity exposes any op (a direct()-only SDK).
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
+  // Sanitise the local variable name — an entity whose lowercased name is a
+  // Ruby keyword (e.g. `self`) would otherwise emit uncompilable code. The
+  // fixture KEY (`"${eName.toLowerCase()}"`) stays raw — it must match the
+  // entity's registered name for the mock lookup to resolve.
+  const eVar = safeVarName(eName.toLowerCase(), 'rb')
   // Model-driven id key: null when the entity has no id-like field (a
   // response-wrapped spec). When null the fixture seeds no id and a match op
   // takes no argument.
   const idF = exampleEntity ? entityIdField(exampleEntity) : null
-  // Drive the test-mode example off the entity's PRIMARY op — an op it actually
-  // exposes — never a hardcoded `load` a create-only entity lacks.
-  const primaryOp = exampleEntity ? (entityPrimaryOp(exampleEntity) || 'load') : 'load'
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
   const seedSentence = idF
     ? '. Seed fixture\ndata via the `entity` option so offline calls resolve without a live server'
@@ -51,6 +56,15 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     const chosen = required.length ? required : items.slice(0, 3)
     testCallArg = `{ ${chosen.map((it: any) => `"${it.name}" => ${rbLit(it.type)}`).join(', ')} }`
   }
+
+  // The op-driven test-mode line, shown only when the SDK has an entity op.
+  // A direct()-only SDK (no ops anywhere) shows a direct() call instead.
+  const testModeExample = primaryOp
+    ? `# Entity ops return the bare mock record (raises on error).
+${eVar} = client.${eName}.${primaryOp}(${testCallArg})
+puts ${eVar}`
+    : `result = client.direct({ "path" => "/api/resource", "method" => "GET" })
+puts result`
 
   const apikeyEnvLine = isAuthActive(model)
     ? `\n${envName(model)}_APIKEY=<your-key>`
@@ -101,9 +115,7 @@ Create a mock client for unit testing — no server required${seedSentence}:
 \`\`\`ruby
 client = ${testCtor}
 
-# Entity ops return the bare mock record (raises on error).
-${eName.toLowerCase()} = client.${eName}.${primaryOp}(${testCallArg})
-puts ${eName.toLowerCase()}
+${testModeExample}
 \`\`\`
 
 ### Use a custom fetch function

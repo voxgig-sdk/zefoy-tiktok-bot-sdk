@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, packageName, envName, opRequestShape, entityIdField, entityDataIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, packageName, envName, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -18,9 +18,15 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   // Find the first published entity for examples
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 
-  // Find a nested entity if available
+  // Find a nested entity if available: one with a parent chain
+  // (relations.ancestors), an active load op, and a required non-id load
+  // param to demonstrate (the parent key, e.g. page_id).
   const nestedEntity = Object.values(entity).find((e: any) =>
-    e.active !== false && e.ancestors && e.ancestors.length > 0
+    e.active !== false &&
+    e.relations && e.relations.ancestors && 0 < e.relations.ancestors.length &&
+    entityOps(e).includes('load') &&
+    opRequestShape(e, 'load').items.some((it: any) =>
+      !it.optional && it.name !== entityIdField(e))
   ) as any
 
   const ctor = isAuthActive(model)
@@ -44,7 +50,7 @@ const client = ${ctor}
     // reserved word (`const delete = ...` is a TS1109 syntax error).
     const eVar = safeVarName(eName.toLowerCase(), 'ts')
     const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
-    const opnames = Object.keys(exampleEntity.op || {})
+    const opnames = entityOps(exampleEntity)
     // Model-driven id key: `idF` is the entity's id-like MATCH field name, or
     // null when it has none (then load/remove match on no argument).
     const idF = entityIdField(exampleEntity)
@@ -74,22 +80,26 @@ for (const ${eVar} of ${eVar}s) {
       const neName = nom(nestedEntity, 'Name')
       const neVar = safeVarName(neName.toLowerCase(), 'ts')
       const neArticle = /^[aeiou]/i.test(neName) ? 'an' : 'a'
-      const parentFields = (nestedEntity.fields || [])
-        .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
-      const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
       const loadOp = nestedEntity.op && nestedEntity.op.load
 
-      // Model-driven id key: only emit an id match line if this nested entity
-      // actually has an id-like key field (some response-wrapped specs do not).
+      // Model-driven match: every REQUIRED load-match key — the same shape
+      // that generates <Name>LoadMatch, so the example always type-checks.
+      // Parent keys (e.g. page_id) first, the entity's own id last.
       const neIdF = entityIdField(nestedEntity)
-      const neMatchLines = [`    ${parentParam}: ${exampleValue(nestedEntity, loadOp, parentParam, 'example')},`]
-      if (neIdF) {
-        neMatchLines.push(`    ${neIdF}: ${exampleValue(nestedEntity, loadOp, neIdF, 'example_id')},`)
-      }
+      const neRequired = opRequestShape(nestedEntity, 'load').items
+        .filter((it: any) => !it.optional)
+        .sort((a: any, b: any) =>
+          (a.name === neIdF ? 1 : 0) - (b.name === neIdF ? 1 : 0))
+      const parentItem = neRequired.find((it: any) => it.name !== neIdF) as any
+      const parentParam = parentItem && parentItem.name
+      const parentName = parentParam ? parentParam.replace(/_id$/, '') : 'its parent'
+      const neMatchLines = neRequired.map((it: any) =>
+        `    ${it.name}: ${exampleValue(nestedEntity, loadOp, it.name,
+          it.name === neIdF ? 'example_id' : 'example_' + it.name)},`)
 
       Content(`### 3. Load ${neArticle} ${neName.toLowerCase()}
 
-${neName} is nested under ${eName}, so provide the \`${parentParam}\`.
+${neName} is nested under ${parentName}, so provide the \`${parentParam}\`.
 \`load()\` returns the entity directly and throws on failure:
 
 \`\`\`ts
@@ -106,13 +116,25 @@ ${neMatchLines.join('\n')}
 `)
     }
     else if (opnames.includes('load')) {
+      // Every REQUIRED load-match key (id first) — the same shape that
+      // generates <Name>LoadMatch, so the example always type-checks.
+      const loadRequired = opRequestShape(exampleEntity, 'load').items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      const loadArg = 0 < loadRequired.length
+        ? `{ ${loadRequired.map((it: any) =>
+          `${it.name}: ${exampleValue(exampleEntity, exampleEntity.op && exampleEntity.op.load, it.name,
+            it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')} }`
+        : ''
+
       Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
 \`load()\` returns the entity directly and throws on failure:
 
 \`\`\`ts
 try {
-  const ${eVar} = await client.${eName}().load(${idF ? `{ ${idF}: ${exampleValue(exampleEntity, exampleEntity.op && exampleEntity.op.load, idF, 'example_id')} }` : ''})
+  const ${eVar} = await client.${eName}().load(${loadArg})
   console.log(${eVar})
 } catch (err) {
   console.error('load failed:', err)
@@ -133,12 +155,19 @@ try {
       // <Name>CreateData (a TS2345); update is a patch, so a couple of fields
       // suffice.
       const exampleFields = (opname: string): string[] => {
+        // ids are rendered separately as the match key for update/remove; a
+        // REQUIRED id stays (dropping it makes the literal unassignable).
         const items = opRequestShape(exampleEntity, opname).items
-          .filter((it: any) => it.name !== idF && it.name !== 'id')
+          .filter((it: any) => (it.name !== idF && it.name !== 'id') ||
+            ('create' === opname && !it.optional))
         const required = items.filter((it: any) => !it.optional)
+        const optional = items.filter((it: any) => it.optional)
+        // Required members must all appear or the literal is not assignable
+        // to the typed <Name>{Create,Update}Data; pad update (a patch) with a
+        // sample optional field or two.
         const chosen = 'create' === opname
           ? (required.length ? required : items.slice(0, 2))
-          : items.slice(0, 2)
+          : required.concat(optional).slice(0, Math.max(2, required.length))
         return chosen.map((it: any) =>
           `  ${it.name}: ${exampleValue(exampleEntity, exampleEntity.op[opname], it.name, 'example_' + it.name)},`)
       }
@@ -175,8 +204,17 @@ const updated = await client.${eName}().update({${updateBody}})
 `)
       }
       if (opnames.includes('remove')) {
+        // Every REQUIRED remove-match key: the id (off the created record
+        // when possible) plus parent keys like page_id.
+        const removeLines = opRequestShape(exampleEntity, 'remove').items
+          .filter((it: any) => !it.optional || it.name === idF)
+          .sort((a: any, b: any) =>
+            (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+          .map((it: any) => it.name === idF
+            ? `  ${it.name}: ${idValueFor('remove')},`
+            : `  ${it.name}: ${exampleValue(exampleEntity, exampleEntity.op.remove, it.name, 'example_' + it.name)},`)
         Content(`// Remove
-await client.${eName}().remove(${idF ? `{\n  ${idF}: ${idValueFor('remove')},\n}` : ''})
+await client.${eName}().remove(${removeLines.length ? `{\n${removeLines.join('\n')}\n}` : ''})
 `)
       }
       Content(`\`\`\`

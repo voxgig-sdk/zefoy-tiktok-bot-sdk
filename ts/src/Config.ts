@@ -39,7 +39,7 @@ class Config {
     base: 'https://zefoy.com',
 
     auth: {
-      prefix: 'Bearer',
+      prefix: '',
     },
 
     headers: {

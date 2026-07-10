@@ -1,11 +1,13 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, entityPrimaryOp, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
   nom,
 } from '@voxgig/apidef'
+
+import { goVarName } from './utility_go'
 
 
 // A type-correct Go literal for a field's canonical type.
@@ -30,14 +32,16 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
-  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `Load` on an op-less entity like Cloudsmith's `Abort`. primaryOp is null
+  // only when NO entity exposes any op (a direct()-only SDK).
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
-  const eLower = safeVarName(eName.toLowerCase(), 'go')
+  // camelCase Go identifier (never snake_case or flattened lowercase,
+  // never a Go keyword).
+  const eLower = exampleEntity ? goVarName(exampleEntity.name) : 'entity'
   // Model-driven id key: null when the entity has no id-like field.
   const idF = exampleEntity ? entityIdField(exampleEntity) : null
-  // Drive the test-mode example off the entity's PRIMARY op — never a hardcoded
-  // `Load` a create-only entity lacks.
-  const primaryOp = exampleEntity ? (entityPrimaryOp(exampleEntity) || 'load') : 'load'
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
   let testArg = 'nil'
   if (exampleEntity && isMatchOp) {
@@ -49,6 +53,23 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     const chosen = required.length ? required : items.slice(0, 3)
     testArg = `map[string]any{${chosen.map((it: any) => `"${it.name}": ${goLit(it.type)}`).join(', ')}}`
   }
+
+  // The op-driven test-mode block, shown only when the SDK has an entity op.
+  // A direct()-only SDK (no ops anywhere) shows a Direct() call instead — never
+  // a fabricated method (`cap(primaryOp)` would also fail on a null op).
+  const testModeExample = primaryOp
+    ? `${eLower}, err := client.${eName}(nil).${cap(primaryOp)}(
+    ${testArg}, nil,
+)
+if err != nil {
+    panic(err)
+}
+fmt.Println(${eLower}) // the returned mock data`
+    : `result, err := client.Direct(map[string]any{"path": "/api/resource", "method": "GET"})
+if err != nil {
+    panic(err)
+}
+fmt.Println(result)`
 
   const apikeyEnvLine = isAuthActive(model)
     ? `\n${envName(model)}_APIKEY=<your-key>`
@@ -98,13 +119,7 @@ Create a mock client for unit testing \u2014 no server required:
 \`\`\`go
 client := sdk.Test()
 
-${eLower}, err := client.${eName}(nil).${cap(primaryOp)}(
-    ${testArg}, nil,
-)
-if err != nil {
-    panic(err)
-}
-fmt.Println(${eLower}) // the returned mock data
+${testModeExample}
 \`\`\`
 
 ### Use a custom fetch function

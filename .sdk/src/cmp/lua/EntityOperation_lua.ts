@@ -7,7 +7,7 @@ import {
 
 const EntityOperation = cmp(function Operation(props: any) {
   const { model } = props.ctx$
-  const { ff, opname, entity, entrep } = props
+  const { ff, opname, entity, entrep, cls } = props
 
   let { indent } = props
 
@@ -29,6 +29,11 @@ const EntityOperation = cmp(function Operation(props: any) {
       ProjectName: model.const.Name,
       EntityName: entity.Name,
       entityname: entity.name,
+
+      // Class receiver token decoupled from the EntityName data-type token in
+      // the Entity<Op>Op.fragment.lua files (receiver -> cls).
+      EntyClass: cls,
+
       '#Feature-Hook': ({ name, indent }: any) =>
         Content({ indent }, `
 u.feature_hook(ctx, "${name}")

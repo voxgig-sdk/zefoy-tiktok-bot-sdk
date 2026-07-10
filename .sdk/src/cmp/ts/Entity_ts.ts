@@ -4,8 +4,13 @@ import * as Path from 'node:path'
 import {
   cmp, each, camelify, names,
   File, Content, Folder, Fragment, Line, FeatureHook, Slot,
-  opTypeName,
+  opTypeName, entityClassName,
 } from '@voxgig/sdkgen'
+
+import {
+  KIT,
+  getModelPath
+} from '@voxgig/apidef'
 
 import { EntityOperation } from './EntityOperation_ts'
 // import { EntityTest } from './EntityTest_ts'
@@ -14,6 +19,13 @@ import { EntityOperation } from './EntityOperation_ts'
 const Entity = cmp(function Entity(props: any) {
   const { model, stdrep } = props.ctx$
   const { target, entity } = props
+
+  // Collision-free entity CLASS name (see entityClassName): normally
+  // `<Name>Entity`, disambiguated when it would clash with another entity's
+  // data-type name. The DATA type stays `<Name>`. The class file name and the
+  // Main import path both use this, so they always agree.
+  const entityColl = getModelPath(model, `main.${KIT}.entity`)
+  const cls = entityClassName(entity, entityColl)
 
   const entrep = {
     ...stdrep,
@@ -38,7 +50,7 @@ const Entity = cmp(function Entity(props: any) {
 
   Folder({ name: 'src/entity' }, () => {
 
-    File({ name: entity.Name + 'Entity.' + target.name }, () => {
+    File({ name: cls + '.' + target.name }, () => {
 
       const opnames = Object.keys(entity.op)
 
@@ -57,6 +69,10 @@ const Entity = cmp(function Entity(props: any) {
           entityname: entity.name,
           SdkName: model.const.Name,
           EntityName: entity.Name,
+
+          // Class token decoupled from the EntityName data-type token in
+          // Entity.fragment.ts so the class can be renamed independently.
+          EntyClass: cls,
 
           '#TypeImports': ({ indent }: any) => Content({ indent }, typeImport),
 

@@ -10,7 +10,7 @@ type entityCreateOp struct{}
 
 // EJECT-START
 
-func (e *EntityNameEntity) Create(reqdata map[string]any, ctrl map[string]any) (any, error) {
+func (e *EntyClass) Create(reqdata map[string]any, ctrl map[string]any) (any, error) {
 	utility := e.utility
 	ctx := utility.MakeContext(map[string]any{
 		"opname":  "create",
@@ -35,7 +35,7 @@ func (e *EntityNameEntity) Create(reqdata map[string]any, ctrl map[string]any) (
 // CreateTyped is the statically-typed variant of Create: it takes an
 // EntityNameCreateData and returns an EntityName. It delegates to the untyped
 // Create (identical runtime) and converts at the typed boundary.
-func (e *EntityNameEntity) CreateTyped(reqdata EntityNameCreateData, ctrl map[string]any) (EntityName, error) {
+func (e *EntyClass) CreateTyped(reqdata EntityNameCreateData, ctrl map[string]any) (EntityName, error) {
 	res, err := e.Create(asMap(reqdata), ctrl)
 	if err != nil {
 		return EntityName{}, err

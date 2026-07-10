@@ -4,6 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
+  entityClassName,
 } from '@voxgig/sdkgen'
 
 
@@ -55,8 +56,10 @@ const Main = cmp(async function Main(props: any) {
 
       Line(`// ${model.const.Name} ${target.Name} SDK\n`)
 
-      List({ item: entity }, ({ item }: any) =>
-        Line(`import { ${item.Name}Entity } from './entity/${item.Name}Entity'`))
+      List({ item: entity }, ({ item }: any) => {
+        const cls = entityClassName(item, entity)
+        return Line(`import { ${cls} } from './entity/${cls}'`)
+      })
 
       // Re-export the generated typed models so consumers can
       // `import { Advice, AdviceLoadMatch } from '<pkg>'`.

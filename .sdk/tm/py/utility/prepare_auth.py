@@ -38,6 +38,9 @@ def prepare_auth_util(ctx):
         apikey_val = ""
         if isinstance(apikey, str):
             apikey_val = apikey
-        headers[HEADER_AUTH] = auth_prefix + " " + apikey_val
+        # Empty prefix (raw apiKey credential) must not add a leading space.
+        headers[HEADER_AUTH] = (
+            auth_prefix + " " + apikey_val if auth_prefix else apikey_val
+        )
 
     return spec, None

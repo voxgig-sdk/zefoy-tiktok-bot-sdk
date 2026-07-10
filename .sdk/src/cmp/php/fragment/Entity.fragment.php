@@ -8,7 +8,7 @@ require_once __DIR__ . '/../core/Helpers.php';
 
 use Voxgig\Struct\Struct;
 
-class EntityNameEntity
+class EntyClass
 {
     private string $_name;
     private $_client;
@@ -52,7 +52,7 @@ class EntityNameEntity
     public function make(): self
     {
         $opts = $this->_entopts;
-        return new EntityNameEntity($this->_client, $opts);
+        return new EntyClass($this->_client, $opts);
     }
 
     /**

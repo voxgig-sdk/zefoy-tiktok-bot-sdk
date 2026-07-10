@@ -3,8 +3,14 @@ import * as Path from 'node:path'
 
 import {
   cmp, each, camelify, names,
-  File, Content, Folder, Fragment, Line, FeatureHook, Slot
+  File, Content, Folder, Fragment, Line, FeatureHook, Slot,
+  entityClassName,
 } from '@voxgig/sdkgen'
+
+import {
+  KIT,
+  getModelPath
+} from '@voxgig/apidef'
 
 import { EntityOperation } from './EntityOperation_py'
 
@@ -18,6 +24,13 @@ const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
 const Entity = cmp(function Entity(props: any) {
   const { model, stdrep } = props.ctx$
   const { target, entity } = props
+
+  // Collision-free entity CLASS name (see entityClassName): normally
+  // `<Name>Entity`, disambiguated when it would clash with another entity's
+  // data-type name. The DATA type stays `<Name>`. The snake-cased source-file
+  // name is unaffected; only the class identifier changes.
+  const entityColl = getModelPath(model, `main.${KIT}.entity`)
+  const cls = entityClassName(entity, entityColl)
 
   const entrep = {
     ...stdrep,
@@ -65,6 +78,10 @@ const Entity = cmp(function Entity(props: any) {
           ProjectName: model.const.Name,
           EntityName: entity.Name,
           entityname: entity.name,
+
+          // Class token decoupled from the EntityName data-type token in
+          // Entity.fragment.py so the class can be renamed independently.
+          EntyClass: cls,
 
           // Literal-marker slot (jostraca's `#Name` tag pattern is hardcoded to
           // `//` comments, so Python uses a `# #`-prefixed literal like the op

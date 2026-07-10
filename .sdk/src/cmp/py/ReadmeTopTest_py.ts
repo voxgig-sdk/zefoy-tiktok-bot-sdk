@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -24,22 +24,30 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
 
-  const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `load` on an op-less entity like Cloudsmith's `Abort`.
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
 
   Content(`\`\`\`python
 client = ${model.const.Name}SDK.test()
 `)
 
-  if (exampleEntity) {
+  if (exampleEntity && primaryOp) {
     const eName = nom(exampleEntity, 'Name')
-    // Drive the test-mode example off the entity's PRIMARY op (never a
-    // hardcoded `load` a create-only entity lacks).
     const idF = entityIdField(exampleEntity)
-    const primaryOp = entityPrimaryOp(exampleEntity) || 'load'
     const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
     let arg = ''
     if (isMatchOp) {
-      arg = idF ? `{"${idF}": "test01"}` : ''
+      // Every REQUIRED match key (id first) — the same shape that generates
+      // the op's Match type, so the block also satisfies the mypy doc gate.
+      const items = opRequestShape(exampleEntity, primaryOp).items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      arg = 0 < items.length
+        ? `{${items.map((it: any) =>
+          `"${it.name}": ${it.name === idF ? '"test01"' : pyLit(it.type)}`).join(', ')}}`
+        : ''
     } else if ('create' === primaryOp || 'update' === primaryOp) {
       const items = opRequestShape(exampleEntity, primaryOp).items
         .filter((it: any) => it.name !== idF && it.name !== 'id')
@@ -47,8 +55,12 @@ client = ${model.const.Name}SDK.test()
       const chosen = required.length ? required : items.slice(0, 3)
       arg = `{${chosen.map((it: any) => `"${it.name}": ${pyLit(it.type)}`).join(', ')}}`
     }
-    Content(`${eName.toLowerCase()} = client.${eName}().${primaryOp}(${arg})
-print(${eName.toLowerCase()})
+    // A list() result is a list — name the variable accordingly (the root
+    // README doc gate concatenates blocks, so reusing the singular name for
+    // a different type is a mypy assignment error).
+    const eVar = safeVarName(eName.toLowerCase(), 'py') + ('list' === primaryOp ? 's' : '')
+    Content(`${eVar} = client.${eName}().${primaryOp}(${arg})
+print(${eVar})
 `)
   }
 

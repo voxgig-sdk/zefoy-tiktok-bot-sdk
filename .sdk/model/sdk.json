@@ -6,9 +6,6 @@
     },
     "kit": {
       "config": {
-        "auth": {
-          "prefix": "Bearer"
-        },
         "docs_order": [
           "ts",
           "py",
@@ -232,14 +229,24 @@
           "name": "MIT",
           "url": "https://opensource.org/licenses/MIT"
         },
+        "meta_source": "https://www.freepublicapis.com",
+        "security": {
+          "in": "cookie",
+          "name": "PHPSESSID",
+          "prefix": "",
+          "scheme": "sessionAuth",
+          "type": "apiKey"
+        },
         "servers": [
           {
             "description": "Zefoy Production Server",
             "url": "https://zefoy.com"
           }
         ],
+        "summary": "The Zefoy API provides automation tools for TikTok, enabling users to acquire likes, followers, shares, and views efficiently.",
         "title": "Zefoy TikTok Bot",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "website": "https://zefoy.com"
       },
       "option": {},
       "target": {
@@ -292,6 +299,9 @@
           },
           "name": "go-cli",
           "phase": {
+            "agentguide": {
+              "active": false
+            },
             "entity": {
               "active": false
             },
@@ -342,6 +352,9 @@
           },
           "name": "go-mcp",
           "phase": {
+            "agentguide": {
+              "active": false
+            },
             "entity": {
               "active": false
             },

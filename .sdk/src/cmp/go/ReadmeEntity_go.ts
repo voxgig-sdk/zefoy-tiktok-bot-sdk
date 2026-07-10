@@ -1,10 +1,12 @@
 
-import { cmp, each, Content, canonToType, entityIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, entityIdField, entityOps, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+import { exampleValue, goVarName } from './utility_go'
 
 
 // Operation method spelling differs between Go and other languages — Go
@@ -39,12 +41,15 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
 
   publishedEntities.map((entity: any) => {
-    const opnames = Object.keys(entity.op || {})
+    // ACTIVE ops only — an inactive op generates no method, so an example
+    // calling it would not compile.
+    const opnames = entityOps(entity)
     const fields = entity.fields || []
     // Model-driven id key: null when this entity has no id-like field.
     const idF = entityIdField(entity)
-    // Variable-safe lowercase name (a `Type`/`Range` entity must not bind a Go keyword).
-    const eVar = safeVarName(entity.name, 'go')
+    // camelCase Go identifier (a `status_embed_config` entity must not bind a
+    // snake_case Go variable, and a `type`/`range` entity not a Go keyword).
+    const eVar = goVarName(entity.name)
 
     Content(`
 ### ${entity.Name}
@@ -97,10 +102,22 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     }
 
     if (opnames.includes('load')) {
+      // The id key plus every REQUIRED match key (parent path params like
+      // page_id) — the same shape that generates the op's request match, so
+      // the example always carries the keys the route needs.
+      const loadItems = opRequestShape(entity, 'load').items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      const loadArg = 0 < loadItems.length
+        ? `map[string]any{${loadItems.map((it: any) =>
+          `"${it.name}": ${exampleValue(entity, entity.op && entity.op.load, it.name,
+            it.name === idF ? entity.name + '_id' : it.name)}`).join(', ')}}`
+        : 'nil'
       Content(`#### Example: Load
 
 \`\`\`go
-${eVar}, err := client.${entity.Name}(nil).Load(${idF ? `map[string]any{"${idF}": "${entity.name}_id"}` : 'nil'}, nil)
+${eVar}, err := client.${entity.Name}(nil).Load(${loadArg}, nil)
 if err != nil {
     panic(err)
 }
@@ -125,18 +142,27 @@ fmt.Println(${eVar}s) // the array of records
     }
 
     if (opnames.includes('create')) {
+      // Members come from the SAME shape that generates the op's request
+      // data (every required member appears, including a required id), each
+      // with a type-correct example VALUE via exampleValue — a
+      // `"name": /* type */` comment is not a value and yields uncompilable
+      // Go, so the example must carry a real literal.
+      const createItems = opRequestShape(entity, 'create').items
+        .filter((it: any) => !it.optional)
       Content(`#### Example: Create
 
 \`\`\`go
 result, err := client.${entity.Name}(nil).Create(map[string]any{
 `)
-      each(fields, (field: any) => {
-        if ('id' !== field.name && field.req) {
-          Content(`    "${field.name}": /* ${canonToType(field.type, target.name)} */,
+      createItems.map((it: any) => {
+        Content(`    "${it.name}": ${exampleValue(entity, entity.op && entity.op.create, it.name, 'example_' + it.name)},
 `)
-        }
       })
       Content(`}, nil)
+if err != nil {
+    panic(err)
+}
+fmt.Println(result)
 \`\`\`
 
 `)

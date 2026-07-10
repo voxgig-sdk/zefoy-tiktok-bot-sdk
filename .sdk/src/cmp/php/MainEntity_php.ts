@@ -1,6 +1,11 @@
 
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, entityClassName } from '@voxgig/sdkgen'
+
+import {
+  KIT,
+  getModelPath
+} from '@voxgig/apidef'
 
 
 // Reserved PHP method names on the SDK class that an entity accessor must
@@ -12,6 +17,10 @@ const PHP_RESERVED_LOWER = new Set(['test'])
 const MainEntity = cmp(async function MainEntity(props: any) {
   const { entity } = props
   const { model } = props.ctx$
+
+  // Collision-free entity CLASS name (entityClassName); the accessor METHOD name
+  // (below) is unchanged so callers still write $client->${entity.Name}().
+  const cls = entityClassName(entity, getModelPath(model, `main.${KIT}.entity`))
 
   // Canonical facade method name is the PascalCase entity Name
   // (`$client->${entity.Name}()`). PHP method names are case-insensitive, so
@@ -34,11 +43,11 @@ const MainEntity = cmp(async function MainEntity(props: any) {
         require_once __DIR__ . '/entity/${entity.name}_entity.php';
         if ($data === null) {
             if ($this->_${entity.name} === null) {
-                $this->_${entity.name} = new ${entity.Name}Entity($this, null);
+                $this->_${entity.name} = new ${cls}($this, null);
             }
             return $this->_${entity.name};
         }
-        return new ${entity.Name}Entity($this, $data);
+        return new ${cls}($this, $data);
     }
 
 `)

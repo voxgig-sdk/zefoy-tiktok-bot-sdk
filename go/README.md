@@ -54,7 +54,7 @@ func main() {
     })
 
     // Create a engagement.
-    created, err := client.Engagement(nil).Create(map[string]any{"url": "example"}, nil)
+    created, err := client.Engagement(nil).Create(map[string]any{"url": "example_url"}, nil)
     if err != nil {
         panic(err)
     }
@@ -306,8 +306,12 @@ Create an instance: `engagement := client.Engagement(nil)`
 
 ```go
 result, err := client.Engagement(nil).Create(map[string]any{
-    "url": /* string */,
+    "url": "example_url",
 }, nil)
+if err != nil {
+    panic(err)
+}
+fmt.Println(result)
 ```
 
 

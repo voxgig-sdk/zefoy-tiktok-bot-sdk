@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -23,21 +23,29 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
 
-  const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `load` on an op-less entity like Cloudsmith's `Abort`.
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
 
-  if (exampleEntity) {
+  if (exampleEntity && primaryOp) {
     const eName = nom(exampleEntity, 'Name')
     const ename = eName.toLowerCase()
     // Model-driven id key: null when the entity has no id-like field.
     const idF = entityIdField(exampleEntity)
-    // Drive the test-mode example off the entity's PRIMARY op (never a hardcoded
-    // `load` a create-only entity lacks).
-    const primaryOp = entityPrimaryOp(exampleEntity) || 'load'
     const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
     const recBody = idF ? `["${idF}" => "test01"]` : '[]'
     let callArg = ''
     if (isMatchOp) {
-      callArg = idF ? `["${idF}" => "test01"]` : ''
+      // Every REQUIRED match key (id first, then parent path params like
+      // page_id) — the same shape the runtime resolves path params from.
+      const items = opRequestShape(exampleEntity, primaryOp).items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      callArg = 0 < items.length
+        ? `[${items.map((it: any) =>
+          `"${it.name}" => ${it.name === idF ? '"test01"' : phpLit(it.type)}`).join(', ')}]`
+        : ''
     } else if ('create' === primaryOp || 'update' === primaryOp) {
       const items = opRequestShape(exampleEntity, primaryOp).items
         .filter((it: any) => it.name !== idF && it.name !== 'id')
@@ -45,12 +53,14 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
       const chosen = required.length ? required : items.slice(0, 3)
       callArg = `[${chosen.map((it: any) => `"${it.name}" => ${phpLit(it.type)}`).join(', ')}]`
     }
+    // A list result is an array — name the variable accordingly.
+    const eVar = ename + ('list' === primaryOp ? 's' : '')
     Content(`\`\`\`php
 // Seed fixture data so offline calls resolve without a live server.
 $client = ${model.const.Name}SDK::test([
     "entity" => ["${ename}" => ["test01" => ${recBody}]],
 ]);
-$${ename} = $client->${eName}()->${primaryOp}(${callArg});
+$${eVar} = $client->${eName}()->${primaryOp}(${callArg});
 \`\`\`
 `)
   } else {

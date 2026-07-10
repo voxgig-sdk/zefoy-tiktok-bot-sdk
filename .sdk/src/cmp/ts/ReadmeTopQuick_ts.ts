@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, packageName, envName, entityIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, packageName, envName, entityIdField, entityOps, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -31,7 +31,7 @@ const client = ${ctor}
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
     const eVar = safeVarName(eName.toLowerCase(), 'ts')
-    const opnames = Object.keys(exampleEntity.op || {})
+    const opnames = entityOps(exampleEntity)
 
     let hasCall = false
 
@@ -45,26 +45,33 @@ for (const ${eVar} of ${eVar}s) {
       hasCall = true
     }
 
-    // Find a nested entity for a more interesting example
+    // Find a nested entity for a more interesting example: one with a parent
+    // chain, an active load op of its OWN, and a required non-id load param
+    // to demonstrate (the parent key, e.g. page_id).
     const nestedEntity = Object.values(entity).find((e: any) =>
-      e.active !== false && e.ancestors && e.ancestors.length > 0
+      e.active !== false &&
+      e.relations && e.relations.ancestors && 0 < e.relations.ancestors.length &&
+      entityOps(e).includes('load') &&
+      opRequestShape(e, 'load').items.some((it: any) =>
+        !it.optional && it.name !== entityIdField(e))
     ) as any
 
-    if (nestedEntity && opnames.includes('load')) {
+    if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
       const neVar = safeVarName(neName.toLowerCase(), 'ts')
-      const parentFields = (nestedEntity.fields || [])
-        .filter((f: any) => f.name !== 'id' && f.name.endsWith('_id'))
-      const parentParam = parentFields.length > 0 ? parentFields[0].name : 'parent_id'
       const loadOp = nestedEntity.op && nestedEntity.op.load
 
-      // Model-driven id key: only emit an id match line if the nested entity
-      // has an id-like key field.
+      // Every REQUIRED load-match key (parent keys first, own id last) — the
+      // same shape that generates <Name>LoadMatch, so the example
+      // type-checks.
       const neIdF = entityIdField(nestedEntity)
-      const neMatchLines = [`  ${parentParam}: ${exampleValue(nestedEntity, loadOp, parentParam, 'example')},`]
-      if (neIdF) {
-        neMatchLines.push(`  ${neIdF}: ${exampleValue(nestedEntity, loadOp, neIdF, 'example_id')},`)
-      }
+      const neMatchLines = opRequestShape(nestedEntity, 'load').items
+        .filter((it: any) => !it.optional || it.name === neIdF)
+        .sort((a: any, b: any) =>
+          (a.name === neIdF ? 1 : 0) - (b.name === neIdF ? 1 : 0))
+        .map((it: any) =>
+          `  ${it.name}: ${exampleValue(nestedEntity, loadOp, it.name,
+            it.name === neIdF ? 'example_id' : 'example_' + it.name)},`)
 
       Content(`
 // Load a specific ${neName.toLowerCase()} (returns a ${neName})

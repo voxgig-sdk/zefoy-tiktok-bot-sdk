@@ -13,15 +13,22 @@ main: {
         name: "MIT"
         url: "https://opensource.org/licenses/MIT"
       }
+      security: {
+        in: "cookie"
+        name: "PHPSESSID"
+        prefix: ""
+        scheme: "sessionAuth"
+        type: "apiKey"
+      }
       servers: [
         {
           description: "Zefoy Production Server"
           url: "https://zefoy.com"
         }
       ]
+      summary: "The Zefoy API provides automation tools for TikTok, enabling users to acquire likes, followers, shares, and views efficiently."
       title: "Zefoy TikTok Bot"
       version: "1.0.0"
+      website: "https://zefoy.com"
     }
   }
-}
-

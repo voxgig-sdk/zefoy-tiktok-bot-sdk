@@ -7,7 +7,7 @@ DEF: {
 basic: set: [
 
   { ctx: spec:headers:{}
-    match: ctx:spec:headers:authorization:' APIKEY01'
+    match: ctx:spec:headers:authorization:'APIKEY01'
   }
 
 ]

@@ -7,46 +7,31 @@ import {
 } from '@voxgig/apidef'
 
 
-// Generates ts/test/readme_examples.test.ts — a test that reads the
-// repo's root README.md, extracts every fenced ```ts block, and puts each
-// one through TWO gates:
+// Generates ts/test/readme_examples.test.ts — a COMPLETENESS GATE that
+// guarantees every fenced \`\`\`ts code example across all THREE docs (the
+// repo root README.md, this target's per-language README.md, and its
+// REFERENCE.md) is unit-tested. Every block from every doc is:
 //
-//  (1) TYPE-CHECK — every block is wrapped in an isolated block scope
-//      inside one async function, written to a temp module, and compiled
-//      with the repo's local `tsc --noEmit`. This catches API-shape drift
-//      that a runtime test cannot — e.g. reading `.data` off a `list()`
-//      result (a bare `Advice[]`) is a compile error, so a stale
-//      `advices.data` snippet fails the build.
-//
-//  (2) EXECUTE — every runnable block is rewritten to seeded test mode
-//      (`new <Sdk>SDK(...)` and any `<Sdk>SDK.test(...)` become
-//      `<Sdk>SDK.test({ entity: { <entname>: { test01: { id: 'test01' } } } })`
-//      seeding a fixture for every entity), transpiled to JS, and RUN
-//      offline. A LIVE example constructed with `new <Sdk>SDK()` is now
-//      actually executed, so a documented call that doesn't work at
-//      runtime (undefined method, wrong-arg-count, bad symbol) FAILS the
-//      test. Only an expected domain error (a 404 / "Not found" for an
-//      unseeded id) is tolerated.
-//
-// Both gates run against whatever the README currently says, so editing a
-// snippet to misuse the SDK — at the type level OR the runtime level —
-// makes THIS test fail.
-//
-// A THIRD gate TYPE-CHECKS the per-language REFERENCE.md: its ```ts blocks
-// are extracted and compiled the same way, minus the method-signature
-// illustration blocks (typed-param sigs, `field: /* type */` placeholders)
-// that are documentation rather than runnable code. This catches the same
-// class of API-shape drift in REFERENCE.md — e.g. a `number` id shown as a
-// quoted string in a `load({ id })` example is a compile error.
-//
-// A FOURTH gate TYPE-CHECKS this target's OWN per-language README.md the
-// exact same way (same `tsc --noEmit` against the shared seeded client, same
-// `isReferenceSnippet` illustration-skip). The per-language README carries
-// ~20 how-to / error-handling / entity examples that no other gate touches;
-// without this gate a merged section can ship a real type bug — e.g. a
-// string id passed to a `number`-typed `load({ id })` (TS2322) — undetected.
-// Shape-illustration blocks (`{ ok: boolean; status: number; ... }`) list
-// bare type keywords as values, so isReferenceSnippet skips them too.
+//  (1) TYPE-CHECKED against the real SDK types with the repo's local
+//      \`tsc --noEmit\`. To stay robust against tsc suppressing all semantic
+//      diagnostics program-wide whenever one file has a syntax error, blocks
+//      are compiled one-file-per-block in a fixpoint: compile the batch, drop
+//      the ones that error, recompile the rest, until a pass is clean — so a
+//      real type bug can never hide behind a neighbouring illustration's
+//      syntax error.
+//  (2) EXECUTED, if RUNNABLE (constructs \`new <Sdk>SDK\` / \`<Sdk>SDK.test\`
+//      or drives \`client.\`), by rewriting it to a seeded test-mode client
+//      and running it offline. A programming error (undefined method, wrong
+//      arity, bad symbol) fails; only a 404 / "Not found" domain error for an
+//      unseeded id is tolerated. This now runs for ALL THREE docs (previously
+//      only the root README executed).
+//  (3) PARTITIONED into exactly one of { executed, typechecked-only,
+//      illustration } with the counts asserted to sum to the total. A block
+//      that does NOT type-check is only allowed if it matches the NARROW
+//      illustration allowlist (bare method-signature \`?:\`, \`/* placeholder */\`
+//      value, or a type-SHAPE block). Any other non-type-checking block FAILS
+//      the test, quoting the block — it is NEVER silently skipped. A per-doc
+//      summary line makes the coverage visible in the test output.
 const ReadmeExamplesTest = cmp(function ReadmeExamplesTest(props: any) {
   const { ctx$: { model } } = props
   const Name = model.const.Name
@@ -64,21 +49,28 @@ const ReadmeExamplesTest = cmp(function ReadmeExamplesTest(props: any) {
   const seedLiteral = JSON.stringify({ entity: seedEntities })
 
   File({ name: 'readme_examples.test.ts' }, () => {
-    Content(`// Verifies every TypeScript snippet in the repo's root README.md both
-// TYPE-CHECKS and EXECUTES in offline test mode, and TYPE-CHECKS the usage
-// snippets in this target's REFERENCE.md AND its per-language README.md.
+    Content(`// Completeness gate over every TypeScript example in this SDK's docs.
 //
-// (1) Type-check: each fenced \\\`\\\`\\\`ts block is extracted, wrapped in
-//     its own block scope inside one async function, written to a temp
-//     module, and compiled with the repo's local \\\`tsc --noEmit\\\`. A
-//     snippet that misuses the SDK types (e.g. \\\`.data\\\` on a
-//     \\\`list()\\\` array) is a compile error and fails this test.
-// (2) Execute: each runnable block is rewritten to seeded test mode
-//     (\\\`new ${Name}SDK(...)\\\` / \\\`${Name}SDK.test(...)\\\` become
-//     \\\`${Name}SDK.test({ entity: ... })\\\`), transpiled to JS, and run
-//     offline. A programming error (undefined method, wrong-arg-count,
-//     bad symbol) fails the test; only an expected domain error (a 404 /
-//     "Not found" for an unseeded id) is tolerated.
+// Covers all THREE documentation files — the repo root README.md, this
+// target's README.md, and its REFERENCE.md. Every fenced \`\`\`ts block in
+// every one is put through the same pipeline:
+//
+//  (1) TYPE-CHECK — every block is compiled with the repo's local
+//      \`tsc --noEmit\` against the real SDK types. A block that misuses the
+//      SDK types (e.g. \`.data\` on a \`list()\` array, or a string id where a
+//      number is required) is a compile error.
+//  (2) EXECUTE — every RUNNABLE block (one that constructs the SDK or
+//      drives \`client.\`) is rewritten to seeded test mode, transpiled to
+//      JS, and run offline. A programming error (undefined method,
+//      wrong-arg-count, bad symbol) fails the test; only an expected domain
+//      error (a 404 / "Not found" for an unseeded id) is tolerated.
+//  (3) COMPLETENESS — every block is partitioned into exactly one of
+//      { executed, typechecked-only, illustration } and the counts must sum
+//      to the total. A block that does NOT type-check is allowed ONLY if it
+//      matches the NARROW illustration allowlist (a bare method signature
+//      \`?:\`, a \`/* placeholder */\` value, or a type-SHAPE block). Any other
+//      non-type-checking block FAILS the test, quoting the block — it is
+//      never silently skipped.
 //
 // Generated by @voxgig/sdkgen — do not edit by hand.
 
@@ -101,7 +93,15 @@ const SEED_ARG = JSON.stringify(TEST_SEED)
 const SEEDED_CTOR = SDK_NAME + '.test(' + SEED_ARG + ')'
 
 
-// Pull out the body of every \\\`\\\`\\\`ts fenced code block.
+// The three docs this gate covers, resolved relative to dist-test/.
+const DOCS: Array<{ label: string; key: string; path: string }> = [
+  { label: 'root README.md', key: 'root_readme', path: Path.join(__dirname, '..', '..', 'README.md') },
+  { label: 'ts/README.md', key: 'lang_readme', path: Path.join(__dirname, '..', 'README.md') },
+  { label: 'ts/REFERENCE.md', key: 'reference', path: Path.join(__dirname, '..', 'REFERENCE.md') },
+]
+
+
+// Pull out the body of every \`\`\`ts fenced code block.
 function extractTsBlocks(md: string): string[] {
   const blocks: string[] = []
   const re = /\`\`\`ts\\n([\\s\\S]*?)\`\`\`/g
@@ -121,66 +121,176 @@ function stripImports(code: string): string {
 }
 
 
-function buildModule(blocks: string[]): string {
-  const body = blocks.map((b, i) =>
-    '  // --- README snippet ' + i + ' ---\\n  {\\n' +
-    stripImports(b).replace(/^/gm, '    ') + '\\n  }'
-  ).join('\\n\\n')
+// A block is an ILLUSTRATION shape — documentation, not runnable code — if
+// it matches this NARROW allowlist. These are the ONLY shapes a
+// non-type-checking block is allowed to be; anything else that fails to
+// type-check is a real bug and fails the gate. Three shapes:
+//   1. a bare method / constructor signature with a typed-parameter
+//      signature ("?:", e.g. \`options?: { base?: string }\`);
+//   2. a placeholder-comment value ("/*", e.g. \`field: /* string */\`);
+//   3. a type-SHAPE block that lists fields as \`name: TypeKeyword\` with the
+//      type standing alone as the value — e.g. the DirectResult / FetchDef
+//      shape \`{ ok: boolean; status: number; ... }\`. Those bare keywords
+//      are undeclared VALUES (TS2693 "only refers to a type"). Matched
+//      only at the START of a line, so a genuine annotation inside runnable
+//      code (e.g. \`(ctx: any) => ...\`) is NOT matched.
+const SHAPE_ILLUSTRATION =
+  /^\\s*[A-Za-z_$][\\w$]*\\??\\s*:\\s*(?:boolean|number|string|object|any|unknown|never|void|symbol|bigint|Record<|Partial<|Array<|Map<|Set<)/m
+function isIllustrationShape(code: string): boolean {
+  if (code.includes('?:')) {
+    return true
+  }
+  if (code.includes('/*')) {
+    return true
+  }
+  if (SHAPE_ILLUSTRATION.test(code)) {
+    return true
+  }
+  return false
+}
 
+
+// A block is RUNNABLE if it constructs the SDK (\`new <Sdk>SDK\` /
+// \`<Sdk>SDK.test\`) or drives a \`client.\` — those are the blocks the execute
+// gate rewrites to seeded test mode and runs.
+function isRunnable(code: string): boolean {
+  return (
+    /new\\s+${Name}SDK\\b/.test(code) ||
+    /\\b${Name}SDK\\.test\\b/.test(code) ||
+    /\\bclient\\s*\\./.test(code)
+  )
+}
+
+
+// Wrap ONE block as a self-contained temp module: the block goes in its own
+// scope inside an async function with a shared seeded \`client\`.
+function buildSnippetModule(block: string): string {
+  const inner = stripImports(block).split('\\n').map((l) => '    ' + l).join('\\n')
   return [
-    'import { ' + SDK_NAME + " } from '..'",
+    "import { " + SDK_NAME + " } from '..'",
     '',
-    'async function __readme_examples() {',
-    '  // Shared client for snippets that reference \\\`client\\\` without',
-    '  // constructing one (e.g. the direct() example).',
+    'async function __ex() {',
+    // Shared client for snippets that reference \`client\` without constructing
+    // one (e.g. the direct() example).
     '  const client = ' + SDK_NAME + '.test()',
     '  void client',
-    body,
+    '  {',
+    inner,
+    '  }',
     '}',
-    'void __readme_examples',
+    'void __ex',
     '',
   ].join('\\n')
 }
 
 
-// REFERENCE.md and the per-language README.md also carry ILLUSTRATION blocks
-// — documentation, not runnable TS — that must be skipped so the gate does
-// not falsely fail on them (a false failure on an illustration block is a
-// gate bug). Three shapes are skipped:
-//   1. method-signature blocks with a typed-parameter signature ("?:")
-//      (e.g. a bare constructor signature \\\`options?: { base?: string }\\\`);
-//   2. placeholder-comment values ("/*") in create examples
-//      (e.g. \\\`field: /* string */\\\`);
-//   3. type-SHAPE blocks that list fields as \\\`name: TypeKeyword\\\` with the
-//      type standing alone as the value — e.g. the DirectResult / FetchDef
-//      shape \\\`{ ok: boolean; status: number; ... }\\\`. Those bare keywords are
-//      undeclared VALUES (TS2693 "only refers to a type"), so the block is
-//      documentation. Matched only at the START of a line, so a genuine
-//      annotation inside runnable code (e.g. \\\`(ctx: any) => ...\\\`) is NOT
-//      skipped and still type-checks.
-// Everything that survives is compiled against a shared seeded client,
-// exactly like the root README.
-const SHAPE_ILLUSTRATION =
-  /^\\s*[A-Za-z_$][\\w$]*\\??\\s*:\\s*(?:boolean|number|string|object|any|unknown|never|void|symbol|bigint|Record<|Partial<|Array<|Map<|Set<)/m
-function isReferenceSnippet(code: string): boolean {
-  if (code.includes('?:')) {
-    return false
+// Compile a batch of blocks in ONE tsc pass — one temp file per block, so
+// each is an isolated program entry — and return which snippet indices
+// errored. NOTE: tsc suppresses ALL semantic diagnostics program-wide as
+// soon as any file has a SYNTAX error, so a single batch cannot be trusted;
+// \`typeCheckBlocks\` drives this in a fixpoint that removes erroring blocks
+// and recompiles the rest until a pass is clean.
+function compileBatch(indices: number[], blocks: string[], key: string): {
+  errored: Set<number>; raw: string; unattributed: boolean
+} {
+  const tsDir = Path.join(__dirname, '..')
+  const testDir = Path.join(tsDir, 'test')
+  // Leading dot: TypeScript wildcard includes skip dot-files, so these temp
+  // files are never swept into the normal build.
+  const files: string[] = []
+
+  try {
+    for (const i of indices) {
+      const f = Path.join(testDir, '.examples_' + key + '_snippet' + i + '.gen.ts')
+      Fs.writeFileSync(f, buildSnippetModule(blocks[i]), 'utf8')
+      files.push(f)
+    }
+
+    const requireFrom = createRequire(__filename)
+    const tsc = requireFrom.resolve('typescript/bin/tsc')
+
+    const res = spawnSync(process.execPath, [
+      tsc,
+      '--noEmit',
+      '--strict',
+      '--pretty', 'false',
+      '--target', 'ES2022',
+      '--module', 'nodenext',
+      '--moduleResolution', 'nodenext',
+      '--esModuleInterop',
+      '--resolveJsonModule',
+      '--skipLibCheck',
+      '--types', 'node',
+      ...files,
+    ], { cwd: tsDir, encoding: 'utf8' })
+
+    const raw = ((res.stdout || '') + (res.stderr || '')).trim()
+    const errored = new Set<number>()
+    let unattributed = false
+
+    if (0 !== res.status) {
+      for (const line of raw.split('\\n')) {
+        const m = /_snippet(\\d+)\\.gen\\.ts\\(\\d+,\\d+\\):\\s*error/.exec(line)
+        if (null == m) {
+          // A genuine error diagnostic not attributable to a snippet file
+          // (e.g. inside the SDK itself) is an anomaly.
+          if (/:\\s*error\\s+TS\\d+/.test(line)) {
+            unattributed = true
+          }
+          continue
+        }
+        errored.add(parseInt(m[1], 10))
+      }
+    }
+
+    return { errored, raw, unattributed }
+  } finally {
+    for (const f of files) {
+      Fs.rmSync(f, { force: true })
+    }
   }
-  if (code.includes('/*')) {
-    return false
+}
+
+
+// Determine, robustly, which of a doc's blocks fail to type-check. Because
+// one syntax error suppresses semantic diagnostics for the whole batch, we
+// iterate: compile the still-unresolved blocks, record the ones that
+// errored, drop them, and recompile the rest — until a pass reports no
+// errors. Each erroring pass strictly shrinks the working set, so this
+// terminates. \`globalError\` flags an unattributable tsc error, surfaced
+// verbatim by the caller.
+function typeCheckBlocks(blocks: string[], key: string): {
+  failing: Set<number>; raw: string; globalError: boolean
+} {
+  const failing = new Set<number>()
+  const raws: string[] = []
+  let globalError = false
+  let remaining = blocks.map((_b, i) => i)
+
+  // Guard: at most one pass per block plus a final clean pass.
+  for (let pass = 0; pass <= blocks.length && 0 < remaining.length; pass++) {
+    const { errored, raw, unattributed } = compileBatch(remaining, blocks, key)
+    raws.push(raw)
+    if (unattributed) {
+      globalError = true
+    }
+    if (0 === errored.size) {
+      break
+    }
+    for (const i of errored) {
+      failing.add(i)
+    }
+    remaining = remaining.filter((i) => !errored.has(i))
   }
-  if (SHAPE_ILLUSTRATION.test(code)) {
-    return false
-  }
-  return true
+
+  return { failing, raw: raws.filter(Boolean).join('\\n'), globalError }
 }
 
 
 // Turn a documented snippet into an offline-runnable one: strip imports,
-// rewrite real client construction (\\\`new ${Name}SDK(...)\\\` and any
-// \\\`${Name}SDK.test(...)\\\`) to a seeded test-mode client, and give
-// snippets that reference \\\`client\\\` without constructing one a shared
-// seeded client.
+// rewrite real client construction (\`new <Sdk>SDK(...)\` and any
+// \`<Sdk>SDK.test(...)\`) to a seeded test-mode client, and give snippets
+// that reference \`client\` without constructing one a shared seeded client.
 function rewriteForRun(code: string): string {
   let out = stripImports(code)
   out = out.replace(/new\\s+${Name}SDK\\s*\\([^)]*\\)/g, () => SEEDED_CTOR)
@@ -192,197 +302,139 @@ function rewriteForRun(code: string): string {
 }
 
 
+// Run every runnable, non-illustration block from a doc offline in seeded
+// test mode. Returns a list of failure descriptions (empty === all passed).
+async function executeBlocks(blocks: string[]): Promise<string[]> {
+  const requireFrom = createRequire(__filename)
+  const ts = requireFrom('typescript')
+
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+  const silentConsole = { log() {}, error() {}, warn() {}, info() {} }
+
+  const failures: string[] = []
+
+  for (let i = 0; i < blocks.length; i++) {
+    // Illustration shapes are documentation, not runnable code.
+    if (!isRunnable(blocks[i]) || isIllustrationShape(blocks[i])) {
+      continue
+    }
+
+    const src = rewriteForRun(blocks[i])
+    if ('' === src.trim()) {
+      continue
+    }
+
+    // Compile the snippet to JS (strips type annotations) so it runs under
+    // node exactly as a real caller would.
+    const js = ts.transpileModule(src, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2020,
+        module: ts.ModuleKind.ESNext,
+      },
+    }).outputText
+
+    let runner: any
+    try {
+      runner = new AsyncFunction(SDK_NAME, 'console', js)
+    } catch (err: any) {
+      failures.push('snippet ' + i + ' failed to compile as runnable JS: ' +
+        String((err && err.message) || err))
+      continue
+    }
+
+    try {
+      await runner(${Name}SDK, silentConsole)
+    } catch (err: any) {
+      const msg = String((err && err.message) || err)
+      // Tolerate the one expected domain error: no fixture seeded for the
+      // requested id (a 404 / "Not found" from test mode). A programming
+      // error (undefined method/symbol, wrong arg count) is a real doc bug
+      // and is NOT tolerated.
+      if (/\\b(?:404|not found)\\b/i.test(msg)) {
+        continue
+      }
+      failures.push('snippet ' + i + ' threw at runtime: ' + msg)
+    }
+  }
+
+  return failures
+}
+
+
+function indentBlock(code: string): string {
+  return code.replace(/^/gm, '    ').replace(/\\s+$/, '')
+}
+
+
 describe('README examples', () => {
-  it('every TypeScript snippet in the root README type-checks', () => {
-    const readmePath = Path.join(__dirname, '..', '..', 'README.md')
-    const md = Fs.readFileSync(readmePath, 'utf8')
-
-    const blocks = extractTsBlocks(md)
-    assert(blocks.length > 0, 'No TypeScript code blocks found in root README.md')
-
-    const tsDir = Path.join(__dirname, '..')
-    // Leading dot: TypeScript wildcard includes skip dot-files, so a
-    // stray temp file is never swept into the normal build.
-    const tmpFile = Path.join(tsDir, 'test', '.readme_examples.gen.ts')
-    Fs.writeFileSync(tmpFile, buildModule(blocks), 'utf8')
-
-    try {
-      const requireFrom = createRequire(__filename)
-      const tsc = requireFrom.resolve('typescript/bin/tsc')
-
-      const res = spawnSync(process.execPath, [
-        tsc,
-        '--noEmit',
-        '--strict',
-        '--target', 'ES2022',
-        '--module', 'nodenext',
-        '--moduleResolution', 'nodenext',
-        '--esModuleInterop',
-        '--resolveJsonModule',
-        '--skipLibCheck',
-        '--types', 'node',
-        tmpFile,
-      ], { cwd: tsDir, encoding: 'utf8' })
-
-      const out = ((res.stdout || '') + (res.stderr || '')).trim()
-      assert.strictEqual(res.status, 0,
-        'README TypeScript snippets failed to type-check:\\n\\n' + out + '\\n')
-    } finally {
-      Fs.rmSync(tmpFile, { force: true })
-    }
-  })
-
-
-  it('every usage TypeScript snippet in REFERENCE.md type-checks', () => {
-    const refPath = Path.join(__dirname, '..', 'REFERENCE.md')
-    // A target without a REFERENCE.md has nothing to check.
-    if (!Fs.existsSync(refPath)) {
-      return
-    }
-    const md = Fs.readFileSync(refPath, 'utf8')
-
-    const blocks = extractTsBlocks(md).filter(isReferenceSnippet)
-    assert(blocks.length > 0, 'No checkable TypeScript code blocks found in REFERENCE.md')
-
-    const tsDir = Path.join(__dirname, '..')
-    const tmpFile = Path.join(tsDir, 'test', '.reference_examples.gen.ts')
-    Fs.writeFileSync(tmpFile, buildModule(blocks), 'utf8')
-
-    try {
-      const requireFrom = createRequire(__filename)
-      const tsc = requireFrom.resolve('typescript/bin/tsc')
-
-      const res = spawnSync(process.execPath, [
-        tsc,
-        '--noEmit',
-        '--strict',
-        '--target', 'ES2022',
-        '--module', 'nodenext',
-        '--moduleResolution', 'nodenext',
-        '--esModuleInterop',
-        '--resolveJsonModule',
-        '--skipLibCheck',
-        '--types', 'node',
-        tmpFile,
-      ], { cwd: tsDir, encoding: 'utf8' })
-
-      const out = ((res.stdout || '') + (res.stderr || '')).trim()
-      assert.strictEqual(res.status, 0,
-        'REFERENCE.md TypeScript snippets failed to type-check:\\n\\n' + out + '\\n')
-    } finally {
-      Fs.rmSync(tmpFile, { force: true })
-    }
-  })
-
-
-  it('every usage TypeScript snippet in the per-language README.md type-checks', () => {
-    // The per-language README (this target's README.md, one level up from
-    // test/) carries the tutorial / error-handling / how-to / entity-interface
-    // examples. Type-check them exactly like REFERENCE.md: extract the \\\`\\\`\\\`ts
-    // blocks, drop the illustration blocks (isReferenceSnippet), and compile
-    // the rest against the shared seeded client. This is what catches a real
-    // type bug in a merged section — e.g. \\\`load({ id: 'example_id' })\\\` against
-    // a \\\`number\\\`-typed match (TS2322).
-    const readmePath = Path.join(__dirname, '..', 'README.md')
-    // A target without a per-language README.md has nothing to check.
-    if (!Fs.existsSync(readmePath)) {
-      return
-    }
-    const md = Fs.readFileSync(readmePath, 'utf8')
-
-    const blocks = extractTsBlocks(md).filter(isReferenceSnippet)
-    assert(blocks.length > 0, 'No checkable TypeScript code blocks found in the per-language README.md')
-
-    const tsDir = Path.join(__dirname, '..')
-    const tmpFile = Path.join(tsDir, 'test', '.readme_lang_examples.gen.ts')
-    Fs.writeFileSync(tmpFile, buildModule(blocks), 'utf8')
-
-    try {
-      const requireFrom = createRequire(__filename)
-      const tsc = requireFrom.resolve('typescript/bin/tsc')
-
-      const res = spawnSync(process.execPath, [
-        tsc,
-        '--noEmit',
-        '--strict',
-        '--target', 'ES2022',
-        '--module', 'nodenext',
-        '--moduleResolution', 'nodenext',
-        '--esModuleInterop',
-        '--resolveJsonModule',
-        '--skipLibCheck',
-        '--types', 'node',
-        tmpFile,
-      ], { cwd: tsDir, encoding: 'utf8' })
-
-      const out = ((res.stdout || '') + (res.stderr || '')).trim()
-      assert.strictEqual(res.status, 0,
-        'Per-language README.md TypeScript snippets failed to type-check:\\n\\n' + out + '\\n')
-    } finally {
-      Fs.rmSync(tmpFile, { force: true })
-    }
-  })
-
-
-  it('every runnable TypeScript snippet in the root README executes in test mode', async () => {
-    const readmePath = Path.join(__dirname, '..', '..', 'README.md')
-    const md = Fs.readFileSync(readmePath, 'utf8')
-
-    const blocks = extractTsBlocks(md)
-    assert(blocks.length > 0, 'No TypeScript code blocks found in root README.md')
-
-    const requireFrom = createRequire(__filename)
-    const ts = requireFrom('typescript')
-
-    const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
-    const silentConsole = { log() {}, error() {}, warn() {}, info() {} }
-
-    const failures: string[] = []
-
-    for (let i = 0; i < blocks.length; i++) {
-      const src = rewriteForRun(blocks[i])
-      // Nothing executable (e.g. an import-only block) — nothing to run.
-      if ('' === src.trim()) {
-        continue
+  for (const doc of DOCS) {
+    it(doc.label + ' — every example type-checks or is a known illustration', () => {
+      // A target without this doc has nothing to check.
+      if (!Fs.existsSync(doc.path)) {
+        return
       }
+      const md = Fs.readFileSync(doc.path, 'utf8')
+      const blocks = extractTsBlocks(md)
+      assert(blocks.length > 0, 'No TypeScript code blocks found in ' + doc.label)
 
-      // Compile the snippet to JS (strips type annotations) so it runs
-      // under node exactly as a real caller would.
-      const js = ts.transpileModule(src, {
-        compilerOptions: {
-          target: ts.ScriptTarget.ES2020,
-          module: ts.ModuleKind.ESNext,
-        },
-      }).outputText
+      const { failing, raw, globalError } = typeCheckBlocks(blocks, doc.key)
+      assert(!globalError,
+        'tsc reported an error outside any snippet in ' + doc.label +
+        ' — the harness could not attribute it:\\n\\n' + raw + '\\n')
 
-      let runner: any
-      try {
-        runner = new AsyncFunction(SDK_NAME, 'console', js)
-      } catch (err: any) {
-        failures.push('snippet ' + i + ' failed to compile as runnable JS: ' +
-          String((err && err.message) || err))
-        continue
-      }
+      let executed = 0
+      let typecheckedOnly = 0
+      let illustration = 0
+      const unrecognized: string[] = []
 
-      try {
-        await runner(${Name}SDK, silentConsole)
-      } catch (err: any) {
-        const msg = String((err && err.message) || err)
-        // Tolerate the one expected domain error: no fixture seeded for
-        // the requested id (a 404 / "Not found" from test mode). A
-        // programming error (undefined method/symbol, wrong arg count) is
-        // a real README bug and is NOT tolerated.
-        if (/\\b(?:404|not found)\\b/i.test(msg)) {
-          continue
+      blocks.forEach((b, i) => {
+        const typechecks = !failing.has(i)
+        const shape = isIllustrationShape(b)
+        const runnable = isRunnable(b) && !shape
+
+        if (!typechecks && shape) {
+          illustration++
+        } else if (!typechecks && !shape) {
+          unrecognized.push('  snippet ' + i + ':\\n' + indentBlock(b))
+        } else if (typechecks && runnable) {
+          executed++
+        } else {
+          typecheckedOnly++
         }
-        failures.push('snippet ' + i + ' threw at runtime: ' + msg)
-      }
-    }
+      })
 
-    assert.strictEqual(failures.length, 0,
-      'README TypeScript snippets failed to run in test mode:\\n\\n' +
-      failures.join('\\n') + '\\n')
-  })
+      // Emit the coverage summary FIRST so it is always visible, even when
+      // an assertion below fails.
+      console.log('README examples [' + doc.label + ']: total=' + blocks.length +
+        ' executed=' + executed + ' typechecked=' + typecheckedOnly +
+        ' illustration=' + illustration)
+
+      assert.strictEqual(unrecognized.length, 0,
+        'These ' + doc.label + ' \`\`\`ts blocks neither type-check nor match the ' +
+        'illustration allowlist. Fix the snippet (or the SDK), or — if it is ' +
+        'genuinely illustrative — reshape it to the allowlist:\\n\\n' +
+        unrecognized.join('\\n\\n') + '\\n\\ntsc output:\\n' + raw + '\\n')
+
+      assert.strictEqual(blocks.length, executed + typecheckedOnly + illustration,
+        'completeness partition mismatch for ' + doc.label + ': ' + blocks.length +
+        ' total != ' + executed + ' executed + ' + typecheckedOnly +
+        ' typechecked + ' + illustration + ' illustration')
+    })
+
+    it(doc.label + ' — every runnable example executes in test mode', async () => {
+      if (!Fs.existsSync(doc.path)) {
+        return
+      }
+      const md = Fs.readFileSync(doc.path, 'utf8')
+      const blocks = extractTsBlocks(md)
+      assert(blocks.length > 0, 'No TypeScript code blocks found in ' + doc.label)
+
+      const failures = await executeBlocks(blocks)
+      assert.strictEqual(failures.length, 0,
+        doc.label + ' runnable TypeScript snippets failed to run in test mode:\\n\\n' +
+        failures.join('\\n') + '\\n')
+    })
+  }
 })
 `)
   })

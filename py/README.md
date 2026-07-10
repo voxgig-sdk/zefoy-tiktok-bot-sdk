@@ -43,7 +43,7 @@ client = ZefoyTiktokBotSDK({
 
 ```python
 # Create — returns the bare created record (a dict)
-created = client.Engagement().create({"url": "example"})
+created = client.Engagement().create({"url": "example_url"})
 
 ```
 
@@ -284,7 +284,7 @@ Create an instance: `engagement = client.Engagement()`
 
 ```python
 engagement = client.Engagement().create({
-    "url": "example",  # str
+    "url": "example_url",  # str
 })
 ```
 

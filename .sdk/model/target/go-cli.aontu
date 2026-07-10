@@ -19,10 +19,11 @@ main: kit: target: 'go-cli': {
   // changes. A CLI-style target switches the standard phases off
   // and runs only Main.
   phase: {
-    entity:  { active: false }
-    feature: { active: false }
-    readme:  { active: false }
-    test:    { active: false }
+    entity:     { active: false }
+    feature:    { active: false }
+    readme:     { active: false }
+    agentguide: { active: false }
+    test:       { active: false }
   }
 
   // No external module deps declared here; the generated go.mod uses

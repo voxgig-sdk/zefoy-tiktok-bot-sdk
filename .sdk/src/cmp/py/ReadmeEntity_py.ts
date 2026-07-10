@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, entityIdField } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -11,13 +11,14 @@ import {
 // type. The create example is EXECUTED by the doc test (the body is
 // JSON-serialised), so an Ellipsis (`...`) placeholder would raise
 // "Object of type ellipsis is not JSON serializable" — use a real value.
-function pyLit(type: any): string {
+// Strings render the quoted placeholder.
+function pyLit(type: any, placeholder: string = 'example'): string {
   const k = canonKey(type)
   if ('INTEGER' === k || 'NUMBER' === k) return '1'
   if ('BOOLEAN' === k) return 'True'
   if ('ARRAY' === k) return '[]'
   if ('OBJECT' === k) return '{}'
-  return '"example"'
+  return `"${placeholder}"`
 }
 
 
@@ -57,6 +58,9 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     const fields = entity.fields || []
     // Model-driven id key: null when this entity has no id-like field.
     const idF = entityIdField(entity)
+    // Sanitise the local variable name — an entity whose lowercased name is a
+    // Python keyword (e.g. `class`) would otherwise emit uncompilable code.
+    const eVar = safeVarName(entity.name, 'py')
 
     Content(`
 ### ${entity.Name}
@@ -69,7 +73,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`${entity.name} = client.${entity.Name}()\`
+    Content(`Create an instance: \`${eVar} = client.${entity.Name}()\`
 
 `)
 
@@ -109,10 +113,22 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     }
 
     if (opnames.includes('load')) {
+      // The id key plus every REQUIRED match key (parent path params like
+      // page_id) — the same shape the runtime resolves path params from, so
+      // the example always works.
+      const loadItems = opRequestShape(entity, 'load').items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      const loadArg = 0 < loadItems.length
+        ? `{${loadItems.map((it: any) =>
+          `"${it.name}": ${pyLit(it.type,
+            it.name === idF ? entity.name + '_id' : it.name)}`).join(', ')}}`
+        : ''
       Content(`#### Example: Load
 
 \`\`\`python
-${entity.name} = client.${entity.Name}().load(${idF ? `{"${idF}": "${entity.name}_id"}` : ''})
+${eVar} = client.${entity.Name}().load(${loadArg})
 \`\`\`
 
 `)
@@ -122,23 +138,28 @@ ${entity.name} = client.${entity.Name}().load(${idF ? `{"${idF}": "${entity.name
       Content(`#### Example: List
 
 \`\`\`python
-${entity.name}s = client.${entity.Name}().list()
+${eVar}s = client.${entity.Name}().list()
 \`\`\`
 
 `)
     }
 
     if (opnames.includes('create')) {
+      // Members come from the SAME shape the runtime validates
+      // (opRequestShape): every required member must appear — including a
+      // required id and parent keys like page_id — with a real, executable
+      // literal (the doc test RUNS this block, so a comment placeholder
+      // would break it).
+      const createItems = opRequestShape(entity, 'create').items
+        .filter((it: any) => !it.optional)
       Content(`#### Example: Create
 
 \`\`\`python
-${entity.name} = client.${entity.Name}().create({
+${eVar} = client.${entity.Name}().create({
 `)
-      each(fields, (field: any) => {
-        if ('id' !== field.name && field.req) {
-          Content(`    "${field.name}": ${pyLit(field.type)},  # ${canonToType(field.type, target.name)}
+      createItems.map((it: any) => {
+        Content(`    "${it.name}": ${pyLit(it.type, 'example_' + it.name)},  # ${canonToType(it.type, target.name)}
 `)
-        }
       })
       Content(`})
 \`\`\`

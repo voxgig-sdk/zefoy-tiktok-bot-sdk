@@ -35,7 +35,9 @@ class ZefoyTiktokBotPrepareAuth
         } else {
             $auth_prefix = \Voxgig\Struct\Struct::getpath($options, 'auth.prefix') ?? '';
             $apikey_val = is_string($apikey) ? $apikey : '';
-            $headers[self::HEADER_AUTH] = "{$auth_prefix} {$apikey_val}";
+            // Empty prefix (raw apiKey credential) must not add a leading space.
+            $headers[self::HEADER_AUTH] = $auth_prefix === ''
+                ? $apikey_val : "{$auth_prefix} {$apikey_val}";
         }
 
         return [$spec, null];

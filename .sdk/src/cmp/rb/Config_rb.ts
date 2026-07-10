@@ -10,6 +10,7 @@ import {
   cmp,
   each,
   isAuthActive,
+  resolveAuthPrefix,
 } from '@voxgig/sdkgen'
 
 
@@ -39,8 +40,8 @@ const Config = cmp(async function Config(props: any) {
   const headers = getModelPath(model, `main.${KIT}.config.headers`) || {}
 
   const authActive = isAuthActive(model)
-  let authPrefix = ''
-  try { authPrefix = getModelPath(model, `main.${KIT}.config.auth.prefix`) } catch (_e) { }
+  // config.auth.prefix override -> spec-derived info.security.prefix -> 'Bearer'
+  const authPrefix = resolveAuthPrefix(model)
 
   let baseUrl = ''
   try { baseUrl = getModelPath(model, `main.${KIT}.info.servers.0.url`) } catch (_e) { }

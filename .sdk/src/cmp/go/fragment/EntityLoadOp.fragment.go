@@ -10,7 +10,7 @@ type entityLoadOp struct{}
 
 // EJECT-START
 
-func (e *EntityNameEntity) Load(reqmatch map[string]any, ctrl map[string]any) (any, error) {
+func (e *EntyClass) Load(reqmatch map[string]any, ctrl map[string]any) (any, error) {
 	utility := e.utility
 	ctx := utility.MakeContext(map[string]any{
 		"opname":   "load",
@@ -38,7 +38,7 @@ func (e *EntityNameEntity) Load(reqmatch map[string]any, ctrl map[string]any) (a
 // LoadTyped is the statically-typed variant of Load: it takes an
 // EntityNameLoadMatch and returns an EntityName. It delegates to the untyped
 // Load (identical runtime) and converts at the typed boundary.
-func (e *EntityNameEntity) LoadTyped(reqmatch EntityNameLoadMatch, ctrl map[string]any) (EntityName, error) {
+func (e *EntyClass) LoadTyped(reqmatch EntityNameLoadMatch, ctrl map[string]any) (EntityName, error) {
 	res, err := e.Load(asMap(reqmatch), ctrl)
 	if err != nil {
 		return EntityName{}, err

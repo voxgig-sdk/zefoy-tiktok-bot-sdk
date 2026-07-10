@@ -11,6 +11,7 @@ import {
   each,
   indent,
   isAuthActive,
+  resolveAuthPrefix,
 } from '@voxgig/sdkgen'
 
 
@@ -42,12 +43,8 @@ const Config = cmp(async function Config(props: any) {
   const headers = getModelPath(model, `main.${KIT}.config.headers`) || {}
 
   const authActive = isAuthActive(model)
-  let authPrefix = 'Bearer'
-  try {
-    const v = getModelPath(model, `main.${KIT}.config.auth.prefix`,
-      { only_active: false, required: false })
-    if (null != v) authPrefix = v
-  } catch (_e) { /* ignore */ }
+  // config.auth.prefix override -> spec-derived info.security.prefix -> 'Bearer'
+  const authPrefix = resolveAuthPrefix(model)
   const authBlock = authActive
     ? `auth: {
       prefix: '${authPrefix}',

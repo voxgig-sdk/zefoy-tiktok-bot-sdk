@@ -21,7 +21,7 @@ class ZefoyTiktokBotConfig
             "options" => [
                 "base" => "https://zefoy.com",
                 "auth" => [
-                    "prefix" => "Bearer",
+                    "prefix" => "",
                 ],
                 "headers" => [
           'content-type' => 'application/json',

@@ -47,7 +47,12 @@ func prepareAuthUtil(ctx *core.Context) (*core.Spec, error) {
 		if av, ok := apikey.(string); ok {
 			apikeyVal = av
 		}
-		headers[headerAuth] = authPrefix + " " + apikeyVal
+		// Empty prefix (raw apiKey credential) must not add a leading space.
+		if authPrefix == "" {
+			headers[headerAuth] = apikeyVal
+		} else {
+			headers[headerAuth] = authPrefix + " " + apikeyVal
+		}
 	}
 
 	return spec, nil

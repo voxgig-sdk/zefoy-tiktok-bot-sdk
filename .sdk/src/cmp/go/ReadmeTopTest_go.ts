@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -30,18 +30,17 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
   // Go module path == repo path on GitHub (org from model.origin).
   const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
 
-  const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `load` on an op-less entity like Cloudsmith's `Abort`.
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
 
   Content(`\`\`\`go
 client := sdk.Test()
 `)
 
-  if (exampleEntity) {
+  if (exampleEntity && primaryOp) {
     const eName = nom(exampleEntity, 'Name')
-    // Drive the test-mode example off the entity's PRIMARY op (never a hardcoded
-    // `Load` a create-only entity lacks).
     const idF = entityIdField(exampleEntity)
-    const primaryOp = entityPrimaryOp(exampleEntity) || 'load'
     const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
     let arg = 'nil'
     if (isMatchOp) {

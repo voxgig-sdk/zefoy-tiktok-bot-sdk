@@ -1,7 +1,9 @@
 .PHONY: test build clean publish
 
+# Run the WHOLE suite (entity, direct, utility, and readme-example tests) —
+# a single-file invocation here leaves the rest of test/ silently unrun.
 test:
-	ruby -Ilib test/exists_test.rb
+	ruby -Ilib -Itest -e 'Dir.glob("./test/*_test.rb").each { |f| require f }'
 
 build:
 	@echo "No build step for Ruby"

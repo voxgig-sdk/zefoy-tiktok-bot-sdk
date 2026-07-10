@@ -14,10 +14,11 @@ main: kit: target: 'go-mcp': {
 
   // Per-generation-phase activation. Mirrors go-cli — only Main runs.
   phase: {
-    entity:  { active: false }
-    feature: { active: false }
-    readme:  { active: false }
-    test:    { active: false }
+    entity:     { active: false }
+    feature:    { active: false }
+    readme:     { active: false }
+    agentguide: { active: false }
+    test:       { active: false }
   }
 
   // No external module deps declared here. The generated go.mod uses

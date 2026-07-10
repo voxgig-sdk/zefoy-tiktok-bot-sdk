@@ -1,11 +1,13 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, opRequestShape, entityIdField, entityOps } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
   nom,
 } from '@voxgig/apidef'
+
+import { exampleValue, goVarName } from './utility_go'
 
 
 // Emits the go/README.md Quickstart as ONE complete, compilable program.
@@ -35,40 +37,54 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
   if (exampleEntity) {
     const eName = nom(exampleEntity, 'Name')
-    // Variable-safe lowercase name — a `Type`/`Range` entity must not bind a Go
-    // keyword (`type, err := ...` fails `go build`).
-    const eLower = safeVarName(eName.toLowerCase(), 'go')
-    const opnames = Object.keys(exampleEntity.op || {})
+    // camelCase variable name — a `status_embed_config` entity must not bind
+    // a snake_case Go variable, and a `Type`/`Range` entity must not bind a
+    // Go keyword (`type, err := ...` fails `go build`).
+    const eLower = goVarName(exampleEntity.name)
+    // ACTIVE ops only — an inactive op generates no method, so an example
+    // calling it would not compile.
+    const opnames = entityOps(exampleEntity)
 
-    // Model-driven example fields (from the same op shape the request types are
-    // built from) so create/update reference REAL writable fields, not a
-    // hardcoded "name", and ids use a type-correct literal.
-    const idField = (exampleEntity.id && exampleEntity.id.field) || 'id'
     // Model-driven id key: null when the entity has no id-like field (a
     // response-wrapped spec). When null, load/remove pass a nil match and
     // update omits the id member.
     const idF = entityIdField(exampleEntity)
-    const goLit = (type: any): string => {
-      const k = canonKey(type)
-      if ('INTEGER' === k || 'NUMBER' === k) return '1'
-      if ('BOOLEAN' === k) return 'true'
-      if ('ARRAY' === k) return '[]any{}'
-      if ('OBJECT' === k) return 'map[string]any{}'
-      return '"example"'
-    }
-    const examplePairs = (opname: string): string[] => {
+
+    // Model-driven example members for an op body, from the SAME op shape the
+    // request types are built from (opRequestShape), so create/update
+    // reference REAL writable fields, not a hardcoded "name", and every value
+    // is a type-correct Go literal (exampleValue). ids are rendered
+    // separately as the match key for update/remove; a REQUIRED id stays for
+    // create (dropping it makes the payload incomplete).
+    const exampleFields = (opname: string): string[] => {
       const items = opRequestShape(exampleEntity, opname).items
-        .filter((it: any) => it.name !== idField && it.name !== 'id')
+        .filter((it: any) => (it.name !== idF && it.name !== 'id') ||
+          ('create' === opname && !it.optional))
       const required = items.filter((it: any) => !it.optional)
+      const optional = items.filter((it: any) => it.optional)
+      // Required members must all appear or the payload is incomplete; pad
+      // update (a patch) with a sample optional field or two.
       const chosen = 'create' === opname
         ? (required.length ? required : items.slice(0, 2))
-        : items.slice(0, 2)
-      return chosen.map((it: any) => `"${it.name}": ${goLit(it.type)}`)
+        : required.concat(optional).slice(0, Math.max(2, required.length))
+      return chosen.map((it: any) =>
+        `"${it.name}": ${exampleValue(exampleEntity, exampleEntity.op[opname], it.name, 'example_' + it.name)}`)
     }
-    const idOp = opnames.includes('load') ? 'load' : (opnames.includes('update') ? 'update' : 'remove')
-    const idShape = opRequestShape(exampleEntity, idOp)
-      .items.find((it: any) => it.name === idField || it.name === 'id')
-    const idLit = idShape ? goLit(idShape.type) : '"example_id"'
+
+    // The full REQUIRED match for load/remove (id first, then parent path
+    // params like page_id) — the same shape that generates the op's request
+    // match, so the example always carries the keys the route needs.
+    const matchArg = (opname: string): string => {
+      const matchItems = opRequestShape(exampleEntity, opname).items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      return 0 < matchItems.length
+        ? `map[string]any{${matchItems.map((it: any) =>
+          `"${it.name}": ${exampleValue(exampleEntity, exampleEntity.op[opname], it.name,
+            it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')}}`
+        : 'nil'
+    }
 
     if (opnames.includes('list')) {
       body.push(`    // List ${eLower} records — the value is the array of records itself.`)
@@ -85,7 +101,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('load')) {
       body.push(`    // Load a single ${eLower} — the value is the loaded record.`)
-      body.push(`    ${eLower}, err := client.${eName}(nil).Load(${idF ? `map[string]any{"${idF}": ${idLit}}` : 'nil'}, nil)`)
+      body.push(`    ${eLower}, err := client.${eName}(nil).Load(${matchArg('load')}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -96,7 +112,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('create')) {
       body.push(`    // Create a ${eLower}.`)
-      body.push(`    created, err := client.${eName}(nil).Create(map[string]any{${examplePairs('create').join(', ')}}, nil)`)
+      body.push(`    created, err := client.${eName}(nil).Create(map[string]any{${exampleFields('create').join(', ')}}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -106,8 +122,13 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
     }
 
     if (opnames.includes('update')) {
+      // The id member (when the entity has an id-like key) plus example
+      // patch fields — the same shape that generates the op's request data.
+      const updateMembers = (idF
+        ? [`"${idF}": ${exampleValue(exampleEntity, exampleEntity.op.update, idF, 'example_id')}`]
+        : []).concat(exampleFields('update'))
       body.push(`    // Update a ${eLower}.`)
-      body.push(`    updated, err := client.${eName}(nil).Update(map[string]any{${(idF ? [`"${idF}": ${idLit}`] : []).concat(examplePairs('update')).join(', ')}}, nil)`)
+      body.push(`    updated, err := client.${eName}(nil).Update(map[string]any{${updateMembers.join(', ')}}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)
@@ -118,7 +139,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
     if (opnames.includes('remove')) {
       body.push(`    // Remove a ${eLower}.`)
-      body.push(`    removed, err := client.${eName}(nil).Remove(${idF ? `map[string]any{"${idF}": ${idLit}}` : 'nil'}, nil)`)
+      body.push(`    removed, err := client.${eName}(nil).Remove(${matchArg('remove')}, nil)`)
       body.push(`    if err != nil {`)
       body.push(`        panic(err)`)
       body.push(`    }`)

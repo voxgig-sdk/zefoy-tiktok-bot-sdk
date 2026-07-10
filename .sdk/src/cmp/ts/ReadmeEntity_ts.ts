@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, entityIdField, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -99,10 +99,22 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     }
 
     if (opnames.includes('load')) {
+      // The id key plus every REQUIRED match key (parent path params like
+      // page_id) — the same shape that generates <Name>LoadMatch, so the
+      // example always type-checks.
+      const loadItems = opRequestShape(entity, 'load').items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) =>
+          (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      const loadArg = 0 < loadItems.length
+        ? `{ ${loadItems.map((it: any) =>
+          `${it.name}: ${exampleValue(entity, entity.op && entity.op.load, it.name,
+            it.name === idF ? entity.name + '_id' : it.name)}`).join(', ')} }`
+        : ''
       Content(`#### Example: Load
 
 \`\`\`ts
-const ${eVar} = await client.${entity.Name}().load(${idF ? `{ ${idF}: ${exampleValue(entity, entity.op && entity.op.load, idF, entity.name + '_id')} }` : ''})
+const ${eVar} = await client.${entity.Name}().load(${loadArg})
 \`\`\`
 
 `)
@@ -119,16 +131,20 @@ const ${eVar}s = await client.${entity.Name}().list()
     }
 
     if (opnames.includes('create')) {
+      // Members come from the SAME shape that generates <Name>CreateData
+      // (every required member appears), with a type-correct example VALUE
+      // via exampleValue — a `name: /* type */` comment is not a value and
+      // yields invalid TS (TS1109), so the example must carry a real literal.
+      const createItems = opRequestShape(entity, 'create').items
+        .filter((it: any) => !it.optional)
       Content(`#### Example: Create
 
 \`\`\`ts
 const ${eVar} = await client.${entity.Name}().create({
 `)
-      each(fields, (field: any) => {
-        if ('id' !== field.name && field.req) {
-          Content(`  ${field.name}: /* ${canonToType(field.type, target.name)} */,
+      createItems.map((it: any) => {
+        Content(`  ${it.name}: ${exampleValue(entity, entity.op && entity.op.create, it.name, 'example_' + it.name)},
 `)
-        }
       })
       Content(`})
 \`\`\`

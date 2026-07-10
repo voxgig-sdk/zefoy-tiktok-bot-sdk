@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, entityPrimaryOp, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
 
 import { KIT, getModelPath, nom } from '@voxgig/apidef'
 
@@ -18,13 +18,13 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { target, ctx$: { model } } = props
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
-  const exampleEntity = Object.values(entity || {}).find((e: any) => e && e.active !== false) as any
+  // Pick an entity with a real op (prefer a read op) — never fabricate a
+  // `load` on an op-less entity like Cloudsmith's `Abort`. primaryOp is null
+  // only when NO entity exposes any op (a direct()-only SDK).
+  const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
   // Model-driven id key: null when the entity has no id-like field.
   const idF = exampleEntity ? entityIdField(exampleEntity) : null
-  // Drive the test-mode example off the entity's PRIMARY op — never a hardcoded
-  // `load` a create-only entity lacks.
-  const primaryOp = exampleEntity ? (entityPrimaryOp(exampleEntity) || 'load') : 'load'
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
   const seedSentence = idF
     ? '. Seed fixture\ndata via the `entity` option so offline calls resolve without a live server'
@@ -42,6 +42,15 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     const chosen = required.length ? required : items.slice(0, 3)
     testCallArg = `[${chosen.map((it: any) => `"${it.name}" => ${phpLit(it.type)}`).join(', ')}]`
   }
+
+  // The op-driven test-mode line, shown only when the SDK has an entity op.
+  // A direct()-only SDK (no ops anywhere) shows a direct() call instead.
+  const testModeExample = primaryOp
+    ? `// Entity ops return the bare mock record (throws on error).
+$${eName.toLowerCase()} = $client->${eName}()->${primaryOp}(${testCallArg});
+print_r($${eName.toLowerCase()});`
+    : `$result = $client->direct(["path" => "/api/resource", "method" => "GET"]);
+print_r($result);`
 
   const apikeyEnvLine = isAuthActive(model)
     ? `\n${envName(model)}_APIKEY=<your-key>`
@@ -93,9 +102,7 @@ Create a mock client for unit testing — no server required${seedSentence}:
 \`\`\`php
 $client = ${testCtor};
 
-// Entity ops return the bare mock record (throws on error).
-$${eName.toLowerCase()} = $client->${eName}()->${primaryOp}(${testCallArg});
-print_r($${eName.toLowerCase()});
+${testModeExample}
 \`\`\`
 
 ### Use a custom fetch function

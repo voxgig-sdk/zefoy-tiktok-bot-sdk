@@ -1,10 +1,12 @@
 
-import { cmp, each, Content, isAuthActive, entityIdField, entityPrimaryOp, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, entityIdField, entityPrimaryOp } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
 } from '@voxgig/apidef'
+
+import { goVarName } from './utility_go'
 
 
 const ReadmeModel = cmp(function ReadmeModel(props: any) {
@@ -48,20 +50,40 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
     ? '| `"apikey"` | `string` | API key for authentication. |\n'
     : ''
 
-  // First published entity name, for the Result shape illustration.
-  const firstEntityName = (entityList[0] as any)?.Name || 'Entity'
-  const firstEntityVar = safeVarName(firstEntityName.toLowerCase(), 'go')
+  // Illustrate the Result shape with the first entity that ACTUALLY exposes an
+  // op — never fabricate a `Load` on an op-less first entity (e.g. Cloudsmith's
+  // `Abort`). firstPrimaryOp is null only when NO active entity has any op (a
+  // direct()-only SDK), in which case the call illustration is omitted.
+  const firstWithOp = entityList.find((e: any) => entityPrimaryOp(e) != null)
+  const firstPrimaryOp = firstWithOp ? entityPrimaryOp(firstWithOp) : null
+  const firstEntityName = firstWithOp ? ((firstWithOp as any).Name || 'Entity') : 'Entity'
+  // camelCase Go identifier (never snake_case or flattened lowercase,
+  // never a Go keyword).
+  const firstEntityVar = goVarName((firstWithOp as any)?.name || 'entity')
   // Model-driven id key: null when the example entity has no id-like field, so
   // the Result-shape illustration passes a nil match.
-  const firstIdF = entityIdField(entityList[0] || {})
-  // The example entity's PRIMARY op — an op it actually exposes (never a
-  // hardcoded `Load` a create-only entity lacks).
-  const firstPrimaryOp = entityList[0] ? (entityPrimaryOp(entityList[0]) || 'load') : 'load'
-  const firstPrimaryMethod = firstPrimaryOp.charAt(0).toUpperCase() + firstPrimaryOp.slice(1)
+  const firstIdF = firstWithOp ? entityIdField(firstWithOp) : null
+  const firstPrimaryMethod = firstPrimaryOp
+    ? firstPrimaryOp.charAt(0).toUpperCase() + firstPrimaryOp.slice(1)
+    : ''
   const firstIsMatchOp = 'load' === firstPrimaryOp || 'remove' === firstPrimaryOp
   const firstOpArg = firstIsMatchOp
     ? (firstIdF ? `map[string]any{"${firstIdF}": "example_id"}` : 'nil')
     : 'map[string]any{/* fields */}'
+
+  // The Result-shape call illustration, shown only when some entity exposes an
+  // op. A direct()-only SDK (no entity ops) omits it — there is no op to call.
+  const resultCallExample = firstPrimaryOp
+    ? `Check \`err\` first, then use the value directly (or the typed
+\`...Typed\` variants, which return the entity's model struct and a typed
+slice):
+
+    ${firstEntityVar}, err := client.${firstEntityName}(nil).${firstPrimaryMethod}(${firstOpArg}, nil)
+    if err != nil { /* handle */ }
+    // ${firstEntityVar} is the returned record
+
+`
+    : ''
 
   Content(`### New${model.const.Name}SDK
 
@@ -126,15 +148,7 @@ operation's data **directly** — there is no wrapper:
 | --- | --- |
 ${resultShapeRows}
 
-Check \`err\` first, then use the value directly (or the typed
-\`...Typed\` variants, which return the entity's model struct and a typed
-slice):
-
-    ${firstEntityVar}, err := client.${firstEntityName}(nil).${firstPrimaryMethod}(${firstOpArg}, nil)
-    if err != nil { /* handle */ }
-    // ${firstEntityVar} is the returned record
-
-Only \`Direct()\` returns a response envelope — a \`map[string]any\` with
+${resultCallExample}Only \`Direct()\` returns a response envelope — a \`map[string]any\` with
 \`"ok"\`, \`"status"\`, \`"headers"\`, and \`"data"\` keys.
 
 `)
