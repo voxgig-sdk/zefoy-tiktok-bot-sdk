@@ -10,6 +10,12 @@ import (
 
 func makePointUtil(ctx *core.Context) (map[string]any, error) {
 	if ctx.Out["point"] != nil {
+		// A PrePoint feature hook (e.g. rbac) may short-circuit the
+		// operation by storing an error here; surface it before any
+		// endpoint resolution or network activity.
+		if err, ok := ctx.Out["point"].(error); ok {
+			return nil, err
+		}
 		if tm, ok := ctx.Out["point"].(map[string]any); ok {
 			ctx.Point = tm
 			return tm, nil

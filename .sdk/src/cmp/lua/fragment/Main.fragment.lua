@@ -55,14 +55,17 @@ function ProjectNameSDK.new(options)
 
   self._rootctx.options = self.options
 
-  -- Add features from config.
+  -- Add features in the resolved order (make_options puts an explicit list
+  -- order first, else defaults to test-first). Ordering matters: the `test`
+  -- feature installs the base mock transport and the transport features
+  -- (retry/cache/netsim/proxy/ratelimit) wrap whatever is current, so `test`
+  -- must be added before them to sit at the base of the chain.
   local feature_opts = helpers.to_map(vs.getprop(self.options, "feature"))
   if feature_opts ~= nil then
-    local feature_items = vs.items(feature_opts)
-    if feature_items ~= nil then
-      for _, item in ipairs(feature_items) do
-        local fname = item[1]
-        local fopts = helpers.to_map(item[2])
+    local featureorder = vs.getpath(self.options, "__derived__.featureorder")
+    if type(featureorder) == "table" then
+      for _, fname in ipairs(featureorder) do
+        local fopts = helpers.to_map(feature_opts[fname])
         if fopts ~= nil and fopts["active"] == true then
           utility.feature_add(self._rootctx, _make_feature(fname))
         end

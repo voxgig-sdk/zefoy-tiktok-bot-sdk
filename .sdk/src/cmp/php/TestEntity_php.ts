@@ -48,6 +48,12 @@ const TestEntity = cmp(function TestEntity(props: any) {
   const target = props.target
   const entity: ModelEntity = props.entity
 
+  // The stream test streams the "list" op and asserts a 3-item collection, so
+  // it only applies to entities that declare a list op. Others (e.g. Batch =
+  // create/load) have no list endpoint — make_point errors and the stream
+  // yields nothing — so skip the stream test for them.
+  const hasList = !!(entity.op && (entity.op as any).list)
+
   const basicflow: ModelEntityFlow | undefined =
     getModelPath(model, `main.${KIT}.flow.Basic${nom(entity, 'Name')}Flow`)
   if (null == basicflow || true !== basicflow.active) {
@@ -105,7 +111,46 @@ class ${entity.Name}EntityTest extends TestCase
         $ent = $testsdk->${accessor}(null);
         $this->assertNotNull($ent);
     }
+${hasList ? `
+    // Feature #4: the entity stream(action, ...) method runs the op pipeline
+    // and yields result items. With the streaming feature active it yields the
+    // feature's incremental output; otherwise it falls back to the materialised
+    // list so stream always yields.
+    public function test_stream(): void
+    {
+        $seed = [
+            "entity" => [
+                "${entity.name}" => [
+                    "s1" => ["id" => "s1"],
+                    "s2" => ["id" => "s2"],
+                    "s3" => ["id" => "s3"],
+                ],
+            ],
+        ];
 
+        // Fallback: streaming inactive -> yields the materialised list items.
+        $base = ${model.const.Name}SDK::test($seed, null);
+        $seen = iterator_to_array($base->${accessor}(null)->stream("list", null, null), false);
+        $this->assertCount(3, $seen);
+
+        // Inbound: streaming active -> yields each item from the feature.
+        $cfg = ${model.const.Name}Config::make_config();
+        if (isset($cfg["feature"]) && is_array($cfg["feature"]) && isset($cfg["feature"]["streaming"])) {
+            $sdk = ${model.const.Name}SDK::test($seed, ["feature" => ["streaming" => ["active" => true]]]);
+            $got = [];
+            foreach ($sdk->${accessor}(null)->stream("list", null, null) as $item) {
+                if (is_array($item) && array_is_list($item)) {
+                    foreach ($item as $sub) {
+                        $got[] = $sub;
+                    }
+                } else {
+                    $got[] = $item;
+                }
+            }
+            $this->assertCount(3, $got);
+        }
+    }
+` : ''}
     public function test_basic_flow(): void
     {
         $setup = ${entity.name}_basic_setup(null);
@@ -144,6 +189,14 @@ class ${entity.Name}EntityTest extends TestCase
 
     // Model-driven step iteration
     each(basicflow.step, (step: any, index: any) => {
+      // Never emit a REMOVE (or its removed-item verify LIST) without a
+      // preceding CREATE: a coherent CRUD flow only removes what it created,
+      // so a create-less remove would mutate pre-existing (live) data.
+      if (!flowHasCreate) {
+        if ('remove' === step.op) { return }
+        if ('list' === step.op &&
+          (step.valid || []).some((v: any) => 'ItemNotExists' === v.apply)) { return }
+      }
       const opgen: OpGen = GENERATE_OP[step.op]
       if (opgen) {
         opgen(genCtx, step, index)

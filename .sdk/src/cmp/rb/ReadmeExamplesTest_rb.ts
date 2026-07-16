@@ -117,7 +117,10 @@ ${entityLines}
     blocks = []
     DOCS.each do |label, path|
       assert File.exist?(path), "missing documentation source: #{label}"
-      File.read(path).scan(/#{fence}ruby\\r?\\n(.*?)#{fence}/m).each_with_index do |a, i|
+      # Explicit UTF-8: the docs contain non-ASCII punctuation, and under a
+      # POSIX/US-ASCII locale a default-encoded read makes scan raise
+      # ArgumentError (invalid byte sequence).
+      File.read(path, encoding: "UTF-8").scan(/#{fence}ruby\\r?\\n(.*?)#{fence}/m).each_with_index do |a, i|
         blocks << { doc: label, n: i, code: a[0] }
       end
     end

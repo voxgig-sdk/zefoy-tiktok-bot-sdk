@@ -236,6 +236,14 @@ function basicSetup(extra?: any) {
             model, entity, flow: basicflow, PROJUPPER: PROJENVNAME,
           }
           each(basicflow.step, (step: ModelEntityFlowStep, index: number) => {
+            // Never emit a REMOVE (or its removed-item verify LIST) without a
+            // preceding CREATE: a coherent CRUD flow only removes what it made,
+            // so a create-less remove would mutate pre-existing (live) data.
+            if (!flowHasCreate) {
+              if ('remove' === step.op) { return }
+              if ('list' === step.op &&
+                (step.valid || []).some((v: any) => 'ItemNotExists' === v.apply)) { return }
+            }
             const opgen = GENERATE_OP[step.op]
             if (null != opgen) {
               opgen(genCtx, step, index)

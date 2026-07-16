@@ -21,6 +21,31 @@ local function make_options_util(ctx)
     opts = {}
   end
 
+  -- Feature add-order. options.feature may be given as an ordered LIST of
+  -- { name = ..., active = ..., ... } entries (the list position IS the order
+  -- in which features are added), or as a { name = {opts} } map. Normalize a
+  -- list to a map (so merge/validate/init are unchanged) and remember the
+  -- explicit order; a map defaults to test-first so the `test` mock transport
+  -- is installed as the base of the transport wrapper chain.
+  local featureorder = {}
+  if vs.islist(opts.feature) then
+    local fmap = {}
+    for _, entry in ipairs(opts.feature) do
+      if type(entry) == "table" and entry.name ~= nil then
+        local name = entry.name
+        local fopts = {}
+        for k, v in pairs(entry) do
+          if k ~= "name" then
+            fopts[k] = v
+          end
+        end
+        fmap[name] = fopts
+        table.insert(featureorder, name)
+      end
+    end
+    opts.feature = fmap
+  end
+
   local config = ctx.config or {}
   local cfgopts = {}
   local co = config["options"]
@@ -104,10 +129,43 @@ local function make_options_util(ctx)
   end
   local keyre = table.concat(parts, "|")
 
+  -- Resolve the feature add-order: an explicit list order (above) wins;
+  -- otherwise order the map test-first, then the remaining names sorted, so
+  -- the outcome is deterministic and `test` is always the base transport.
+  if #featureorder == 0 then
+    local fmap = opts.feature
+    local names = {}
+    if type(fmap) == "table" then
+      for k, _ in pairs(fmap) do
+        if type(k) == "string" then
+          table.insert(names, k)
+        end
+      end
+    end
+    table.sort(names)
+    local has_test = false
+    for _, n in ipairs(names) do
+      if n == "test" then
+        has_test = true
+      end
+    end
+    if has_test then
+      featureorder = { "test" }
+      for _, n in ipairs(names) do
+        if n ~= "test" then
+          table.insert(featureorder, n)
+        end
+      end
+    else
+      featureorder = names
+    end
+  end
+
   local derived = { clean = {} }
   if keyre ~= "" then
     derived.clean = { keyre = keyre }
   end
+  derived.featureorder = featureorder
   opts["__derived__"] = derived
 
   return opts

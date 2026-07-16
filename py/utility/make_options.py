@@ -19,6 +19,26 @@ def make_options_util(ctx):
     if not isinstance(opts, dict):
         opts = {}
 
+    # Feature add-order. options["feature"] may be given as an ordered LIST of
+    # {name, active, ...opts} entries (the list position IS the order in which
+    # features are added), or as a {name: {opts}} map. Normalize a list to a
+    # map (so merge/validate/init are unchanged) and remember the explicit
+    # order; a map defaults to test-first so the `test` mock transport is
+    # installed as the base of the transport wrapper chain.
+    featureorder = []
+    if isinstance(opts.get("feature"), list):
+        fmap = {}
+        for entry in opts["feature"]:
+            if not isinstance(entry, dict):
+                continue
+            name = entry.get("name")
+            if name is None:
+                continue
+            fopts = {k: v for k, v in entry.items() if k != "name"}
+            fmap[name] = fopts
+            featureorder.append(name)
+        opts["feature"] = fmap
+
     config = ctx.config or {}
     cfgopts = {}
     co = config.get("options") if isinstance(config, dict) else None
@@ -95,9 +115,21 @@ def make_options_util(ctx):
             parts.append(vs.escre(trimmed))
     keyre = "|".join(parts)
 
+    # Resolve the feature add-order: an explicit list order (above) wins;
+    # otherwise order the map test-first, then the remaining names sorted, so
+    # the outcome is deterministic and `test` is always the base transport.
+    if len(featureorder) == 0:
+        fmap = opts.get("feature")
+        names = sorted(fmap.keys()) if isinstance(fmap, dict) else []
+        if "test" in names:
+            featureorder = ["test"] + [n for n in names if n != "test"]
+        else:
+            featureorder = names
+
     derived = {"clean": {}}
     if keyre != "":
         derived["clean"] = {"keyre": keyre}
+    derived["featureorder"] = featureorder
     opts["__derived__"] = derived
 
     return opts

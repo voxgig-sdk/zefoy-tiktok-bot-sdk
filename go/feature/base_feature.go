@@ -8,7 +8,15 @@ type BaseFeature struct {
 	Version string
 	Name    string
 	Active  bool
+
+	// AddOpts positions this feature when added via the client `extend`
+	// option: "__before__", "__after__" or "__replace__" name an
+	// already-added feature (mirrors the ts feature `_options`).
+	AddOpts map[string]any
 }
+
+// AddOptions is read by the featureAdd utility to place this feature.
+func (f *BaseFeature) AddOptions() map[string]any { return f.AddOpts }
 
 func NewBaseFeature() *BaseFeature {
 	return &BaseFeature{

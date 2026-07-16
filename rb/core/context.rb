@@ -28,6 +28,8 @@ class ZefoyTiktokBotContext
     if ctrl_raw.is_a?(Hash)
       @ctrl.throw_err = ctrl_raw["throw"] if ctrl_raw.key?("throw")
       @ctrl.explain = ctrl_raw["explain"] if ctrl_raw["explain"].is_a?(Hash)
+      @ctrl.actor = ctrl_raw["actor"] if ctrl_raw.key?("actor")
+      @ctrl.paging = ctrl_raw["paging"] if ctrl_raw["paging"].is_a?(Hash)
     elsif basectx&.ctrl
       @ctrl = basectx.ctrl
     end

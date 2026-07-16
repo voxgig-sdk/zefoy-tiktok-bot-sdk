@@ -70,11 +70,13 @@ const Config = cmp(async function Config(props: any) {
         }),
 
         '// #FeatureClasses': () => each(feature, (f: any) => {
-          Line(` ${f.name}: ${nom(f, 'Name')}Feature`)
+          // Trailing comma: the map has one entry per feature, so entries
+          // must be comma-separated (a single feature hid this until now).
+          Line(` ${f.name}: ${nom(f, 'Name')}Feature,`)
         }),
 
         '// #FeatureConfigs': () => each(feature, (f: any) => {
-          Line(` ${f.name}: ${formatJson(f.config, { margin: 4 })}`)
+          Line(` ${f.name}: ${formatJson(f.config, { margin: 4 })},`)
         }),
 
 

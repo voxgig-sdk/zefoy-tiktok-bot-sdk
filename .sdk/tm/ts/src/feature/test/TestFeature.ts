@@ -150,7 +150,64 @@ class TestFeature extends BaseFeature {
       }
     }
 
-    ctx.utility.fetcher = testFetcher
+    // Optional network behaviour simulation over the mock transport. Enable
+    // per test via `SDK.test({ net: { latency, failTimes, ... } })`. When
+    // `net` is absent the mock behaves exactly as before (no wrapping), so
+    // existing generated tests are unaffected.
+    const net = this._options.net
+    ctx.utility.fetcher = (null == net) ? testFetcher : this.makeNetsim(net, testFetcher)
+  }
+
+
+  // Wrap a transport with simulated network conditions: latency (fixed or
+  // {min,max}), a budget of first-N failures (`failTimes` -> `failStatus`),
+  // first-N connection errors (`errorTimes`), or a hard `offline` outage.
+  // Counter-driven, so simulations are deterministic across a test.
+  makeNetsim(this: any, net: any, inner: any) {
+    const self = this
+    self._netcalls = 0
+
+    function pickLatency(): number {
+      const l = net.latency
+      if (null == l) { return 0 }
+      if ('number' === typeof l) { return l < 0 ? 0 : l }
+      const min = l.min | 0
+      const max = null == l.max ? min : l.max | 0
+      return max <= min ? min : min + ((max - min) >> 1)
+    }
+
+    function sleep(ms: number): Promise<void> {
+      if (null == ms || 0 >= ms) { return Promise.resolve() }
+      if ('function' === typeof net.sleep) { return Promise.resolve(net.sleep(ms)) }
+      return new Promise((r) => setTimeout(r, ms))
+    }
+
+    return async function netsimFetcher(ctx: any, url: string, fetchdef: any) {
+      self._netcalls++
+      const call = self._netcalls
+
+      if (true === net.offline) {
+        await sleep(pickLatency())
+        return ctx.error('netsim_offline', 'Simulated network offline (URL was: "' + url + '")')
+      }
+      if (call <= (net.errorTimes | 0)) {
+        await sleep(pickLatency())
+        return ctx.error('netsim_conn', 'Simulated connection error (call ' + call + ')')
+      }
+      if (call <= (net.failTimes | 0)) {
+        await sleep(pickLatency())
+        const status = null == net.failStatus ? 503 : net.failStatus
+        return {
+          status,
+          statusText: 'Simulated Failure',
+          body: 'not-used',
+          json: async () => undefined,
+          headers: { forEach(_cb: any) { }, get(_k: string) { return undefined } },
+        }
+      }
+      await sleep(pickLatency())
+      return inner(ctx, url, fetchdef)
+    }
   }
 
 

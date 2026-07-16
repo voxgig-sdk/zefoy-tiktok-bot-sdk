@@ -6,8 +6,14 @@ from core.helpers import to_map
 
 
 def make_point_util(ctx):
-    if ctx.out.get("point") is not None:
-        ctx.point = ctx.out["point"]
+    pre = ctx.out.get("point")
+    if pre is not None:
+        # A feature hook (e.g. rbac) short-circuits endpoint resolution by
+        # placing an error in ctx.out["point"] (mirrors the ts pipeline
+        # where `ctx.out.point instanceof Error` aborts the operation).
+        if isinstance(pre, Exception):
+            return None, pre
+        ctx.point = pre
         return ctx.point, None
 
     op = ctx.op

@@ -10,6 +10,7 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
 {
     private mixed $client;
     private ?array $options;
+    private int $_netcalls;
 
     public function __construct()
     {
@@ -19,6 +20,7 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
         $this->active = true;
         $this->client = null;
         $this->options = null;
+        $this->_netcalls = 0;
     }
 
     public function init(ZefoyTiktokBotContext $ctx, array $options): void
@@ -229,7 +231,84 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
             }
         };
 
-        $ctx->utility->fetcher = $test_fetcher;
+        // Optional network behaviour simulation over the mock transport.
+        // Enable per test via `SDK::test(['net' => ['latency' => ..., ...]])`.
+        // When `net` is absent the mock behaves exactly as before (no
+        // wrapping), so existing generated tests are unaffected. Mirrors
+        // ts/src/feature/test/TestFeature.ts (makeNetsim).
+        $net = \Voxgig\Struct\Struct::getprop($options, 'net');
+        $ctx->utility->fetcher = !is_array($net)
+            ? $test_fetcher
+            : $this->makeNetsim($net, $test_fetcher);
+    }
+
+    /**
+     * Wrap a transport with simulated network conditions: latency (fixed or
+     * {min,max} midpoint), a budget of first-N failures (`failTimes` ->
+     * `failStatus`), first-N connection errors (`errorTimes`), or a hard
+     * `offline` outage. Counter-driven, so simulations are deterministic
+     * across a test. Mirrors ts/src/feature/test/TestFeature.ts makeNetsim.
+     */
+    public function makeNetsim(array $net, callable $inner): callable
+    {
+        $this->_netcalls = 0;
+
+        $pick_latency = function () use ($net): float {
+            $l = $net['latency'] ?? null;
+            if ($l === null) {
+                return 0.0;
+            }
+            if (is_numeric($l)) {
+                return $l < 0 ? 0.0 : (float)$l;
+            }
+            if (!is_array($l)) {
+                return 0.0;
+            }
+            $min = (int)($l['min'] ?? 0);
+            $max = isset($l['max']) && is_numeric($l['max']) ? (int)$l['max'] : $min;
+            return $max <= $min ? (float)$min : (float)($min + (($max - $min) >> 1));
+        };
+
+        $sleep = function (mixed $ms) use ($net): void {
+            if (!is_numeric($ms) || $ms <= 0) {
+                return;
+            }
+            $s = $net['sleep'] ?? null;
+            if (is_callable($s)) {
+                $s($ms);
+                return;
+            }
+            usleep((int)($ms * 1000));
+        };
+
+        return function (ZefoyTiktokBotContext $fctx, string $url, array $fetchdef) use ($net, $inner, $pick_latency, $sleep): array {
+            $this->_netcalls++;
+            $call = $this->_netcalls;
+
+            if (($net['offline'] ?? null) === true) {
+                $sleep($pick_latency());
+                return [null, $fctx->make_error('netsim_offline',
+                    "Simulated network offline (URL was: \"{$url}\")")];
+            }
+            if ($call <= (int)($net['errorTimes'] ?? 0)) {
+                $sleep($pick_latency());
+                return [null, $fctx->make_error('netsim_conn',
+                    "Simulated connection error (call {$call})")];
+            }
+            if ($call <= (int)($net['failTimes'] ?? 0)) {
+                $sleep($pick_latency());
+                $status = is_numeric($net['failStatus'] ?? null) ? (int)$net['failStatus'] : 503;
+                return [[
+                    'status' => $status,
+                    'statusText' => 'Simulated Failure',
+                    'body' => 'not-used',
+                    'json' => function () { return null; },
+                    'headers' => [],
+                ], null];
+            }
+            $sleep($pick_latency());
+            return $inner($fctx, $url, $fetchdef);
+        };
     }
 
     /**

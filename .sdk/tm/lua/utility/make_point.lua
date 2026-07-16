@@ -5,7 +5,14 @@ local helpers = require("core.helpers")
 
 local function make_point_util(ctx)
   if ctx.out["point"] ~= nil then
-    ctx.point = ctx.out["point"]
+    local preset = ctx.out["point"]
+    -- PrePoint short-circuit: a feature (e.g. rbac) may place an SDK error
+    -- in ctx.out["point"] to abort the operation before any endpoint
+    -- resolution or network work happens.
+    if type(preset) == "table" and preset.is_sdk_error == true then
+      return nil, preset
+    end
+    ctx.point = preset
     return ctx.point, nil
   end
 

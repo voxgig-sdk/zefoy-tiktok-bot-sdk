@@ -43,6 +43,31 @@ class ZefoyTiktokBotMakeOptions
             $opts = [];
         }
 
+        // Feature add-order. options['feature'] may be given as an ordered LIST
+        // of ['name'=>..., 'active'=>..., ...] entries (the list position IS the
+        // order in which features are added), or as a ['name'=>[opts]] map.
+        // Normalize a list to a map (so merge/validate/init are unchanged) and
+        // remember the explicit order; a map defaults to test-first so the
+        // `test` mock transport is installed as the base of the wrapper chain.
+        $featureorder = [];
+        if (isset($opts['feature']) && is_array($opts['feature']) && array_is_list($opts['feature'])) {
+            $fmap = [];
+            foreach ($opts['feature'] as $entry) {
+                if (!is_array($entry)) {
+                    continue;
+                }
+                $name = $entry['name'] ?? null;
+                if ($name === null) {
+                    continue;
+                }
+                $fopts = $entry;
+                unset($fopts['name']);
+                $fmap[$name] = $fopts;
+                $featureorder[] = $name;
+            }
+            $opts['feature'] = $fmap;
+        }
+
         $config = $ctx->config ?? [];
         $cfgopts = isset($config['options']) && is_array($config['options']) ? $config['options'] : [];
 
@@ -94,7 +119,28 @@ class ZefoyTiktokBotMakeOptions
             return \Voxgig\Struct\Struct::escre($p);
         }, $parts);
         $keyre = implode('|', $parts);
+
+        // Resolve the feature add-order: an explicit list order (above) wins;
+        // otherwise order the map test-first, then the remaining names sorted,
+        // so the outcome is deterministic and `test` is always the base.
+        if (count($featureorder) === 0) {
+            $fmap = $opts['feature'] ?? null;
+            $names = is_array($fmap)
+                ? array_values(array_filter(array_keys($fmap), 'is_string'))
+                : [];
+            sort($names, SORT_STRING);
+            if (in_array('test', $names, true)) {
+                $rest = array_values(array_filter($names, function ($n) {
+                    return $n !== 'test';
+                }));
+                $featureorder = array_merge(['test'], $rest);
+            } else {
+                $featureorder = $names;
+            }
+        }
+
         $derived = ['clean' => $keyre === '' ? [] : ['keyre' => $keyre]];
+        $derived['featureorder'] = $featureorder;
         $opts['__derived__'] = $derived;
 
         return $opts;

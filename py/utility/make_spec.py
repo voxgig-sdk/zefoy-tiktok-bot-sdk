@@ -6,8 +6,12 @@ from core.spec import ZefoyTiktokBotSpec
 
 
 def make_spec_util(ctx):
-    if ctx.out.get("spec") is not None:
-        ctx.spec = ctx.out["spec"]
+    pre = ctx.out.get("spec")
+    if pre is not None:
+        # A feature hook may short-circuit with an error (see make_point).
+        if isinstance(pre, Exception):
+            return None, pre
+        ctx.spec = pre
         return ctx.spec, None
 
     point = ctx.point

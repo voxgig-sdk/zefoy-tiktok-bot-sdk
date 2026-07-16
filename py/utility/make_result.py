@@ -2,8 +2,12 @@
 
 
 def make_result_util(ctx):
-    if ctx.out.get("result") is not None:
-        return ctx.out["result"], None
+    pre = ctx.out.get("result")
+    if pre is not None:
+        # A feature hook may short-circuit with an error (see make_point).
+        if isinstance(pre, Exception):
+            return None, pre
+        return pre, None
 
     utility = ctx.utility
     op = ctx.op

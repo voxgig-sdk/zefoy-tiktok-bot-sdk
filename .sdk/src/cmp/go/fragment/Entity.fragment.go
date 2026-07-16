@@ -106,6 +106,139 @@ func (e *EntyClass) MatchTyped(match ...EntityName) EntityName {
 	return typedFrom[EntityName](e.Match())
 }
 
+// Stream (feature #4). Runs `action` through the full pipeline and returns a
+// channel over result items, so the `streaming` feature's incremental output
+// is reachable from a generated entity (a normal op call materialises the
+// whole result). `callopts` parameterises the call:
+//   - inbound (download): the channel yields items/chunks (from the streaming
+//     feature when active, else the materialised items);
+//   - outbound (upload): a `body` in callopts is attached to the request so the
+//     transport can stream the payload;
+//   - `ctrl` (pipeline control) and `signal` (a done channel) are honoured.
+func (e *EntyClass) Stream(action string, args map[string]any, callopts map[string]any) <-chan any {
+	out := make(chan any)
+
+	if callopts == nil {
+		callopts = map[string]any{}
+	}
+
+	var signal <-chan struct{}
+	switch s := callopts["signal"].(type) {
+	case <-chan struct{}:
+		signal = s
+	case chan struct{}:
+		signal = s
+	}
+
+	ctrl := map[string]any{}
+	if c := core.ToMapAny(callopts["ctrl"]); c != nil {
+		for k, v := range c {
+			ctrl[k] = v
+		}
+	}
+
+	ctxmap := map[string]any{
+		"opname": action,
+		"ctrl":   ctrl,
+		"match":  e.match,
+		"data":   e.data,
+	}
+	for k, v := range args {
+		ctxmap[k] = v
+	}
+
+	utility := e.utility
+	ctx := utility.MakeContext(ctxmap, e.entctx)
+	ctx.Meta["stream"] = callopts
+
+	// Outbound: expose the caller's payload so the request builder / transport
+	// can stream it as the request body.
+	if body := callopts["body"]; body != nil {
+		ctx.Reqdata["body$"] = body
+		ctx.Meta["stream_out"] = body
+	}
+
+	send := func(item any) bool {
+		select {
+		case <-signal:
+			return false
+		case out <- item:
+			return true
+		}
+	}
+
+	go func() {
+		defer close(out)
+
+		utility.FeatureHook(ctx, "PrePoint")
+		point, err := utility.MakePoint(ctx)
+		ctx.Out["point"] = point
+		if err != nil {
+			return
+		}
+
+		utility.FeatureHook(ctx, "PreSpec")
+		spec, err := utility.MakeSpec(ctx)
+		ctx.Out["spec"] = spec
+		if err != nil {
+			return
+		}
+
+		utility.FeatureHook(ctx, "PreRequest")
+		req, err := utility.MakeRequest(ctx)
+		ctx.Out["request"] = req
+		if err != nil {
+			return
+		}
+
+		utility.FeatureHook(ctx, "PreResponse")
+		resp, err := utility.MakeResponse(ctx)
+		ctx.Out["response"] = resp
+		if err != nil {
+			return
+		}
+
+		utility.FeatureHook(ctx, "PreResult")
+		result, err := utility.MakeResult(ctx)
+		ctx.Out["result"] = result
+		if err != nil {
+			return
+		}
+
+		utility.FeatureHook(ctx, "PreDone")
+
+		// Inbound: prefer the streaming feature's incremental iterator; else
+		// fall back to the materialised items so Stream always yields.
+		if ctx.Result != nil && ctx.Result.Stream != nil {
+			for item := range ctx.Result.Stream() {
+				if !send(item) {
+					return
+				}
+			}
+			return
+		}
+
+		data, derr := utility.Done(ctx)
+		if derr != nil {
+			return
+		}
+		switch d := data.(type) {
+		case []any:
+			for _, item := range d {
+				if !send(item) {
+					return
+				}
+			}
+		case nil:
+			// nothing to yield
+		default:
+			send(d)
+		}
+	}()
+
+	return out
+}
+
 // #LoadOp
 
 // #ListOp

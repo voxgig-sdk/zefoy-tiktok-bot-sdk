@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import random
+import time
 
 from utility.voxgig_struct import voxgig_struct as vs
 from feature.base_feature import ZefoyTiktokBotBaseFeature
@@ -155,7 +156,75 @@ class ZefoyTiktokBotTestFeature(ZefoyTiktokBotBaseFeature):
 
             return respond(404, None, {"statusText": "Unknown operation"})
 
-        ctx.utility.fetcher = test_fetcher
+        # Optional network behaviour simulation over the mock transport.
+        # Enable per test via SDK.test({"net": {"latency": ..., ...}}). When
+        # "net" is absent the mock behaves exactly as before (no wrapping),
+        # so existing generated tests are unaffected.
+        net = vs.getprop(options, "net")
+        if isinstance(net, dict):
+            ctx.utility.fetcher = self.make_netsim(net, test_fetcher)
+        else:
+            ctx.utility.fetcher = test_fetcher
+
+    # Wrap a transport with simulated network conditions: latency (fixed or
+    # {min,max}), a budget of first-N failures (failTimes -> failStatus),
+    # first-N connection errors (errorTimes), or a hard offline outage.
+    # Counter-driven, so simulations are deterministic across a test.
+    def make_netsim(self, net, inner):
+        self._netcalls = 0
+
+        def pick_latency():
+            latency = vs.getprop(net, "latency")
+            if latency is None:
+                return 0
+            if isinstance(latency, (int, float)) and not isinstance(latency, bool):
+                return 0 if latency < 0 else latency
+            if not isinstance(latency, dict):
+                return 0
+            mn = int(vs.getprop(latency, "min") or 0)
+            mx = vs.getprop(latency, "max")
+            mx = mn if mx is None else int(mx)
+            return mn if mx <= mn else mn + ((mx - mn) >> 1)
+
+        def sleep(ms):
+            if ms is None or ms <= 0:
+                return
+            net_sleep = vs.getprop(net, "sleep")
+            if callable(net_sleep):
+                net_sleep(ms)
+                return
+            time.sleep(ms / 1000.0)
+
+        def netsim_fetcher(fctx, url, fetchdef):
+            self._netcalls += 1
+            call = self._netcalls
+
+            if vs.getprop(net, "offline") is True:
+                sleep(pick_latency())
+                return None, fctx.make_error("netsim_offline",
+                    'Simulated network offline (URL was: "' + url + '")')
+
+            if call <= int(vs.getprop(net, "errorTimes") or 0):
+                sleep(pick_latency())
+                return None, fctx.make_error("netsim_conn",
+                    "Simulated connection error (call " + str(call) + ")")
+
+            if call <= int(vs.getprop(net, "failTimes") or 0):
+                sleep(pick_latency())
+                status = vs.getprop(net, "failStatus")
+                status = 503 if status is None else status
+                return {
+                    "status": status,
+                    "statusText": "Simulated Failure",
+                    "body": "not-used",
+                    "json": lambda: None,
+                    "headers": {},
+                }, None
+
+            sleep(pick_latency())
+            return inner(fctx, url, fetchdef)
+
+        return netsim_fetcher
 
     def build_args(self, ctx, op, args):
         opname = op.name

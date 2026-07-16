@@ -49,6 +49,10 @@ class ZefoyTiktokBotContext:
                 self.ctrl.throw_err = ctrl_raw["throw"]
             if isinstance(ctrl_raw.get("explain"), dict):
                 self.ctrl.explain = ctrl_raw["explain"]
+            if ctrl_raw.get("actor") is not None:
+                self.ctrl.actor = ctrl_raw["actor"]
+            if isinstance(ctrl_raw.get("paging"), dict):
+                self.ctrl.paging = ctrl_raw["paging"]
         elif basectx is not None and basectx.ctrl is not None:
             self.ctrl = basectx.ctrl
 

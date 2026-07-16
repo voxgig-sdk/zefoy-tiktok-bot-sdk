@@ -186,7 +186,91 @@ function TestFeature:init(ctx, options)
     return respond(404, nil, { statusText = "Unknown operation" })
   end
 
-  ctx.utility.fetcher = test_fetcher
+  -- Optional network behaviour simulation over the mock transport. Enable
+  -- per test via `SDK.test({ net = { latency = ..., failTimes = ... } })`.
+  -- When `net` is absent the mock behaves exactly as before (no wrapping),
+  -- so existing generated tests are unaffected.
+  local net = vs.getprop(options, "net")
+  if type(net) ~= "table" then
+    ctx.utility.fetcher = test_fetcher
+  else
+    ctx.utility.fetcher = self:make_netsim(net, test_fetcher)
+  end
+end
+
+
+-- Wrap a transport with simulated network conditions: latency (fixed or
+-- {min,max}, sampled at the midpoint), a budget of first-N failures
+-- (`failTimes` -> `failStatus`), first-N connection errors
+-- (`errorTimes`), or a hard `offline` outage. Counter-driven, so
+-- simulations are deterministic across a test.
+function TestFeature:make_netsim(net, inner)
+  local test_self = self
+  test_self._netcalls = 0
+
+  local function pick_latency()
+    local l = net["latency"]
+    if l == nil then
+      return 0
+    end
+    if type(l) == "number" then
+      if l < 0 then
+        return 0
+      end
+      return l
+    end
+    local min = math.floor(tonumber(l["min"]) or 0)
+    local max = l["max"] == nil and min or math.floor(tonumber(l["max"]) or 0)
+    if max <= min then
+      return min
+    end
+    return min + math.floor((max - min) / 2)
+  end
+
+  local function sleep(ms)
+    if ms == nil or ms <= 0 then
+      return
+    end
+    if type(net["sleep"]) == "function" then
+      net["sleep"](ms)
+      return
+    end
+    -- Portable stdlib-only wait: spin on the CPU clock.
+    local target = os.clock() + (ms / 1000)
+    while os.clock() < target do end
+  end
+
+  return function(fctx, fullurl, fetchdef)
+    test_self._netcalls = test_self._netcalls + 1
+    local call = test_self._netcalls
+
+    if net["offline"] == true then
+      sleep(pick_latency())
+      return nil, fctx:make_error("netsim_offline",
+        'Simulated network offline (URL was: "' .. fullurl .. '")')
+    end
+
+    if call <= math.floor(tonumber(net["errorTimes"]) or 0) then
+      sleep(pick_latency())
+      return nil, fctx:make_error("netsim_conn",
+        "Simulated connection error (call " .. call .. ")")
+    end
+
+    if call <= math.floor(tonumber(net["failTimes"]) or 0) then
+      sleep(pick_latency())
+      local status = net["failStatus"] == nil and 503 or net["failStatus"]
+      return {
+        status = status,
+        statusText = "Simulated Failure",
+        body = "not-used",
+        json = function() return nil end,
+        headers = {},
+      }, nil
+    end
+
+    sleep(pick_latency())
+    return inner(fctx, fullurl, fetchdef)
+  end
 end
 
 

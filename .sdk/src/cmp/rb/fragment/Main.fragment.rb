@@ -46,14 +46,17 @@ class ProjectNameSDK
 
     @_rootctx.options = @options
 
-    # Add features from config.
+    # Add features in the resolved order (make_options puts an explicit array
+    # order first, else defaults to test-first). Ordering matters: the `test`
+    # feature installs the base mock transport and the transport features
+    # (retry/cache/netsim/proxy/ratelimit) wrap whatever is current, so `test`
+    # must be added before them to sit at the base of the chain.
     feature_opts = ProjectNameHelpers.to_map(VoxgigStruct.getprop(@options, "feature"))
     if feature_opts
-      items = VoxgigStruct.items(feature_opts)
-      if items
-        items.each do |item|
-          fname = item[0]
-          fopts = ProjectNameHelpers.to_map(item[1])
+      featureorder = VoxgigStruct.getpath(@options, "__derived__.featureorder")
+      if featureorder.is_a?(Array)
+        featureorder.each do |fname|
+          fopts = ProjectNameHelpers.to_map(feature_opts[fname])
           if fopts && fopts["active"] == true
             utility.feature_add.call(@_rootctx, ProjectNameFeatures.make_feature(fname))
           end

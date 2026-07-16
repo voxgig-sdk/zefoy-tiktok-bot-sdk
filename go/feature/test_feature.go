@@ -11,8 +11,9 @@ import (
 
 type TestFeature struct {
 	BaseFeature
-	client  *core.ZefoyTiktokBotSDK
-	options map[string]any
+	client   *core.ZefoyTiktokBotSDK
+	options  map[string]any
+	netcalls int
 }
 
 func NewTestFeature() *TestFeature {
@@ -197,7 +198,81 @@ func (f *TestFeature) Init(ctx *core.Context, options map[string]any) {
 		return respond(404, nil, map[string]any{"statusText": "Unknown operation"}), nil
 	}
 
-	ctx.Utility.Fetcher = testFetcher
+	// Optional network behaviour simulation over the mock transport. Enable
+	// per test via `TestSDK(map[string]any{"net": ...}, nil)`. When `net` is
+	// absent the mock behaves exactly as before (no wrapping), so existing
+	// generated tests are unaffected.
+	net := core.ToMapAny(vs.GetProp(options, "net"))
+	if net == nil {
+		ctx.Utility.Fetcher = testFetcher
+	} else {
+		ctx.Utility.Fetcher = f.makeNetsim(net, testFetcher)
+	}
+}
+
+// makeNetsim wraps a transport with simulated network conditions: latency
+// (fixed or {min,max}), a budget of first-N failures (`failTimes` ->
+// `failStatus`), first-N connection errors (`errorTimes`), or a hard
+// `offline` outage. Counter-driven, so simulations are deterministic
+// across a test.
+func (f *TestFeature) makeNetsim(net map[string]any, inner core.FetcherFunc) core.FetcherFunc {
+	f.netcalls = 0
+
+	pickLatency := func() int {
+		l, has := net["latency"]
+		if !has || l == nil {
+			return 0
+		}
+		if lm, ok := l.(map[string]any); ok {
+			min := foptInt(lm, "min", 0)
+			max := foptInt(lm, "max", min)
+			if max <= min {
+				return min
+			}
+			return min + ((max - min) >> 1)
+		}
+		fixed := foptInt(net, "latency", 0)
+		if fixed < 0 {
+			return 0
+		}
+		return fixed
+	}
+
+	sleep := func(ms int) {
+		if ms <= 0 {
+			return
+		}
+		foptSleep(net)(ms)
+	}
+
+	return func(ctx *core.Context, url string, fetchdef map[string]any) (any, error) {
+		f.netcalls++
+		call := f.netcalls
+
+		if netOffline, ok := net["offline"].(bool); ok && netOffline {
+			sleep(pickLatency())
+			return nil, ctx.MakeError("netsim_offline",
+				"Simulated network offline (URL was: \""+url+"\")")
+		}
+		if call <= foptInt(net, "errorTimes", 0) {
+			sleep(pickLatency())
+			return nil, ctx.MakeError("netsim_conn",
+				fmt.Sprintf("Simulated connection error (call %d)", call))
+		}
+		if call <= foptInt(net, "failTimes", 0) {
+			sleep(pickLatency())
+			status := foptInt(net, "failStatus", 503)
+			return map[string]any{
+				"status":     status,
+				"statusText": "Simulated Failure",
+				"body":       "not-used",
+				"json":       (func() any)(func() any { return nil }),
+				"headers":    map[string]any{},
+			}, nil
+		}
+		sleep(pickLatency())
+		return inner(ctx, url, fetchdef)
+	}
 }
 
 func (f *TestFeature) buildArgs(ctx *core.Context, op *core.Operation, args map[string]any) any {

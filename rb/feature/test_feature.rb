@@ -145,7 +145,71 @@ class ZefoyTiktokBotTestFeature < ZefoyTiktokBotBaseFeature
       end
     }
 
-    ctx.utility.fetcher = test_fetcher
+    # Optional network behaviour simulation over the mock transport. Enable
+    # per test via `SDK.test({ "net" => { "latency" => ..., ... } })`. When
+    # "net" is absent the mock behaves exactly as before (no wrapping), so
+    # existing generated tests are unaffected.
+    net = VoxgigStruct.getprop(options, "net")
+    net = nil unless net.is_a?(Hash)
+    ctx.utility.fetcher = net.nil? ? test_fetcher : make_netsim(net, test_fetcher)
+  end
+
+  # Wrap a transport with simulated network conditions: latency (fixed or
+  # {min,max}), a budget of first-N failures ("failTimes" -> "failStatus"),
+  # first-N connection errors ("errorTimes"), or a hard "offline" outage.
+  # Counter-driven, so simulations are deterministic across a test.
+  def make_netsim(net, inner)
+    @netcalls = 0
+
+    pick_latency = -> {
+      l = net["latency"]
+      next 0 if l.nil?
+      next (l < 0 ? 0 : l) if l.is_a?(Numeric)
+      min = (l["min"] || 0).to_i
+      max = l["max"].nil? ? min : l["max"].to_i
+      max <= min ? min : min + ((max - min) >> 1)
+    }
+
+    do_sleep = ->(ms) {
+      next if ms.nil? || ms <= 0
+      if net["sleep"].is_a?(Proc)
+        net["sleep"].call(ms)
+      else
+        sleep(ms / 1000.0)
+      end
+    }
+
+    ->(fctx, fullurl, fetchdef) {
+      @netcalls += 1
+      call = @netcalls
+
+      if net["offline"] == true
+        do_sleep.call(pick_latency.call)
+        return nil, fctx.make_error("netsim_offline",
+          "Simulated network offline (URL was: \"#{fullurl}\")")
+      end
+
+      if call <= (net["errorTimes"] || 0).to_i
+        do_sleep.call(pick_latency.call)
+        return nil, fctx.make_error("netsim_conn",
+          "Simulated connection error (call #{call})")
+      end
+
+      if call <= (net["failTimes"] || 0).to_i
+        do_sleep.call(pick_latency.call)
+        status = net["failStatus"].nil? ? 503 : net["failStatus"]
+        return {
+          "status" => status,
+          "statusText" => "Simulated Failure",
+          "body" => "not-used",
+          "json" => -> { nil },
+          "headers" => {},
+        }, nil
+      end
+
+      do_sleep.call(pick_latency.call)
+      inner.call(fctx, fullurl, fetchdef)
+    }
   end
 
   def build_args(ctx, op, args)

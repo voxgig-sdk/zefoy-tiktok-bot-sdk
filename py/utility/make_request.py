@@ -6,8 +6,12 @@ from core.result import ZefoyTiktokBotResult
 
 
 def make_request_util(ctx):
-    if ctx.out.get("request") is not None:
-        return ctx.out["request"], None
+    pre = ctx.out.get("request")
+    if pre is not None:
+        # A feature hook may short-circuit with an error (see make_point).
+        if isinstance(pre, Exception):
+            return None, pre
+        return pre, None
 
     spec = ctx.spec
     utility = ctx.utility

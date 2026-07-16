@@ -25,9 +25,10 @@
     "test": "node --enable-source-maps --test-concurrency=1 --test 'dist-test/**/*.test.js'",
     "test-some": "node --enable-source-maps --experimental-test-isolation=none --test-name-pattern=\"$TEST_PATTERN\" --test 'dist-test/**/*.test.js'",
     "test-utility": "node --enable-source-maps --test test/utility/*.test.ts",
+    "test-coverage": "node --test-concurrency=1 --experimental-test-coverage --test-coverage-exclude='**/dist-test/**' --test-coverage-lines=85 --test-coverage-branches=68 --test-coverage-functions=88 --test 'dist-test/**/*.test.js'",
     "watch": "tsc --build src test -w",
-    "build": "tsc --build src test",
-    "clean": "rm -rf node_modules yarn.lock package-lock.json",
+    "build": "rm -rf dist dist-test && tsc --build src test",
+    "clean": "rm -rf node_modules yarn.lock package-lock.json dist dist-test",
     "reset": "npm run clean && npm i && npm run build && npm test"
   },
   "author": {

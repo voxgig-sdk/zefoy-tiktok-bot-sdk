@@ -27,7 +27,7 @@
 //     with every field optional (Go's analog of TS `Partial<Name>`).
 
 import {
-  cmp, each,
+  cmp, each, names,
   File, Content, Folder,
 } from '@voxgig/sdkgen'
 
@@ -77,10 +77,17 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
   const { model } = props.ctx$
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
-  // Emit for every entity that gets an entity file. Main_go.ts iterates
-  // entities WITHOUT an `active` filter, so a struct is required for each so
-  // the typed accessors in every *_entity.go resolve at compile time.
-  const entityList = each(entity).filter((e: any) => e && null != e.Name)
+  // Emit for every entity that gets an entity file. Main_go.ts / Entity_go.ts
+  // iterate entities WITHOUT an `active` filter and reference the typed data
+  // type `<Name>` in every *_entity.go, so a struct is required for each or the
+  // package won't compile. Filter on `name` (always present), NOT `Name`:
+  // `Name` is the PascalCase variant derived LAZILY by `names()`, so filtering
+  // on it silently drops any entity whose `Name` hasn't been derived yet by an
+  // earlier component (order-dependent — e.g. fieldless placeholder entities),
+  // producing `undefined: <Name>` in the generated Go. Derive `Name` here so
+  // the struct set is deterministic and matches the *_entity.go set.
+  const entityList = each(entity).filter((e: any) => e && null != e.name)
+  entityList.forEach((e: any) => { if (null == e.Name) names(e, e.name) })
 
   Folder({ name: 'entity' }, () => {
 

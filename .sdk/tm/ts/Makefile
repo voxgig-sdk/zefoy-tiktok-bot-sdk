@@ -1,8 +1,13 @@
-.PHONY: test build clean publish
+.PHONY: test coverage build clean publish
 
 # tsc emits to dist/ + dist-test/; the test runner reads dist-test/, so build first.
 test: build
 	npm test
+
+# Run the suite under the coverage gate (fails if SDK-source coverage drops
+# below the thresholds in package.json). Use in CI to catch regressions.
+coverage: build
+	npm run test-coverage
 
 build:
 	npm run build

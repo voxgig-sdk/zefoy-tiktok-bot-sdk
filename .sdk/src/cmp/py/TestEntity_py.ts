@@ -77,6 +77,12 @@ const TestEntity = cmp(function TestEntity(props: any) {
 
   const genCtx: GenCtx = { model, entity, flow: basicflow, PROJUPPER }
 
+  // The stream test streams the "list" op and asserts a 3-item collection, so
+  // it only applies to entities that actually declare a `list` op. Others
+  // (e.g. Batch = create/load) have no list endpoint — make_point would error
+  // and the stream would yield nothing — so skip the test for them.
+  const hasList = !!(entity.op && (entity.op as any).list)
+
   File({ name: 'test_' + entity.name + '_entity.' + target.ext }, () => {
 
     Content(`# ${entity.Name} entity test
@@ -101,7 +107,41 @@ class Test${entity.Name}Entity:
         testsdk = ${model.const.Name}SDK.test(None, None)
         ent = testsdk.${entity.Name}(None)
         assert ent is not None
+${hasList ? `
+    def test_should_stream(self):
+        # Feature #4: the entity stream(action, ...) method runs the op
+        # pipeline and yields result items. With the streaming feature active
+        # it yields the feature's incremental output; otherwise it falls back
+        # to the materialised list so stream always yields.
+        seed = {
+            "entity": {
+                "${entity.name}": {
+                    "s1": {"id": "s1"},
+                    "s2": {"id": "s2"},
+                    "s3": {"id": "s3"},
+                }
+            }
+        }
 
+        # Fallback: streaming inactive -> yields the materialised list items.
+        base = ${model.const.Name}SDK.test(seed, None)
+        seen = list(base.${entity.Name}(None).stream("list", None, None))
+        assert len(seen) == 3
+
+        # Inbound: streaming active -> yields each item from the feature.
+        from config import make_config
+        cfg = make_config()
+        if isinstance(cfg.get("feature"), dict) and "streaming" in cfg["feature"]:
+            sdk = ${model.const.Name}SDK.test(
+                seed, {"feature": {"streaming": {"active": True}}})
+            got = []
+            for item in sdk.${entity.Name}(None).stream("list", None, None):
+                if isinstance(item, list):
+                    got.extend(item)
+                else:
+                    got.append(item)
+            assert len(got) == 3
+` : ''}
     def test_should_run_basic_flow(self):
         setup = _${entity.name}_basic_setup(None)
         # Per-op sdk-test-control.json skip — basic test exercises a flow with
@@ -137,6 +177,14 @@ class Test${entity.Name}Entity:
 
     // Model-driven step iteration
     each(basicflow.step, (step: any, index: any) => {
+      // Never emit a REMOVE (or its removed-item verify LIST) without a
+      // preceding CREATE: a coherent CRUD flow only removes what it created,
+      // so a create-less remove would mutate pre-existing (live) data.
+      if (!flowHasCreate) {
+        if ('remove' === step.op) { return }
+        if ('list' === step.op &&
+          (step.valid || []).some((v: any) => 'ItemNotExists' === v.apply)) { return }
+      }
       const opgen: OpGen = GENERATE_OP[step.op]
       if (opgen) {
         opgen(genCtx, step, index)

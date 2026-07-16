@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	vs "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/utility/struct"
@@ -45,7 +46,18 @@ func defaultHTTPFetch(fullurl string, fetchdef map[string]any) (map[string]any, 
 		req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; ZefoyTiktokBotSDK/1.0)")
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	// Honour a proxy annotation on the fetch definition (set by the proxy
+	// feature): route the request through an http.Transport with Proxy set.
+	client := http.DefaultClient
+	if proxy, ok := fetchdef["proxy"].(string); ok && proxy != "" {
+		if proxyURL, perr := url.Parse(proxy); perr == nil {
+			client = &http.Client{
+				Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)},
+			}
+		}
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

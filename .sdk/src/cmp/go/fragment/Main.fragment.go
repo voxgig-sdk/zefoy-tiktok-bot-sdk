@@ -40,16 +40,22 @@ func NewProjectNameSDK(options map[string]any) *ProjectNameSDK {
 
 	sdk.rootctx.Options = sdk.options
 
-	// Add features from config.
+	// Add features in the resolved order (MakeOptions puts an explicit array
+	// order first, else defaults to test-first). Ordering matters: the `test`
+	// feature installs the base mock transport and the transport features
+	// (retry/cache/netsim/proxy/ratelimit) wrap whatever is current, so `test`
+	// must be added before them to sit at the base of the chain.
 	featureOpts := ToMapAny(vs.GetProp(sdk.options, "feature"))
 	if featureOpts != nil {
-		for _, item := range vs.Items(featureOpts) {
-			fname, _ := item[0].(string)
-			fopts := ToMapAny(item[1])
-			if fopts != nil {
-				if active, ok := fopts["active"]; ok {
-					if ab, ok := active.(bool); ok && ab {
-						sdk.utility.FeatureAdd(sdk.rootctx, makeFeature(fname))
+		if fo, ok := vs.GetPath([]any{"__derived__", "featureorder"}, sdk.options).([]any); ok {
+			for _, n := range fo {
+				fname, _ := n.(string)
+				fopts := ToMapAny(featureOpts[fname])
+				if fopts != nil {
+					if active, ok := fopts["active"]; ok {
+						if ab, ok := active.(bool); ok && ab {
+							sdk.utility.FeatureAdd(sdk.rootctx, makeFeature(fname))
+						}
 					}
 				}
 			}

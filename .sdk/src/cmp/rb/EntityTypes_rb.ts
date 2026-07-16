@@ -23,7 +23,7 @@
 // The file is required by the main SDK module so these constants are always loaded.
 
 import {
-  cmp, each,
+  cmp, each, names,
   File, Content,
 } from '@voxgig/sdkgen'
 
@@ -81,6 +81,10 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   const entityList = each(entity).filter((e: any) => e.active !== false)
+  // Derive the PascalCase Name up-front — it is set LAZILY by names(), so an
+  // entity not yet named (e.g. a fieldless placeholder) would otherwise read
+  // `Name = undefined` below. Parity with the go emitter's fix.
+  entityList.forEach((e: any) => { if (null == e.Name) names(e, e.name) })
 
   File({ name: model.const.Name + '_types.' + LANG }, () => {
 

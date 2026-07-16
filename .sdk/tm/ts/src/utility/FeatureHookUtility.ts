@@ -11,7 +11,10 @@ function featureHook(ctx: Context, name: string) {
   for (let f of features) {
     const fh = (f as any)[name]
     if (null != fh) {
-      const fres = fh(ctx)
+      // Call bound to the feature instance: hook methods read instance state
+      // via `this` (e.g. clienttrack's session/options), so an unbound call
+      // would run with `this === undefined` and throw.
+      const fres = fh.call(f, ctx)
       if (fres instanceof Promise) {
         resp.push(fres)
       }

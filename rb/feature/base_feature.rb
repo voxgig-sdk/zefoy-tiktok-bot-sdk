@@ -3,6 +3,11 @@
 class ZefoyTiktokBotBaseFeature
   attr_accessor :version, :name, :active
 
+  # Positions this feature when added via the client `extend` option:
+  # "__before__" / "__after__" / "__replace__" name an already-added
+  # feature (mirrors the ts feature `_options`).
+  attr_accessor :_options
+
   def initialize
     @version = "0.0.1"
     @name = "base"

@@ -5,7 +5,7 @@ import { TestFeature } from './feature/test/TestFeature'
 
 
 const FEATURE_CLASS: Record<string, typeof BaseFeature> = {
-   test: TestFeature
+   test: TestFeature,
 
 }
 
@@ -30,7 +30,7 @@ class Config {
       "options": {
         "active": false
       }
-    }
+    },
 
   }
 

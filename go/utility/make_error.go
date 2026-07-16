@@ -61,6 +61,14 @@ func makeErrorUtil(ctx *core.Context, err error) (any, error) {
 
 	ctx.Ctrl.Err = sdkErr
 
+	// Fire PreUnexpected so observability features (metrics, telemetry, audit,
+	// debug) close/record error paths that never reach PreDone (e.g. a PrePoint
+	// rbac short-circuit). Fires after ctx.Ctrl.Err is set so hooks can read the
+	// error; features guard against double-recording when PreDone already fired.
+	if ctx.Utility != nil && ctx.Utility.FeatureHook != nil {
+		ctx.Utility.FeatureHook(ctx, "PreUnexpected")
+	}
+
 	if ctx.Ctrl.Throw != nil && *ctx.Ctrl.Throw == false {
 		return result.Resdata, nil
 	}

@@ -2,8 +2,12 @@
 
 
 def make_response_util(ctx):
-    if ctx.out.get("response") is not None:
-        return ctx.out["response"], None
+    pre = ctx.out.get("response")
+    if pre is not None:
+        # A feature hook may short-circuit with an error (see make_point).
+        if isinstance(pre, Exception):
+            return None, pre
+        return pre, None
 
     utility = ctx.utility
     spec = ctx.spec

@@ -9,6 +9,12 @@ class ZefoyTiktokBotBaseFeature
     public string $name;
     public bool $active;
 
+    // Positions this feature when added via the client `extend` option:
+    // "__before__" / "__after__" / "__replace__" name an already-added
+    // feature (mirrors the ts feature `_options`). Declared so setting it
+    // on an extension instance avoids the dynamic-property deprecation.
+    public ?array $_options = null;
+
     public function __construct()
     {
         $this->version = '0.0.1';

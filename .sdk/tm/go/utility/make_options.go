@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"sort"
 	"strings"
 
 	vs "github.com/voxgig/struct"
@@ -26,6 +27,36 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 	}
 
 	opts := vs.Clone(options).(map[string]any)
+
+	// Feature add-order (feature #2). options.feature may be given as an ordered
+	// ARRAY of {name, active, ...opts} entries (the array position IS the order
+	// in which features are added), or as a {name:{opts}} map. Normalize an
+	// array to a map (so merge/validate/init are unchanged) and remember the
+	// explicit order; a map defaults to test-first so the `test` mock transport
+	// is installed as the base of the transport wrapper chain.
+	var featureorder []any
+	if farr, ok := opts["feature"].([]any); ok {
+		fmap := map[string]any{}
+		for _, entry := range farr {
+			em := core.ToMapAny(entry)
+			if em == nil {
+				continue
+			}
+			name, _ := em["name"].(string)
+			if name == "" {
+				continue
+			}
+			fopts := map[string]any{}
+			for k, v := range em {
+				if k != "name" {
+					fopts[k] = v
+				}
+			}
+			fmap[name] = fopts
+			featureorder = append(featureorder, name)
+		}
+		opts["feature"] = fmap
+	}
 
 	config := ctx.Config
 	if config == nil {
@@ -118,12 +149,43 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 	}
 	keyre := strings.Join(filtered, "|")
 
+	// Resolve the feature add-order: an explicit array order (above) wins;
+	// otherwise order the map test-first, then the remaining names sorted, so
+	// the outcome is deterministic and `test` is always the base transport.
+	if len(featureorder) == 0 {
+		fmap := core.ToMapAny(opts["feature"])
+		names := make([]string, 0, len(fmap))
+		for k := range fmap {
+			names = append(names, k)
+		}
+		sort.Strings(names)
+		hasTest := false
+		for _, n := range names {
+			if n == "test" {
+				hasTest = true
+			}
+		}
+		if hasTest {
+			featureorder = append(featureorder, "test")
+			for _, n := range names {
+				if n != "test" {
+					featureorder = append(featureorder, n)
+				}
+			}
+		} else {
+			for _, n := range names {
+				featureorder = append(featureorder, n)
+			}
+		}
+	}
+
 	derived := map[string]any{
 		"clean": map[string]any{},
 	}
 	if keyre != "" {
 		derived["clean"] = map[string]any{"keyre": keyre}
 	}
+	derived["featureorder"] = featureorder
 	opts["__derived__"] = derived
 
 	return opts

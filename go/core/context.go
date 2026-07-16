@@ -71,6 +71,16 @@ func NewContext(ctxmap map[string]any, basectx *Context) *Context {
 					ctx.Ctrl.Explain = em
 				}
 			}
+			if a, ok := cm["actor"]; ok {
+				if as, ok := a.(string); ok {
+					ctx.Ctrl.Actor = as
+				}
+			}
+			if p, ok := cm["paging"]; ok {
+				if pm, ok := p.(map[string]any); ok {
+					ctx.Ctrl.Paging = pm
+				}
+			}
 		} else if ctrl, ok := c.(*Control); ok {
 			ctx.Ctrl = ctrl
 		}

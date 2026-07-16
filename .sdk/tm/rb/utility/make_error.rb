@@ -36,6 +36,14 @@ module ZefoyTiktokBotUtilities
 
     ctx.ctrl.err = sdk_err
 
+    # Fire PreUnexpected so observability features (metrics, telemetry, audit,
+    # debug) close/record error paths that never reach PreDone (e.g. a PrePoint
+    # rbac short-circuit). Fires after ctx.ctrl.err is set so hooks can read the
+    # error; features guard against double-recording when PreDone already fired.
+    if ctx.utility && ctx.utility.feature_hook
+      ctx.utility.feature_hook.call(ctx, "PreUnexpected")
+    end
+
     # Opt-out escape hatch: when throwing is explicitly disabled, return the
     # bare result data instead of raising.
     if ctx.ctrl.throw_err == false

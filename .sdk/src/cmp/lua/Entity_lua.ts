@@ -62,8 +62,13 @@ const Entity = cmp(function Entity(props: any) {
           // Entity.fragment.lua so the class can be renamed independently.
           EntyClass: cls,
 
-          '#Entity-Hook': ({ name, indent }: any) =>
-            Content({ indent }, `utility.feature_hook(ctx, "${name}")`),
+          // Feature-hook wiring: the built-in `#Name-Hook` tag replacement
+          // is hardwired to `//` line comments, so Lua's `-- #PrePoint-Hook`
+          // markers were never matched and no pipeline hooks fired in
+          // generated code. Match the Lua-comment hook tags explicitly.
+          '/(?<indent>[ \\t]*)-- #(?<name>[A-Za-z0-9]+)-Hook[ \\t]*\\n?/':
+            ({ name, indent }: any) =>
+              `${indent}utility.feature_hook(ctx, "${name}")\n`,
 
           ...opfrags,
         }

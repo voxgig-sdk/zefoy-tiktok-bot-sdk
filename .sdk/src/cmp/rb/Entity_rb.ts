@@ -60,8 +60,14 @@ const Entity = cmp(function Entity(props: any) {
           // Entity.fragment.rb so the class can be renamed independently.
           EntyClass: cls,
 
-          '#Entity-Hook': ({ name, indent }: any) =>
-            Content({ indent }, `utility.feature_hook.call(ctx, "${name}")`),
+          // Feature-hook markers. jostraca's built-in `#Name-Tag` pattern is
+          // hardcoded to `//` comments, so the Ruby fragment's
+          // `# #<Name>-Hook` marker lines never matched it and the pipeline
+          // hooks (PrePoint, PreRequest, ...) were silently dropped from the
+          // generated op runner. Match the `#`-comment form explicitly.
+          '/(?<indent>[ \\t]*)#[ \\t]*#(?<name>[A-Za-z0-9]+)-Hook[ \\t]*\\n?/':
+            ({ name, indent }: any) =>
+              `${indent}utility.feature_hook.call(ctx, "${name}")\n`,
 
           ...opfrags,
         }

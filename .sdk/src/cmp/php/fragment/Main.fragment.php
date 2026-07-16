@@ -18,6 +18,10 @@ require_once __DIR__ . '/features.php';
 
 use Voxgig\Struct\Struct;
 
+// Features record diagnostic state on the client as dynamic properties
+// (_retry, _cache, _metrics, ...); allow them explicitly (PHP 8.2+
+// deprecates implicit dynamic properties).
+#[\AllowDynamicProperties]
 class ProjectNameSDK
 {
     public string $mode;
@@ -54,14 +58,17 @@ class ProjectNameSDK
 
         $this->_rootctx->options = $this->options;
 
-        // Add features from config.
+        // Add features in the resolved order (make_options puts an explicit
+        // list order first, else defaults to test-first). Ordering matters: the
+        // `test` feature installs the base mock transport and the transport
+        // features (retry/cache/netsim/proxy/ratelimit) wrap whatever is
+        // current, so `test` must be added before them to sit at the base.
         $feature_opts = ProjectNameHelpers::to_map(Struct::getprop($this->options, "feature"));
         if ($feature_opts) {
-            $items = Struct::items($feature_opts);
-            if ($items) {
-                foreach ($items as $item) {
-                    $fname = $item[0];
-                    $fopts = ProjectNameHelpers::to_map($item[1]);
+            $featureorder = Struct::getpath($this->options, "__derived__.featureorder");
+            if (is_array($featureorder)) {
+                foreach ($featureorder as $fname) {
+                    $fopts = ProjectNameHelpers::to_map($feature_opts[$fname] ?? null);
                     if ($fopts && isset($fopts["active"]) && $fopts["active"] === true) {
                         ($utility->feature_add)($this->_rootctx, ProjectNameFeatures::make_feature($fname));
                     }
