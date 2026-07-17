@@ -101,20 +101,27 @@ const Main = cmp(function Main(props: any) {
   const entityNoun = entityCount === 1 ? 'entity' : 'entities'
   // The best single example expression this SDK can actually run, for the
   // tutorial/REPL walkthroughs (never demonstrates an unsupported op).
-  const firstExampleExpr =
+  const exampleOp =
     firstHas('list') ? `list ${firstEntity}` :
     firstHas('load') ? `load 1 ${firstEntity}` :
-    firstHas('update') ? `update '{id:1}' ${firstEntity}` : ':help'
+    firstHas('update') ? `update '{id:1}' ${firstEntity}` : ''
+  // Fallback differs by context: a COMMAND-LINE arg uses the `--help` flag;
+  // the `/`-prefixed meta-command is only valid INSIDE the REPL.
+  const cliExampleExpr = exampleOp || '--help'
+  const replExampleExpr = exampleOp || '/help'
 
   // ---- Examples block (up front) -------------------------------------------
   const ex: string[] = []
   ex.push(`# 1. Build a native binary (-> dist/<os>-<arch>/${bin})`)
   ex.push('make build')
   ex.push('')
-  ex.push('# 2. Provide credentials once, via the environment')
+  ex.push('# 2. See usage (words, entities, env vars)')
+  ex.push(`./${bin} --help`)
+  ex.push('')
+  ex.push('# 3. Provide credentials once, via the environment')
   ex.push(`export ${apiKeyEnv}=sk_live_xxx`)
   ex.push('')
-  ex.push('# 3. Each command line is ONE AQL expression, run against the API:')
+  ex.push('# 4. Each command line is ONE AQL expression, run against the API:')
   if (firstHas('list')) ex.push(`./${bin} list ${firstEntity}`)
   if (firstHas('load')) {
     ex.push(`./${bin} load 1 ${firstEntity}            # {id:1} shorthand`)
@@ -125,13 +132,13 @@ const Main = cmp(function Main(props: any) {
     ex.push(`./${bin} list ${secondEntity}`)
   }
   ex.push('')
-  ex.push('# 4. Override the API base URL for a single call')
-  ex.push(`${baseEnv}=https://api.example.com ./${bin} ${firstExampleExpr}`)
+  ex.push('# 5. Override the API base URL for a single call')
+  ex.push(`${baseEnv}=https://api.example.com ./${bin} ${cliExampleExpr}`)
   ex.push('')
-  ex.push('# 5. No arguments -> interactive REPL')
+  ex.push('# 6. No arguments -> interactive REPL')
   ex.push(`./${bin}`)
-  ex.push(`${model.name}> ${firstExampleExpr}`)
-  ex.push(`${model.name}> :quit`)
+  ex.push(`${model.name}> ${replExampleExpr}`)
+  ex.push(`${model.name}> /quit`)
   const exampleBlock = ex.join('\n')
 
   // ---- How-to guides (gated) -----------------------------------------------
@@ -171,7 +178,7 @@ Configuration is read from the environment — nothing is written to disk:
 \`\`\`sh
 export ${apiKeyEnv}=sk_live_xxx            # API key
 export ${baseEnv}=https://api.example.com  # optional: override the API base URL
-./${bin} ${firstExampleExpr}
+./${bin} ${cliExampleExpr}
 \`\`\`
 
 Both are injectable by a secrets vault, so the key never has to be typed inline.`)
@@ -183,9 +190,8 @@ evaluated as its own AQL expression:
 
 \`\`\`text
 $ ./${bin}
-${model.name}> ${firstExampleExpr}
-${model.name}> :help
-${model.name}> :quit
+${exampleOp ? `${model.name}> ${exampleOp}\n` : ''}${model.name}> /help
+${model.name}> /quit
 \`\`\``)
 
   howtos.push(`### Cross-compile release binaries
@@ -197,7 +203,7 @@ make build-all   # linux/darwin/windows x amd64/arm64, under dist/<os>-<arch>/
 
   howtos.push(`### Discover the available entities
 
-\`:help\` in the REPL prints the full entity list, or see [Entities](#entities)
+\`/help\` in the REPL prints the full entity list, or see [Entities](#entities)
 below — this SDK exposes ${entityCount} ${entityNoun}.`)
 
   const howtoBlock = howtos.join('\n\n')
@@ -238,11 +244,11 @@ ${exampleBlock}
    arguments to open the REPL):
 
    \`\`\`sh
-   ./dist/*/${bin} ${firstExampleExpr}
+   ./dist/*/${bin} ${cliExampleExpr}
    \`\`\`
 
 4. **Go interactive.** Run the binary with no arguments to open the REPL, then
-   type \`:help\` for the word and entity lists and \`:quit\` to leave.
+   type \`/help\` for the word and entity lists and \`/quit\` to leave.
 
 That is the whole loop: *build → set key → evaluate AQL expressions*.
 
@@ -273,10 +279,16 @@ ${verbRows}
 
 Unset variables fall back to the SDK's built-in defaults.
 
+### CLI flags
+
+- \`--help\` / \`-h\` — print usage (words, entities, env vars) and exit.
+
 ### REPL commands
 
-- \`:quit\` / \`:q\` / \`:exit\` — exit the REPL
-- \`:help\` / \`:h\` / \`:?\`     — show the word list, entity list and meta commands
+Meta-commands use the \`/\` prefix (everything else on a line is evaluated as AQL):
+
+- \`/quit\` / \`/q\` / \`/exit\` — exit the REPL
+- \`/help\` / \`/h\` / \`/?\`     — show the word list, entity list and meta commands
 
 ### Exit codes
 
