@@ -54,7 +54,7 @@ const Config = cmp(async function Config(props: any) {
 
   File({ name: 'config.' + target.ext }, () => {
 
-    Content(`-- ProjectName SDK configuration
+    Content(`-- ${model.const.Name} SDK configuration
 
 local function make_config()
   return {

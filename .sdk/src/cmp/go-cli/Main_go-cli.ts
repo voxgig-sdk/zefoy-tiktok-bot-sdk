@@ -50,18 +50,27 @@ const Main = cmp(function Main(props: any) {
 /go-cli
 `))
 
-  // README.md — usage guide for the AQL-driven CLI.
+  // ==========================================================================
+  // README.md — Diátaxis-structured, examples-first usage guide.
+  //
+  // EVERYTHING here is MODEL-DRIVEN: verbs, examples and how-to sections are
+  // gated on whether an active entity actually exposes that op
+  // (op.<name>.active !== false) — never document an operation no entity
+  // supports. The CLI implements three AQL words (list / load / update; see
+  // words.fragment.go + runOp).
+  // ==========================================================================
+  const bin = `${model.name}-cli`
   const entityList = entityNames.length > 0 ? entityNames.join(' ') : '(none)'
+  const entityCount = entityNames.length
 
-  // MODEL-DRIVEN verbs. The CLI implements three AQL words (list / load /
-  // update; see words.fragment.go + runOp). Each README verb row is
-  // advertised ONLY when at least one active entity actually exposes that
-  // op (op.<name>.active !== false) — never document an operation no entity
-  // supports.
+  const projUpper = String(model.name).toUpperCase().replace(/[^A-Z0-9]/g, '_')
+  const apiKeyEnv = projUpper + '_APIKEY'
+  const baseEnv = projUpper + '_BASE'
+
   const CLI_VERB_ROWS: Record<string, string> = {
-    list:   '| `list`   | `[entity]` · `[query entity]`                | List records               |',
-    load:   '| `load`   | `[entity]` · `[query entity]`                | Load a single record       |',
-    update: '| `update` | `[entity]` · `[query entity]`                | Update a record            |',
+    list:   '| `list`   | `list <entity>` · `list <query> <entity>`     | First page of records          |',
+    load:   '| `load`   | `load <entity>` · `load <query> <entity>`     | A single record                |',
+    update: '| `update` | `update <query> <entity>`                     | Update a record, return it     |',
   }
   const supportedOps = new Set<string>()
   each(entityMap, (entity: any) => {
@@ -76,72 +85,248 @@ const Main = cmp(function Main(props: any) {
     .map(op => CLI_VERB_ROWS[op])
     .join('\n')
 
-  // MODEL-DRIVEN run examples, gated on the first entity's own ops so the
-  // Run section never demonstrates a verb the example entity lacks.
-  const firstEntityObj: any =
-    Object.values(entityMap).find((e: any) => e && e.active !== false)
+  // First / second active entity for concrete, truthful examples, gated on
+  // the FIRST entity's own ops so an example never shows a verb it lacks.
+  const activeEntityObjs: any[] =
+    Object.values(entityMap).filter((e: any) => e && e.active !== false)
+  const firstEntityObj: any = activeEntityObjs[0]
   const firstEntity = firstEntityObj
     ? String(firstEntityObj.name).toLowerCase()
     : (entityNames[0] || 'entity')
+  const secondEntity = activeEntityObjs.length > 1
+    ? String(activeEntityObjs[1].name).toLowerCase()
+    : firstEntity
   const firstOps: any = (firstEntityObj && firstEntityObj.op) || {}
   const firstHas = (op: string) => !!(firstOps[op] && firstOps[op].active !== false)
-  const runLines: string[] = ['# One-shot: arguments form a single AQL expression']
-  if (firstHas('list')) {
-    runLines.push(`./${model.name}-cli list ${firstEntity}`)
-  }
+  const entityNoun = entityCount === 1 ? 'entity' : 'entities'
+  // The best single example expression this SDK can actually run, for the
+  // tutorial/REPL walkthroughs (never demonstrates an unsupported op).
+  const firstExampleExpr =
+    firstHas('list') ? `list ${firstEntity}` :
+    firstHas('load') ? `load 1 ${firstEntity}` :
+    firstHas('update') ? `update '{id:1}' ${firstEntity}` : ':help'
+
+  // ---- Examples block (up front) -------------------------------------------
+  const ex: string[] = []
+  ex.push(`# 1. Build a native binary (-> dist/<os>-<arch>/${bin})`)
+  ex.push('make build')
+  ex.push('')
+  ex.push('# 2. Provide credentials once, via the environment')
+  ex.push(`export ${apiKeyEnv}=sk_live_xxx`)
+  ex.push('')
+  ex.push('# 3. Each command line is ONE AQL expression, run against the API:')
+  if (firstHas('list')) ex.push(`./${bin} list ${firstEntity}`)
   if (firstHas('load')) {
-    runLines.push(`./${model.name}-cli load 1 ${firstEntity}`)
-    runLines.push(`./${model.name}-cli load '{id:1}' ${firstEntity}`)
+    ex.push(`./${bin} load 1 ${firstEntity}            # {id:1} shorthand`)
+    ex.push(`./${bin} load '{id:1}' ${firstEntity}       # explicit match map`)
   }
-  if (firstHas('update')) {
-    runLines.push(`./${model.name}-cli update '{id:1}' ${firstEntity}`)
+  if (firstHas('update')) ex.push(`./${bin} update '{name:"x"}' ${firstEntity}`)
+  if (firstHas('list') && secondEntity !== firstEntity) {
+    ex.push(`./${bin} list ${secondEntity}`)
   }
+  ex.push('')
+  ex.push('# 4. Override the API base URL for a single call')
+  ex.push(`${baseEnv}=https://api.example.com ./${bin} ${firstExampleExpr}`)
+  ex.push('')
+  ex.push('# 5. No arguments -> interactive REPL')
+  ex.push(`./${bin}`)
+  ex.push(`${model.name}> ${firstExampleExpr}`)
+  ex.push(`${model.name}> :quit`)
+  const exampleBlock = ex.join('\n')
+
+  // ---- How-to guides (gated) -----------------------------------------------
+  const howtos: string[] = []
+  if (firstHas('list')) howtos.push(`### List the records of an entity
+
+\`\`\`sh
+./${bin} list ${firstEntity}
+\`\`\`
+
+\`list <entity>\` returns the first page of records. \`<entity>\` is a bareword —
+it is auto-quoted as an AQL atom, so no quotes are needed.`)
+
+  if (firstHas('load')) howtos.push(`### Load a single record
+
+\`\`\`sh
+./${bin} load 1 ${firstEntity}          # scalar shorthand for {id:1}
+./${bin} load '{id:1}' ${firstEntity}     # explicit match map
+\`\`\`
+
+The query is either a **scalar** (\`1\`, treated as \`{id:1}\`) or a **match map**
+(\`{id:1}\`, \`{slug:"acme"}\`). Quote the map so your shell passes it through intact.`)
+
+  if (firstHas('update')) howtos.push(`### Update a record
+
+\`\`\`sh
+./${bin} update '{id:1,name:"new"}' ${firstEntity}
+\`\`\`
+
+The match map carries both the selector and the new field values; the updated
+record is printed back.`)
+
+  howtos.push(`### Authenticate and choose an environment
+
+Configuration is read from the environment — nothing is written to disk:
+
+\`\`\`sh
+export ${apiKeyEnv}=sk_live_xxx            # API key
+export ${baseEnv}=https://api.example.com  # optional: override the API base URL
+./${bin} ${firstExampleExpr}
+\`\`\`
+
+Both are injectable by a secrets vault, so the key never has to be typed inline.`)
+
+  howtos.push(`### Explore interactively with the REPL
+
+Run with no arguments to open a REPL (prompt \`${model.name}>\`). Each line is
+evaluated as its own AQL expression:
+
+\`\`\`text
+$ ./${bin}
+${model.name}> ${firstExampleExpr}
+${model.name}> :help
+${model.name}> :quit
+\`\`\``)
+
+  howtos.push(`### Cross-compile release binaries
+
+\`\`\`sh
+make build       # native binary for this machine
+make build-all   # linux/darwin/windows x amd64/arm64, under dist/<os>-<arch>/
+\`\`\``)
+
+  howtos.push(`### Discover the available entities
+
+\`:help\` in the REPL prints the full entity list, or see [Entities](#entities)
+below — this SDK exposes ${entityCount} ${entityNoun}.`)
+
+  const howtoBlock = howtos.join('\n\n')
 
   File({ name: 'README.md' }, () => Content(`# ${model.name}-cli
 
-AQL-driven CLI and REPL for the ${model.Name} SDK. Positional arguments are
-joined into a single AQL expression and evaluated; with no arguments,
-falls into an interactive REPL.
+AQL-driven command-line client **and** interactive REPL for the ${model.Name}
+SDK. Each command line is parsed as a single [AQL](https://github.com/aql-lang/aql)
+expression and evaluated against the live API; run it with no arguments to drop
+into a REPL. Built on \`github.com/aql-lang/aql/eng/go\` and the sibling Go SDK
+at \`../go\`.
 
-Built on \`github.com/aql-lang/aql/eng/go\` and the sibling Go SDK at \`../go\`.
-
-## Build
-
-\`\`\`sh
-go build -o ${model.name}-cli ./...
-\`\`\`
-
-## Run
+## Examples
 
 \`\`\`sh
-${runLines.join('\n')}
-
-# REPL
-./${model.name}-cli
+${exampleBlock}
 \`\`\`
 
-## Words
+> The rest of this guide follows the [Diátaxis](https://diataxis.fr) framework:
+> a hands-on **Tutorial**, task-focused **How-to guides**, a factual
+> **Reference**, and background **Explanation**.
 
-| Word     | Signatures                                   | Description                |
-|----------|----------------------------------------------|----------------------------|
+## Tutorial: your first query in under a minute
+
+1. **Build the binary.** From this \`go-cli/\` directory:
+
+   \`\`\`sh
+   make build          # -> dist/<os>-<arch>/${bin}
+   \`\`\`
+
+2. **Set your API key** (read from the environment):
+
+   \`\`\`sh
+   export ${apiKeyEnv}=sk_live_xxx
+   \`\`\`
+
+3. **Run a query.** Evaluate an AQL expression against the API (or run with no
+   arguments to open the REPL):
+
+   \`\`\`sh
+   ./dist/*/${bin} ${firstExampleExpr}
+   \`\`\`
+
+4. **Go interactive.** Run the binary with no arguments to open the REPL, then
+   type \`:help\` for the word and entity lists and \`:quit\` to leave.
+
+That is the whole loop: *build → set key → evaluate AQL expressions*.
+
+## How-to guides
+
+${howtoBlock}
+
+## Reference
+
+### Words
+
+The CLI registers these AQL words, each bound to the SDK:
+
+| Word     | Signatures                                    | Returns                        |
+|----------|-----------------------------------------------|--------------------------------|
 ${verbRows}
 
-\`query\` is either a Map (\`{id:1}\`) or a Scalar (\`1\`, treated as \`{id:1}\`).
-\`entity\` is one of the SDK's entity names (auto-quoted as an atom).
+- \`<entity>\` is a bareword, auto-quoted as an AQL atom (e.g. \`${firstEntity}\`).
+- \`<query>\` is either a **Map** (\`{id:1}\`) or a **Scalar** (\`1\`, treated as
+  \`{id:1}\`). A scalar is always wrapped as \`{id:<value>}\`.
 
-## Entities
+### Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| \`${apiKeyEnv}\` | API key sent with every request. |
+| \`${baseEnv}\` | Optional override of the API base URL. |
+
+Unset variables fall back to the SDK's built-in defaults.
+
+### REPL commands
+
+- \`:quit\` / \`:q\` / \`:exit\` — exit the REPL
+- \`:help\` / \`:h\` / \`:?\`     — show the word list, entity list and meta commands
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| \`0\` | Success (also the normal REPL exit). |
+| \`1\` | Parse error, word-registration error, or an API/evaluation error. |
+
+### Build targets
+
+| Target | Result |
+|--------|--------|
+| \`make build\` | Native binary at \`dist/<os>-<arch>/${bin}\`. |
+| \`make build-all\` | linux/darwin/windows x amd64/arm64, each under its own \`dist/<os>-<arch>/\`. |
+| \`make clean\` | Remove \`dist/\` and any stray binaries. |
+
+### Entities
+
+The ${entityCount} ${entityNoun} this SDK exposes (any is valid as \`<entity>\`):
 
 ${entityList}
 
-## REPL commands
+## Explanation
 
-- \`:quit\` / \`:q\` / \`:exit\` — exit the REPL
-- \`:help\` / \`:h\` / \`:?\`     — show help
+### Why AQL?
+
+The whole command line is one [AQL](https://github.com/aql-lang/aql) expression,
+not a fixed \`verb --flag\` grammar. That means the same binary works one-shot
+(\`./${bin} <expr>\`) and interactively (the REPL), and expressions compose the
+same way in both. \`list\` / \`load\` / \`update\` are ordinary AQL *words* bound to
+the SDK — adding SDK operations is adding words, not re-parsing flags.
+
+### How it is wired
+
+\`main.go\` builds the SDK client (configured from the environment), creates an
+AQL registry, and \`words.go\` registers \`list\` / \`load\` / \`update\` as native
+words that dispatch on the entity atom and call the sibling Go SDK at \`../go\`.
+Results are unwrapped from their \`Entity\` wrappers to plain data before being
+printed.
+
+### Output format
+
+Each result value is printed as its AQL string form (a JSON-like rendering of
+the record or list of records). One-shot mode prints to stdout; errors go to
+stderr with a non-zero exit code.
 
 ## Generated by
 
-sdkgen \`go-cli\` target. See the target source under
-\`.sdk/src/cmp/go-cli/\` in this repo, or upstream at
+sdkgen \`go-cli\` target. See the target source under \`.sdk/src/cmp/go-cli/\` in
+this repo, or upstream at
 \`github.com/voxgig/sdkgen/project/.sdk/src/cmp/go-cli/\`.
 `))
 

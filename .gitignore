@@ -2,8 +2,9 @@
 *.local.*
 *.local
 
-# Dependencies
-node_modules/
+# Dependencies (no trailing slash: also ignores node_modules SYMLINKS, e.g.
+# ts/node_modules -> shared tree, which a dir-only rule leaves tracked)
+node_modules
 
 # Logs
 *.log
@@ -15,4 +16,3 @@ logs/
 # Editor
 *~
 *.swp
-node_modules

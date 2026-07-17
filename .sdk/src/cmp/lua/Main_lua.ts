@@ -90,7 +90,7 @@ self._utility.feature_hook(self._rootctx, "${name}")
 
   // Generate feature factory module
   File({ name: 'features.' + target.ext }, () => {
-    Content(`-- ProjectName SDK feature factory
+    Content(`-- ${model.const.Name} SDK feature factory
 
 local BaseFeature = require("feature.base_feature")
 `)

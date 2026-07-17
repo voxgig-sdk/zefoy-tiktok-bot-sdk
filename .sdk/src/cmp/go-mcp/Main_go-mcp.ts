@@ -70,58 +70,198 @@ const Main = cmp(function Main(props: any) {
 /go-mcp
 `))
 
-  // README.md — usage guide for the MCP server.
+  // ==========================================================================
+  // README.md — Diátaxis-structured, examples-first usage guide.
+  //
+  // The server ALWAYS registers exactly two tools (<slug>_list / <slug>_load;
+  // see tools.fragment.go), so tools are not gated. Concrete tool-call and
+  // entity examples are MODEL-DRIVEN off the real slug + entity names.
+  // ==========================================================================
+  const bin = `${model.name}-mcp`
+  const toolList = `${slugLower}_list`
+  const toolLoad = `${slugLower}_load`
+  const entityCount = entityNames.length
+  const entityNoun = entityCount === 1 ? 'entity' : 'entities'
   const firstEntity = entityNames[0] || 'entity'
+
+  // Example entities chosen per-op so a doc example never shows an entity that
+  // doesn't support the op being demonstrated (both tools are always
+  // registered, but a given entity only responds to the ops it exposes).
+  const activeEntityObjs: any[] =
+    Object.values(entityMap).filter((e: any) => e && e.active !== false)
+  const entWithOp = (op: string) => {
+    const e = activeEntityObjs.find(
+      (x: any) => x.op && x.op[op] && x.op[op].active !== false)
+    return e ? String(e.name).toLowerCase() : firstEntity
+  }
+  const listEntity = entWithOp('list')
+  const loadEntity = entWithOp('load')
+
+  const projUpper = String(model.name).toUpperCase().replace(/[^A-Z0-9]/g, '_')
+  const apiKeyEnv = projUpper + '_APIKEY'
+  const baseEnv = projUpper + '_BASE'
+
   File({ name: 'README.md' }, () => Content(`# ${model.name}-mcp
 
-MCP server exposing the ${model.Name} SDK as tools, built on the
-[official Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk)
-and the sibling Go SDK at \`../go\`.
+[MCP](https://modelcontextprotocol.io) server exposing the ${model.Name} SDK as
+two agent tools — \`${toolList}\` and \`${toolLoad}\` — built on the
+[official Go MCP SDK](https://github.com/modelcontextprotocol/go-sdk) and the
+sibling Go SDK at \`../go\`. Runs over **stdio** (default, for spawnable installs)
+or **streamable HTTP** (one shared server for several agents).
 
-## Tools
+## Examples
+
+\`\`\`sh
+# 1. Build a native binary (-> dist/<os>-<arch>/${bin})
+make build
+
+# 2. Provide credentials via the environment
+export ${apiKeyEnv}=sk_live_xxx
+
+# 3a. Install into Claude Code over stdio (most common)
+claude mcp add --scope user ${slugLower} \\
+  -- /absolute/path/to/${bin} -transport stdio
+
+# 3b. …or run a shared HTTP server instead
+./${bin} -transport http -addr :8080
+\`\`\`
+
+Tool-call arguments (what an agent sends):
+
+\`\`\`jsonc
+// ${toolList}: first page of records
+{ "entity": "${listEntity}" }
+{ "entity": "${listEntity}", "query": { } }
+
+// ${toolLoad}: one record by id
+{ "entity": "${loadEntity}", "query": { "id": 1 } }
+\`\`\`
+
+> The rest of this guide follows the [Diátaxis](https://diataxis.fr) framework:
+> a hands-on **Tutorial**, task-focused **How-to guides**, a factual
+> **Reference**, and background **Explanation**.
+
+## Tutorial: install and call a tool
+
+1. **Build** the server from this \`go-mcp/\` directory:
+
+   \`\`\`sh
+   make build          # -> dist/<os>-<arch>/${bin}
+   \`\`\`
+
+2. **Set your API key:**
+
+   \`\`\`sh
+   export ${apiKeyEnv}=sk_live_xxx
+   \`\`\`
+
+3. **Install it into Claude Code** (stdio transport):
+
+   \`\`\`sh
+   claude mcp add --scope user ${slugLower} \\
+     -- "$PWD"/dist/*/${bin} -transport stdio
+   \`\`\`
+
+4. **Restart Claude Code.** The \`${toolList}\` and \`${toolLoad}\` tools now appear
+   in new sessions. Ask the agent to *"list ${listEntity} using ${slugLower}"*
+   and it calls \`${toolList}\` with \`{"entity":"${listEntity}"}\`.
+
+## How-to guides
+
+### Authenticate and choose an environment
+
+Configuration is read from the environment — nothing is written to disk:
+
+\`\`\`sh
+export ${apiKeyEnv}=sk_live_xxx            # API key
+export ${baseEnv}=https://api.example.com  # optional: override the API base URL
+\`\`\`
+
+Set these in the shell that launches the server (or in the \`claude mcp add\`
+environment) so every tool call is authenticated.
+
+### Run as a shared HTTP server
+
+\`\`\`sh
+./${bin} -transport http -addr :8080
+\`\`\`
+
+Streamable HTTP lets several agents share one running process; stdio (the
+default) spawns a fresh process per client.
+
+### Call the \`${toolList}\` tool
+
+Args: \`entity\` (required), \`query\` (optional filter map). Returns the first
+page of records as JSON:
+
+\`\`\`jsonc
+{ "entity": "${listEntity}" }
+\`\`\`
+
+### Call the \`${toolLoad}\` tool
+
+Args: \`entity\` (required), \`query\` = \`{"id":N}\` (required). Returns the single
+record as JSON:
+
+\`\`\`jsonc
+{ "entity": "${loadEntity}", "query": { "id": 1 } }
+\`\`\`
+
+### Cross-compile release binaries
+
+\`\`\`sh
+make build       # native binary for this machine
+make build-all   # linux/darwin/windows x amd64/arm64, under dist/<os>-<arch>/
+\`\`\`
+
+## Reference
+
+### Tools
 
 | Tool | Args | Returns |
 |------|------|---------|
-| \`${slugLower}_list\` | \`entity\`, optional \`query\` map | First page of records as JSON |
-| \`${slugLower}_load\` | \`entity\`, \`query\` (e.g. \`{id:N}\`) | Single record as JSON |
+| \`${toolList}\` | \`entity\` (required), \`query\` (optional map) | First page of records as JSON |
+| \`${toolLoad}\` | \`entity\` (required), \`query\` = \`{id:N}\` | Single record as JSON |
 
-JSON schemas for both tools are emitted by the SDK from the \`Args\`
-struct's \`json\` / \`jsonschema\` tags — no schema is hand-written.
+On error, a tool returns an MCP error result (\`isError: true\`) whose text is the
+failure message (e.g. unknown entity, or an API error).
 
-## Entities
+### \`Args\` schema
+
+Both tools take the same argument object:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| \`entity\` | string | One of the ${entityCount} supported entities (see below). |
+| \`query\` | object | Optional match map. \`{"id":N}\` for load; omit or \`{}\` for list. |
+
+JSON schemas are emitted by the SDK from the \`Args\` struct's \`json\` /
+\`jsonschema\` tags — no schema is hand-written.
+
+### Transports & flags
+
+| Flag | Default | Purpose |
+|------|---------|---------|
+| \`-transport\` | \`stdio\` | \`stdio\` (spawnable) or \`http\` (streamable HTTP). |
+| \`-addr\` | \`:8080\` | Listen address for the \`http\` transport. |
+
+### Environment variables
+
+| Variable | Purpose |
+|----------|---------|
+| \`${apiKeyEnv}\` | API key sent with every request. |
+| \`${baseEnv}\` | Optional override of the API base URL. |
+
+### Entities
+
+The ${entityCount} ${entityNoun} valid as the \`entity\` argument:
 
 ${entityHelp}
 
-## Build
+### Smoke test via HTTP (raw JSON-RPC)
 
 \`\`\`sh
-go build -o ${model.name}-mcp ./...
-\`\`\`
-
-## Run
-
-\`\`\`sh
-# stdio transport — for spawnable agent installs (default).
-./${model.name}-mcp
-
-# streamable HTTP transport — share one running server between agents.
-./${model.name}-mcp -transport http -addr :8080
-\`\`\`
-
-## Install for Claude Code
-
-\`\`\`sh
-claude mcp add --scope user ${slugLower} \\
-  -- /absolute/path/to/${model.name}-mcp -transport stdio
-\`\`\`
-
-After install, restart Claude Code; the \`${slugLower}_list\` and
-\`${slugLower}_load\` tools become available in new sessions.
-
-## Smoke test via HTTP
-
-\`\`\`sh
-./${model.name}-mcp -transport http -addr :18080 &
+./${bin} -transport http -addr :18080 &
 
 # initialize, grab the session id
 curl -sN -X POST http://localhost:18080 \\
@@ -136,13 +276,34 @@ curl -sN -X POST http://localhost:18080 \\
   -H 'Content-Type: application/json' \\
   -H 'Accept: application/json, text/event-stream' \\
   -H "Mcp-Session-Id: $SESSION" \\
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"${slugLower}_load","arguments":{"entity":"${firstEntity}","query":{"id":1}}}}'
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"${toolLoad}","arguments":{"entity":"${loadEntity}","query":{"id":1}}}}'
 \`\`\`
+
+## Explanation
+
+### How tools map to the SDK
+
+\`main.go\` builds the SDK client (configured from the environment) and registers
+two tools. Each dispatches on the \`entity\` argument to the matching entity in
+the sibling Go SDK at \`../go\`, calls \`List\` or \`Load\`, unwraps the \`Entity\`
+wrappers to plain data, and returns it as pretty-printed JSON.
+
+### Why two transports
+
+**stdio** is the standard for agent hosts that spawn a server per client
+(Claude Code's \`claude mcp add\`). **streamable HTTP** keeps one process running
+that many agents can share — handy for a long-lived deployment.
+
+### Schema generation
+
+The input schema is derived from the \`Args\` Go struct's \`json\` / \`jsonschema\`
+tags at registration time, so the advertised tool schema can never drift from
+the code that consumes it.
 
 ## Generated by
 
-sdkgen \`go-mcp\` target. See the target source under
-\`.sdk/src/cmp/go-mcp/\` in this repo, or upstream at
+sdkgen \`go-mcp\` target. See the target source under \`.sdk/src/cmp/go-mcp/\` in
+this repo, or upstream at
 \`github.com/voxgig/sdkgen/project/.sdk/src/cmp/go-mcp/\`.
 `))
 

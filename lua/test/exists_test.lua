@@ -1,4 +1,4 @@
--- ProjectName SDK exists test
+-- ZefoyTiktokBot SDK exists test
 
 local sdk = require("zefoy-tiktok-bot_sdk")
 

@@ -24,7 +24,7 @@ const Test = cmp(function Test(props: any) {
 
     // Generate exists test
     File({ name: 'exists_test.' + target.ext }, () => {
-      Content(`-- ProjectName SDK exists test
+      Content(`-- ${model.const.Name} SDK exists test
 
 local sdk = require("${model.name}_sdk")
 

@@ -2,8 +2,9 @@
 *.local.*
 *.local
 
-# Dependencies
-node_modules/
+# Dependencies (no trailing slash: also ignores node_modules SYMLINKS, e.g.
+# .sdk/node_modules -> shared tree, which a dir-only rule leaves tracked)
+node_modules
 
 # Build output
 dist/
