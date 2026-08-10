@@ -1,9 +1,9 @@
 
-// Go MCP server target — a Go program that *consumes* the sibling Go
-// SDK and exposes it as MCP tools. Like go-cli, it is not a language
-// SDK in its own right, so the standard per-entity / per-feature /
-// readme / test generation phases are switched off via the `phase`
-// map below.
+# Go MCP server target — a Go program that *consumes* the sibling Go
+# SDK and exposes it as MCP tools. Like go-cli, it is not a language
+# SDK in its own right, so the standard per-entity / per-feature /
+# readme / test generation phases are switched off via the `phase`
+# map below.
 
 main: kit: target: 'go-mcp': {
 
@@ -12,7 +12,7 @@ main: kit: target: 'go-mcp': {
   comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
 
-  // Per-generation-phase activation. Mirrors go-cli — only Main runs.
+  # Per-generation-phase activation. Mirrors go-cli — only Main runs.
   phase: {
     entity:     { active: false }
     feature:    { active: false }
@@ -21,15 +21,15 @@ main: kit: target: 'go-mcp': {
     test:       { active: false }
   }
 
-  // No external module deps declared here. The generated go.mod uses
-  // a relative replace to the sibling SDK at ../go and declares the
-  // MCP Go SDK as a direct dep. See Main_go-mcp.ts.
+  # No external module deps declared here. The generated go.mod uses
+  # a relative replace to the sibling SDK at ../go and declares the
+  # MCP Go SDK as a direct dep. See Main_go-mcp.ts.
   deps: {}
 }
 
 
-// Feature-deps map slot — every target carries this so the same
-// feature can specify per-target dep variants.
+# Feature-deps map slot — every target carries this so the same
+# feature can specify per-target dep variants.
 main: kit: feature: &: target: 'go-mcp': deps: &: {
   kind: *'prod' | string
 }

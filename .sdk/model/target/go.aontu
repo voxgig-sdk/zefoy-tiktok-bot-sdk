@@ -11,7 +11,7 @@ main: kit: target: go: {
     kind: *'prod' | string
   }
 
-  // struct is inlined under <gomodule>/utility/struct — no external dep.
+  # struct is inlined under <gomodule>/utility/struct — no external dep.
   deps: {}
 }
 
