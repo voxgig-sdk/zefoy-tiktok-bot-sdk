@@ -8,6 +8,30 @@ name: ci
 # Live API verification is NOT run here. It happens in the central
 # rebuild pipeline under controlled conditions, with per-API auth and
 # rate-limit handling.
+#
+# ---------------------------------------------------------------------------
+# COVERAGE TIERS
+#
+# sdkgen generates 22 language targets; this workflow used to have jobs for
+# eight of them (go, go-cli, go-mcp, ts, py, rb, php, lua). The other
+# fourteen were generated into every SDK repo and never compiled or tested
+# there, so a template regression in, say, rust or swift could only be found
+# by hand.
+#
+# BLOCKING — proven jobs. A failure here fails the build.
+#   go, go-cli, go-mcp, ts, py, rb, php, lua
+#
+# ADVISORY — added to close the coverage gap, marked continue-on-error until
+# each has had a green run in a real SDK repo. They report problems without
+# blocking a release; promote a job to blocking (drop continue-on-error) once
+# it has passed. Do not leave one advisory indefinitely — an advisory job that
+# is always red is the same blind spot in a different costume.
+#   js, csharp, java, kotlin, scala, swift, dart, rust, c, cpp, zig, perl,
+#   clojure, elixir, ocaml, haskell
+#
+# Every target exposes `make -C <lang> test`, so the jobs differ only in
+# toolchain setup.
+# ---------------------------------------------------------------------------
 
 on:
   push:
@@ -138,3 +162,211 @@ jobs:
         run: luarocks install busted
       - if: hashFiles('lua/Makefile') != ''
         run: make -C lua test
+
+  # ---- ADVISORY (see COVERAGE TIERS above) ---------------------------------
+
+  js:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('js/Makefile') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - if: hashFiles('js/package.json') != ''
+        run: cd js && npm install --no-audit --no-fund
+      - if: hashFiles('js/Makefile') != ''
+        run: make -C js test
+
+  csharp:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('csharp/Makefile') != ''
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - if: hashFiles('csharp/Makefile') != ''
+        run: make -C csharp test
+
+  java:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('java/Makefile') != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - if: hashFiles('java/Makefile') != ''
+        run: make -C java test
+
+  kotlin:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('kotlin/Makefile') != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - if: hashFiles('kotlin/Makefile') != ''
+        run: make -C kotlin test
+
+  scala:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('scala/Makefile') != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # scala-cli, NOT sbt: the generated Makefile runs
+      # `scala-cli run . --main-class ...` and there is no build.sbt.
+      #
+      # Pinned to a release tag, not @main: every generated SDK runs this
+      # workflow, so a mutable default branch would let an upstream push change
+      # what executes in every consumer's CI with no change or review in their
+      # repo. Matches how the other third-party setup actions here are pinned.
+      - if: hashFiles('scala/Makefile') != ''
+        uses: VirtusLab/scala-cli-setup@v1.5.1
+      - if: hashFiles('scala/Makefile') != ''
+        run: make -C scala test
+
+  swift:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('swift/Makefile') != ''
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.0'
+      - if: hashFiles('swift/Makefile') != ''
+        run: make -C swift test
+
+  dart:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('dart/Makefile') != ''
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - if: hashFiles('dart/pubspec.yaml') != ''
+        run: cd dart && dart pub get
+      - if: hashFiles('dart/Makefile') != ''
+        run: make -C dart test
+
+  rust:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('rust/Makefile') != ''
+        uses: dtolnay/rust-toolchain@stable
+      - if: hashFiles('rust/Makefile') != ''
+        run: make -C rust test
+
+  c:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # gcc/make are preinstalled on ubuntu-latest — no setup step needed.
+      - if: hashFiles('c/Makefile') != ''
+        run: make -C c test
+
+  cpp:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('cpp/Makefile') != ''
+        run: make -C cpp test
+
+  zig:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # 0.13, NOT 0.14+: the generated build.zig.zon declares `.name` as a
+      # plain string, which 0.14 rejects ("expected enum literal"). Package_zig
+      # says the string form matches the target's toolchain pin — keep the two
+      # in step, or move both to the enum-literal + fingerprint form together.
+      - if: hashFiles('zig/build.zig') != ''
+        uses: mlugg/setup-zig@v1
+        with:
+          version: '0.13.0'
+      - if: hashFiles('zig/build.zig') != ''
+        run: make -C zig test
+
+  perl:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      # perl is preinstalled on ubuntu-latest.
+      - if: hashFiles('perl/Makefile') != ''
+        run: make -C perl test
+
+  clojure:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('clojure/Makefile') != ''
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - if: hashFiles('clojure/Makefile') != ''
+        uses: DeLaGuardo/setup-clojure@13
+        with:
+          cli: latest
+      - if: hashFiles('clojure/Makefile') != ''
+        run: make -C clojure test
+
+  elixir:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('elixir/Makefile') != ''
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '27'
+          elixir-version: '1.17'
+      - if: hashFiles('elixir/Makefile') != ''
+        run: make -C elixir test
+
+  ocaml:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('ocaml/Makefile') != ''
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: '5.2'
+      - if: hashFiles('ocaml/Makefile') != ''
+        run: make -C ocaml test
+
+  haskell:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - if: hashFiles('haskell/Makefile') != ''
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.6'
+      - if: hashFiles('haskell/Makefile') != ''
+        run: make -C haskell test

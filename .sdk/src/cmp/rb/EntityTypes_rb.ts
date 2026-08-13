@@ -12,7 +12,10 @@
 //   $STRING -> String, $INTEGER -> Integer, $NUMBER -> Float, $BOOLEAN -> Boolean,
 //   $OBJECT -> Hash, $ARRAY -> Array, unknown -> Object.
 //
-// Type-name scheme (IDENTICAL to TS): data type = <Name>; per-op request
+// Type-name scheme (as TS, with one Ruby-only guard): data type = <Name>,
+// except where Ruby core already owns that constant — `File`, `Time`, `Data`,
+// … — which would be silently REPLACED by the assignment; those become
+// <Name>Type (see rbSafeTypeName). Per-op request
 // <Name>LoadMatch / <Name>ListMatch / <Name>RemoveMatch (query/id ops),
 // <Name>CreateData / <Name>UpdateData (body ops). An op WITH params -> a Struct of
 // those params (reqd:false -> annotated `[Type, nil]`). An op WITHOUT params -> a
@@ -27,7 +30,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames, rbSafeTypeName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -77,14 +80,27 @@ function emitStruct(
 
 
 const EntityTypes = cmp(function EntityTypes(props: any) {
-  const { model } = props.ctx$
+  const { model, log } = props.ctx$
 
-  const entity = getModelPath(model, `main.${KIT}.entity`)
-  const entityList = each(entity).filter((e: any) => e.active !== false)
+  // only_active:false — getModelPath DROPS active:false entries by default,
+  // but the consumer scaffold (create-sdkgen Root.ts) iterates the RAW entity
+  // collection, so inactive entities still get generated entity code that
+  // references these typed names. The typed model must cover them too.
+  const entity = getModelPath(model, `main.${KIT}.entity`, { only_active: false, required: false })
+  // Emit for EVERY entity that gets generated entity code: the consumer
+  // scaffold (create-sdkgen Root.ts) iterates entities WITHOUT an active
+  // filter, so inactive entities still get class files referencing these
+  // typed names. Filter on `name` (always present), NOT `active` — parity
+  // with the go emitter's fix.
+  const entityList = deriveEntityNames(entity)
   // Derive the PascalCase Name up-front — it is set LAZILY by names(), so an
   // entity not yet named (e.g. a fieldless placeholder) would otherwise read
   // `Name = undefined` below. Parity with the go emitter's fix.
-  entityList.forEach((e: any) => { if (null == e.Name) names(e, e.name) })
+
+  // Surface duplicate generated type names (two entities with the same
+  // PascalCase Name) — they would redeclare a type in statically-typed
+  // targets. Detection only; renaming is a model-level decision.
+  warnEntityTypeCollisions(entity, log, LANG)
 
   File({ name: model.const.Name + '_types.' + LANG }, () => {
 
@@ -102,12 +118,20 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
 
     entityList.forEach((ent: any) => {
       const Name = ent.Name
+      // Ruby constants share ONE namespace with the core classes, and
+      // assigning one silently replaces it — an entity named `File` emitting
+      // `File = Struct.new(...)` clobbers ::File and every later `File.join`
+      // raises NoMethodError. Only the bare data-type constant needs the
+      // guard; the per-op names below always carry a suffix that no core
+      // constant matches. The `client.File(...)` accessor is a METHOD, a
+      // separate namespace, so the public surface is unchanged.
+      const TypeName = rbSafeTypeName(Name)
       const fields = (ent.fields ? each(ent.fields) : [])
         .filter((f: any) => f.active !== false)
 
       // Entity data model: one member per field (`req:false` -> nilable).
       emitStruct(
-        Name,
+        TypeName,
         `${Name} entity data model.`,
         fields.map((f: any) => ({ name: f.name, type: f.type, optional: false === f.req })),
       )

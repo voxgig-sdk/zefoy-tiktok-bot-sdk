@@ -44,7 +44,7 @@ module ZefoyTiktokBotUtilities
       "headers" => { "`$CHILD`" => "`$STRING`" },
       "allow" => {
         "method" => "GET,PUT,POST,PATCH,DELETE,OPTIONS",
-        "op" => "create,update,load,list,remove,command,direct",
+        "op" => "create,update,load,list,remove,command,direct,graphql",
       },
       "entity" => { "`$CHILD`" => { "`$OPEN`" => true, "active" => false, "alias" => {} } },
       "feature" => { "`$CHILD`" => { "`$OPEN`" => true, "active" => false } },
@@ -52,6 +52,11 @@ module ZefoyTiktokBotUtilities
       "system" => {},
       "test" => { "active" => false, "entity" => { "`$OPEN`" => true } },
       "clean" => { "keys" => "key,token,id" },
+      # Server-variable values for a templated base URL (OpenAPI server
+      # variables): {name} placeholders in "base" are substituted from this
+      # map at construction. Spec defaults arrive via the generated config;
+      # user values override them.
+      "server" => { "`$CHILD`" => "" },
     }
 
     sys_fetch = VoxgigStruct.getpath(opts, "system.fetch")
@@ -59,6 +64,38 @@ module ZefoyTiktokBotUtilities
     merged = VoxgigStruct.merge([{}, cfgopts, opts])
     validated = VoxgigStruct.validate(merged, optspec)
     opts = validated.is_a?(Hash) ? validated : {}
+
+    # Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
+    # Every placeholder must resolve to a non-empty value: from
+    # options["server"] (user), else the config default. A placeholder that
+    # resolves to "" is a construction ERROR in live mode — the URL cannot
+    # work — but in test mode substitutes the deterministic value
+    # "test-<name>" so offline tests need no configuration.
+    base = opts["base"]
+    if base.is_a?(String) && base.include?("{")
+      testmode = VoxgigStruct.getpath(opts, "test.active") == true ||
+        VoxgigStruct.getpath(opts, "feature.test.active") == true
+      server = opts["server"].is_a?(Hash) ? opts["server"] : {}
+      sdkname = VoxgigStruct.getpath(config, "main.name")
+      sdkname = "SDK" unless sdkname.is_a?(String) && !sdkname.empty?
+      opts["base"] = base.gsub(/\{([A-Za-z0-9_]+)\}/) do
+        name = Regexp.last_match(1)
+        val = server[name]
+        val = "" unless val.is_a?(String)
+        if val.empty?
+          if testmode
+            "test-#{name}"
+          else
+            raise ArgumentError,
+              "#{sdkname}: the server variable '#{name}' is required: " \
+              "the API base URL is '#{base}' — pass " \
+              "{ \"server\" => { \"#{name}\" => \"...\" } } in the SDK options"
+          end
+        else
+          val
+        end
+      end
+    end
 
     if sys_fetch
       opts["system"] = {} unless opts["system"].is_a?(Hash)

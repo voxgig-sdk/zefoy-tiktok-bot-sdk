@@ -21,7 +21,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames, opActions } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -39,14 +39,27 @@ function propKey(name: string): string {
 
 
 const EntityTypes = cmp(function EntityTypes(props: any) {
-  const { model } = props.ctx$
+  const { model, log } = props.ctx$
 
-  const entity = getModelPath(model, `main.${KIT}.entity`)
-  const entityList = each(entity).filter((e: any) => e.active !== false)
+  // only_active:false — getModelPath DROPS active:false entries by default,
+  // but the consumer scaffold (create-sdkgen Root.ts) iterates the RAW entity
+  // collection, so inactive entities still get generated entity code that
+  // references these typed names. The typed model must cover them too.
+  const entity = getModelPath(model, `main.${KIT}.entity`, { only_active: false, required: false })
+  // Emit for EVERY entity that gets generated entity code: the consumer
+  // scaffold (create-sdkgen Root.ts) iterates entities WITHOUT an active
+  // filter, so inactive entities still get class files referencing these
+  // typed names. Filter on `name` (always present), NOT `active` — parity
+  // with the go emitter's fix.
+  const entityList = deriveEntityNames(entity)
   // Derive the PascalCase Name up-front — it is set LAZILY by names(), so an
   // entity not yet named (e.g. a fieldless placeholder) would otherwise read
   // `Name = undefined` below. Parity with the go emitter's fix.
-  entityList.forEach((e: any) => { if (null == e.Name) names(e, e.name) })
+
+  // Surface duplicate generated type names (two entities with the same
+  // PascalCase Name) — they would redeclare a type in statically-typed
+  // targets. Detection only; renaming is a model-level decision.
+  warnEntityTypeCollisions(entity, log, LANG)
 
   File({ name: model.const.Name + 'Types.' + LANG }, () => {
 
@@ -95,6 +108,23 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
           Content(`  ${propKey(it.name)}${opt}: ${canonToType(it.type, LANG)}
 `)
         })
+
+        // Custom actions are selected with `$action` in the call's argument
+        // (see the Actions section of REFERENCE.md). Without it in the type,
+        // the ONLY documented way to reach those endpoints does not compile,
+        // and a TypeScript caller has to cast — which is how two of one API's
+        // six endpoints came to be unreachable from the typed interface.
+        const actions = opActions(ops[opname])
+        if (0 < actions.length) {
+          Content(`
+  // Selects a custom action instead of the plain ${opname}:
+  //   ${actions.map((a: any) => `'` + a.action + `'`).join(' | ')}
+  // The remaining keys are that action's own payload.
+  $action?: string
+  [action: string]: any
+`)
+        }
+
         Content(`}
 
 `)

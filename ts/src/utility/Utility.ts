@@ -15,6 +15,7 @@ import { makeResponse } from './MakeResponseUtility'
 import { makeResult } from './MakeResultUtility'
 import { makePoint } from './MakePointUtility'
 import { makeSpec } from './MakeSpecUtility'
+import { graphqlBody, graphqlErrors, GRAPHQL_CONTENT_TYPE } from './GraphqlUtility'
 import { makeUrl } from './MakeUrlUtility'
 import { param } from './ParamUtility'
 import { prepareAuth } from './PrepareAuthUtility'
@@ -50,6 +51,9 @@ class Utility {
   makeResult = makeResult
   makePoint = makePoint
   makeSpec = makeSpec
+  graphqlBody = graphqlBody
+  graphqlErrors = graphqlErrors
+  GRAPHQL_CONTENT_TYPE = GRAPHQL_CONTENT_TYPE
   makeUrl = makeUrl
   param = param
   prepareAuth = prepareAuth

@@ -36,7 +36,12 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
   let testCallArg = ''
   if (exampleEntity && isMatchOp) {
-    testCallArg = idF ? `{ ${idF} = "test01" }` : ''
+    const items = opRequestShape(exampleEntity, primaryOp).items
+      .filter((it: any) => !it.optional || it.name === idF)
+      .sort((a: any, b: any) => (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+    testCallArg = 0 < items.length
+      ? `{ ${items.map((it: any) => `${luaKey(it.name)} = ${it.name === idF ? '"test01"' : luaLit(it.type)}`).join(', ')} }`
+      : ''
   } else if (exampleEntity && ('create' === primaryOp || 'update' === primaryOp)) {
     const items = opRequestShape(exampleEntity, primaryOp).items
       .filter((it: any) => it.name !== idF && it.name !== 'id')

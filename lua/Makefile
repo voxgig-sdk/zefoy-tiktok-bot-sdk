@@ -10,26 +10,26 @@ clean:
 	@echo "No clean step for Lua"
 
 # --- Release: publish to LuaRocks -----------------------------------------
-# Upload the rockspec to LuaRocks, then tag lua/vX.Y.Z. LuaRocks has no aql
+# Upload the rockspec to LuaRocks, then tag lua/vX.Y.Z. LuaRocks has no boru
 # recipe, so inject its API key + the GitHub token as custom env vars
-# (all-positional — aql cannot mix --for recipes with positional env):
-#   aql vault exec '<alias>=LUAROCKS_API_KEY,<gh-alias>=GITHUB_TOKEN' -- make publish
+# (all-positional — boru cannot mix --for recipes with positional env):
+#   boru vault exec '<alias>=LUAROCKS_API_KEY,<gh-alias>=GITHUB_TOKEN' -- make publish
 # --skip-pack uploads only the rockspec (its git+https source is fetched at the
 # lua/vX.Y.Z tag on install; that tag is pushed in the LAST step, so we must not
 # pack here). LuaRocks requires the rockspec filename to be
-# <package>-<version>.rockspec, so we upload a canonically-named copy. aql
+# <package>-<version>.rockspec, so we upload a canonically-named copy. boru
 # `--dry-run` rehearses (no upload/tag). set -e + tag-last: a failed upload
 # never leaves a tag behind.
 VERSION := $(shell sed -nE 's/^version *= *"([0-9.]+).*/\1/p' *.rockspec | head -1)
 TAG := lua/v$(VERSION)
-AQL_DRY_RUN_FILLER := AQL-DRY-RUN-FILLER-NOT-A-REAL-SECRET
+BORU_DRY_RUN_FILLER := BORU-DRY-RUN-FILLER-NOT-A-REAL-SECRET
 publish: test
 	@if git rev-parse -q --verify "refs/tags/$(TAG)" >/dev/null; then \
 	  echo "tag $(TAG) already exists — bump the rockspec version first"; exit 1; fi
 	@set -e; \
 	token="$${GITHUB_TOKEN:-$$GH_TOKEN}"; \
-	if [ "$$token" = "$(AQL_DRY_RUN_FILLER)" ] || [ "$$LUAROCKS_API_KEY" = "$(AQL_DRY_RUN_FILLER)" ]; then \
-	  echo "[dry-run] aql filler token detected: would upload to LuaRocks and tag $(TAG); nothing pushed."; \
+	if [ "$$token" = "$(BORU_DRY_RUN_FILLER)" ] || [ "$$LUAROCKS_API_KEY" = "$(BORU_DRY_RUN_FILLER)" ]; then \
+	  echo "[dry-run] boru filler token detected: would upload to LuaRocks and tag $(TAG); nothing pushed."; \
 	  exit 0; \
 	fi; \
 	rock=$$(ls *.rockspec | head -1); \

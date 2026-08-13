@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, camelify, names,
   File, Content, Folder, Fragment, Line, FeatureHook, Slot,
-  entityClassName,
+  entityClassName, entityCollection, goModule
 } from '@voxgig/sdkgen'
 
 import {
@@ -21,12 +21,12 @@ const Entity = cmp(function Entity(props: any) {
 
   // Module name: concatenated lowercase
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
 
   // Collision-free entity CLASS name (see entityClassName): normally
   // `<Name>Entity`, but disambiguated (e.g. `<Name>EntityClient`) when it would
   // clash with another entity's data-type name. The DATA type stays `<Name>`.
-  const entityColl = getModelPath(model, `main.${KIT}.entity`)
+  const entityColl = entityCollection(model)
   const cls = entityClassName(entity, entityColl)
 
   const entrep = {
@@ -42,7 +42,7 @@ const Entity = cmp(function Entity(props: any) {
 
     File({ name: entity.name + '_entity.' + target.ext }, () => {
 
-      const opnames = Object.keys(entity.op)
+      const opnames = Object.keys(entity.op || {})
 
       // For each CRUD op: if the spec defines it, splice in the real
       // implementation. Otherwise emit a stub that satisfies the static

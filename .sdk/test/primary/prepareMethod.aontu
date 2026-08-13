@@ -7,4 +7,20 @@ basic: set: [
   { ctx: { opname:remove }, out: DELETE }
 
   { ctx: { opname:bad } }
+
+  # The point's method comes from the API definition and wins over the
+  # op-name convention: POST-only APIs expose `update` and `remove` as POST,
+  # and PATCH-based APIs expose `update` as PATCH.
+  { ctx: { opname:update, point: { method: POST } }, out: POST }
+  { ctx: { opname:update, point: { method: PATCH } }, out: PATCH }
+  { ctx: { opname:remove, point: { method: POST } }, out: POST }
+  { ctx: { opname:load, point: { method: POST } }, out: POST }
+  { ctx: { opname:create, point: { method: POST } }, out: POST }
+
+  # A lowercase method is normalised to the canonical uppercase verb.
+  { ctx: { opname:update, point: { method: post } }, out: POST }
+
+  # No usable method on the point falls back to the op-name convention.
+  { ctx: { opname:update, point: { method: "" } }, out: PUT }
+  { ctx: { opname:remove, point: { } }, out: DELETE }
 ]

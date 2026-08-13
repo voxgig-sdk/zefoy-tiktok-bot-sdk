@@ -33,7 +33,7 @@ class EngagementEntityTest extends TestCase
         // The basic flow consumes synthetic IDs from the fixture. In live mode
         // without an *_ENTID env override, those IDs hit the live API and 4xx.
         if (!empty($setup["synthetic_only"])) {
-            $this->markTestSkipped("live entity test uses synthetic IDs from fixture — set ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID JSON to run live");
+            $this->markTestSkipped("live entity test uses synthetic IDs from fixture — set ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID JSON to run live");
             return;
         }
         $client = $setup["client"];
@@ -44,7 +44,7 @@ class EngagementEntityTest extends TestCase
             Vs::getpath($setup["data"], "new.engagement"), "engagement_ref01"));
 
         $engagement_ref01_data_result = $engagement_ref01_ent->create($engagement_ref01_data, null);
-        $engagement_ref01_data = Helpers::to_map($engagement_ref01_data_result);
+        $engagement_ref01_data = Helpers::to_map(is_object($engagement_ref01_data_result) && method_exists($engagement_ref01_data_result, 'data_get') ? $engagement_ref01_data_result->data_get() : $engagement_ref01_data_result);
         $this->assertNotNull($engagement_ref01_data);
 
     }
@@ -72,39 +72,39 @@ function engagement_basic_setup($extra)
     // Detect ENTID env override before envOverride consumes it. When live
     // mode is on without a real override, the basic test runs against synthetic
     // IDs from the fixture and 4xx's. Surface this so the test can skip.
-    $entid_env_raw = getenv("ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID");
+    $entid_env_raw = getenv("ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID");
     $idmap_overridden = $entid_env_raw !== false && str_starts_with(trim($entid_env_raw), "{");
 
     $env = Runner::env_override([
-        "ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID" => $idmap,
-        "ZEFOYTIKTOKBOT_TEST_LIVE" => "FALSE",
-        "ZEFOYTIKTOKBOT_TEST_EXPLAIN" => "FALSE",
-        "ZEFOYTIKTOKBOT_APIKEY" => "NONE",
+        "ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID" => $idmap,
+        "ZEFOY_TIKTOK_BOT_TEST_LIVE" => "FALSE",
+        "ZEFOY_TIKTOK_BOT_TEST_EXPLAIN" => "FALSE",
+        "ZEFOY_TIKTOK_BOT_APIKEY" => "NONE",
     ]);
 
     $idmap_resolved = Helpers::to_map(
-        $env["ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID"]);
+        $env["ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID"]);
     if ($idmap_resolved === null) {
         $idmap_resolved = Helpers::to_map($idmap);
     }
 
-    if ($env["ZEFOYTIKTOKBOT_TEST_LIVE"] === "TRUE") {
+    if ($env["ZEFOY_TIKTOK_BOT_TEST_LIVE"] === "TRUE") {
         $merged_opts = Vs::merge([
             [
-                "apikey" => $env["ZEFOYTIKTOKBOT_APIKEY"],
+                "apikey" => $env["ZEFOY_TIKTOK_BOT_APIKEY"],
             ],
             $extra ?? [],
         ]);
         $client = new ZefoyTiktokBotSDK(Helpers::to_map($merged_opts));
     }
 
-    $live = $env["ZEFOYTIKTOKBOT_TEST_LIVE"] === "TRUE";
+    $live = $env["ZEFOY_TIKTOK_BOT_TEST_LIVE"] === "TRUE";
     return [
         "client" => $client,
         "data" => $entity_data,
         "idmap" => $idmap_resolved,
         "env" => $env,
-        "explain" => $env["ZEFOYTIKTOKBOT_TEST_EXPLAIN"] === "TRUE",
+        "explain" => $env["ZEFOY_TIKTOK_BOT_TEST_EXPLAIN"] === "TRUE",
         "live" => $live,
         "synthetic_only" => $live && !$idmap_overridden,
         "now" => (int)(microtime(true) * 1000),

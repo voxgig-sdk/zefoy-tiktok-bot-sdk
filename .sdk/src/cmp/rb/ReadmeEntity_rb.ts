@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -58,7 +58,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     const idF = entityIdField(entity)
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Ruby keyword (e.g. `self`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(entity.name, 'rb')
+    const eVar = exampleVarName(entity.name, 'rb')
 
     Content(`
 ### ${entity.Name}
@@ -126,7 +126,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
       Content(`#### Example: Load
 
 \`\`\`ruby
-# load returns the bare ${entity.Name} record (raises on error).
+# load returns the ENTITY — call data_get for the ${entity.Name} record (raises on error).
 ${eVar} = client.${entity.Name}.load(${loadArg})
 \`\`\`
 

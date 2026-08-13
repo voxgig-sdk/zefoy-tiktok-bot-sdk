@@ -24,6 +24,7 @@ import {
   buildIdNames,
   getMatchEntries,
   isAuthActive,
+  entityDataIdField, envName, envToken
 } from '@voxgig/sdkgen'
 
 
@@ -49,7 +50,7 @@ const TestEntity = cmp(function TestEntity(props: any) {
   // it only applies to entities that declare a list op. Others (e.g. Batch =
   // create/load) have no list endpoint — make_point errors and the stream
   // yields nothing — so skip the stream test for them.
-  const hasList = !!(entity.op && (entity.op as any).list)
+  const hasList = !!(entity.op && (entity.op as any)?.list)
 
   const basicflow: ModelEntityFlow | undefined =
     getModelPath(model, `main.${KIT}.flow.Basic${nom(entity, 'Name')}Flow`)
@@ -57,7 +58,7 @@ const TestEntity = cmp(function TestEntity(props: any) {
     return
   }
 
-  const PROJUPPER = nom(model.const, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
+  const PROJUPPER = envName(model)
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -153,7 +154,7 @@ ${hasList ? `
     -- The basic flow consumes synthetic IDs from the fixture. In live mode
     -- without an *_ENTID env override, those IDs hit the live API and 4xx.
     if setup.synthetic_only then
-      pending("live entity test uses synthetic IDs from fixture — set ${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID JSON to run live")
+      pending("live entity test uses synthetic IDs from fixture — set ${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID JSON to run live")
       return
     end
     local client = setup.client
@@ -234,17 +235,17 @@ end)
     Content(`  -- Detect ENTID env override before envOverride consumes it. When live
   -- mode is on without a real override, the basic test runs against synthetic
   -- IDs from the fixture and 4xx's. Surface this so the test can skip.
-  local entid_env_raw = os.getenv("${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID")
+  local entid_env_raw = os.getenv("${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID")
   local idmap_overridden = entid_env_raw ~= nil and entid_env_raw:match("^%s*{") ~= nil
 
   local env = runner.env_override({
-    ["${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID"] = idmap,
+    ["${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID"] = idmap,
     ["${PROJUPPER}_TEST_LIVE"] = "FALSE",
     ["${PROJUPPER}_TEST_EXPLAIN"] = "FALSE",${apikeyEnvEntry}
   })
 
   local idmap_resolved = helpers.to_map(
-    env["${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID"])
+    env["${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID"])
   if idmap_resolved == nil then
     idmap_resolved = helpers.to_map(idmap)
   end
@@ -330,7 +331,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   Content(`
     local ${datavar}_result, err = ${entvar}:create(${datavar}, nil)
     assert.is_nil(err)
-    ${datavar} = helpers.to_map(${datavar}_result)
+    ${datavar} = helpers.to_map(type(${datavar}_result) == 'table' and ${datavar}_result.data_get and ${datavar}_result:data_get() or ${datavar}_result)
     assert.is_not_nil(${datavar})
 `)
   if (null != ctx.entity.id) {
@@ -342,6 +343,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
 
 const generateList: OpGen = (ctx, step, index) => {
   const { entity, flow } = ctx
+  const hasDataId = null != entityDataIdField(entity)
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))
@@ -387,7 +389,7 @@ const generateList: OpGen = (ctx, step, index) => {
       const hasRefData = validRef && allSteps.some((s: any) => 'create' === s.op &&
         ((s.input.ref ?? entity.name + '_ref01') === validRef))
 
-      if ('ItemExists' === validator.apply && hasRefData) {
+      if ('ItemExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
     local found_item = vs.select(
@@ -395,7 +397,7 @@ const generateList: OpGen = (ctx, step, index) => {
       { id = ${refDataVar}["id"] })
     assert.is_false(vs.isempty(found_item))
 `)
-      } else if ('ItemNotExists' === validator.apply && hasRefData) {
+      } else if ('ItemNotExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
     local not_found_item = vs.select(
@@ -465,7 +467,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   Content(`
     local ${resdatavar}_result, err = ${entvar}:update(${datavar}_up, nil)
     assert.is_nil(err)
-    local ${resdatavar} = helpers.to_map(${resdatavar}_result)
+    local ${resdatavar} = helpers.to_map(type(${resdatavar}_result) == 'table' and ${resdatavar}_result.data_get and ${resdatavar}_result:data_get() or ${resdatavar}_result)
     assert.is_not_nil(${resdatavar})
 `)
   if (hasEntIdU) {
@@ -531,7 +533,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
     }
     local ${datavar}_loaded, err = ${entvar}:load(${matchvar}, nil)
     assert.is_nil(err)
-    local ${datavar}_load_result = helpers.to_map(${datavar}_loaded)
+    local ${datavar}_load_result = helpers.to_map(type(${datavar}_loaded) == 'table' and ${datavar}_loaded.data_get and ${datavar}_loaded:data_get() or ${datavar}_loaded)
     assert.is_not_nil(${datavar}_load_result)
     assert.are.equal(${datavar}_load_result["id"], ${srcdatavar}["id"])
 `)
@@ -548,6 +550,9 @@ const generateLoad: OpGen = (ctx, step, index) => {
 
 const generateRemove: OpGen = (ctx, step, index) => {
   const { entity, flow } = ctx
+  if (null == entityDataIdField(entity)) {
+    return
+  }
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))

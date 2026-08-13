@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -68,7 +68,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
 `)
     }
 
-    Content(`Create an instance: \`$${entity.name} = $client->${entity.Name}();\`
+    Content(`Create an instance: \`$${entity.name} = $client->${phpEntityAccessor(entity.Name)}();\`
 
 `)
 
@@ -123,8 +123,8 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
       Content(`#### Example: Load
 
 \`\`\`php
-// load() returns the bare ${entity.Name} record (throws on error).
-$${entity.name} = $client->${entity.Name}()->load(${loadArg});
+// load() returns the ENTITY — call data_get() for the ${entity.Name} record (throws on error).
+$${entity.name} = $client->${phpEntityAccessor(entity.Name)}()->load(${loadArg});
 \`\`\`
 
 `)
@@ -135,7 +135,7 @@ $${entity.name} = $client->${entity.Name}()->load(${loadArg});
 
 \`\`\`php
 // list() returns an array of ${entity.Name} records (throws on error).
-$${entity.name}s = $client->${entity.Name}()->list();
+$${entity.name}s = $client->${phpEntityAccessor(entity.Name)}()->list();
 \`\`\`
 
 `)
@@ -150,7 +150,7 @@ $${entity.name}s = $client->${entity.Name}()->list();
       Content(`#### Example: Create
 
 \`\`\`php
-$${entity.name} = $client->${entity.Name}()->create([
+$${entity.name} = $client->${phpEntityAccessor(entity.Name)}()->create([
 `)
       createItems.map((it: any) => {
         Content(`    "${it.name}" => null, // ${canonToType(it.type, target.name)}

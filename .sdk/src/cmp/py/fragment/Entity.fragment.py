@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from utility.voxgig_struct import voxgig_struct as vs
-from core import helpers
+from projectname_sdk.utility.voxgig_struct import voxgig_struct as vs
+from projectname_sdk.core import helpers
 # #TypeImports
 
 
@@ -24,6 +24,7 @@ class EntyClass:
         self._utility = client.get_utility()
         self._entopts = entopts
         self._data = {}
+        self._deleted = False
         self._match = {}
 
         self._entctx = self._utility.make_context({
@@ -35,6 +36,16 @@ class EntyClass:
 
     def get_name(self):
         return self._name
+
+    # Every operation resolves to the entity; `remove` additionally marks
+    # it. The instance KEEPS the data it held — a caller can still read what
+    # was deleted — but it is no longer a live record. See AGENTS.md.
+    def mark_deleted(self):
+        self._deleted = True
+
+    def deleted(self):
+        return True is self._deleted
+
 
     def make(self):
         opts = {}
@@ -214,7 +225,24 @@ class EntyClass:
 
             post_done()
 
-            return utility.done(ctx)
+            out = utility.done(ctx)
+
+    # An operation resolves to the ENTITY, not the raw data. Entities are
+    # stateful: post_done has just absorbed resdata/resmatch into this
+    # instance, and the caller reaches the record through data(). Two
+    # structural exceptions: `list` resolves to the ARRAY of entity
+    # instances make_result built, and a failed op with throwing disabled
+    # hands back the error payload unchanged. `remove` additionally marks
+    # the entity deleted; it KEEPS its data, so a caller can still read
+    # what was removed. See AGENTS.md "Entity operations return ENTITIES".
+            opname = None if ctx.op is None else ctx.op.name
+
+            if ctx.result is not None and ctx.result.ok and opname != "list":
+                if opname == "remove":
+                    self.mark_deleted()
+                return self
+
+            return out
 
         except Exception:
             # #PreUnexpected-Hook

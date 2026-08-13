@@ -38,7 +38,7 @@ const client = new ZefoyTiktokBotSDK({
 ### 4. Create, update, and remove
 
 ```ts
-// Create — returns the created Engagement
+// Create — returns the created Engagement ENTITY (.data() for the record)
 const created = await client.Engagement().create({
   url: 'example_url',
 })
@@ -120,7 +120,8 @@ Create a mock client for unit testing — no server required:
 const client = ZefoyTiktokBotSDK.test()
 
 const engagement = await client.Engagement().create({ url: 'example_url' })
-// engagement is a bare entity populated with mock response data
+// engagement is the entity, populated with mock response data
+// — call engagement.data() for the record itself
 console.log(engagement)
 ```
 
@@ -288,7 +289,7 @@ The `prepare()` method returns:
 | Field | Description |
 | --- | --- |
 | `amount` |  |
-| `estimated_time` |  |
+| `estimatedTime` |  |
 | `message` |  |
 | `status` |  |
 | `success` |  |
@@ -319,7 +320,7 @@ Create an instance: `const engagement = client.Engagement()`
 | Field | Type | Description |
 | --- | --- | --- |
 | `amount` | `number` |  |
-| `estimated_time` | `number` |  |
+| `estimatedTime` | `number` |  |
 | `message` | `string` |  |
 | `status` | `string` |  |
 | `success` | `boolean` |  |

@@ -13,6 +13,7 @@ async function makeResponse(ctx: Context): Promise<Response | Error> {
   const resultHeaders = utility.resultHeaders
   const resultBody = utility.resultBody
   const transformResponse = utility.transformResponse
+  const graphqlErrors = utility.graphqlErrors
 
   const spec = ctx.spec
   const result = ctx.result
@@ -38,6 +39,12 @@ async function makeResponse(ctx: Context): Promise<Response | Error> {
     resultBasic(ctx)
     resultHeaders(ctx)
     await resultBody(ctx)
+
+    // GraphQL reports failures as a top-level `errors` array under HTTP 200,
+    // so resultBasic's status check never sees them. Lift them here, before
+    // the response transform tries to unwrap data that is not there.
+    graphqlErrors(ctx)
+
     transformResponse(ctx)
 
     if (null == result.err) {

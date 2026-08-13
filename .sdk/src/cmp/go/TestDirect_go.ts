@@ -11,7 +11,7 @@ import {
   File,
   cmp,
   snakify,
-  isAuthActive,
+  isAuthActive, envName, envToken, liveStrict
 } from '@voxgig/sdkgen'
 
 
@@ -65,7 +65,11 @@ const TestDirect = cmp(function TestDirect(props: any) {
   const entity: ModelEntity = props.entity
   const gomodule = props.gomodule
 
-  const PROJECTNAME = nom(model, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
+  const PROJECTNAME = envName(model)
+
+  // Does a live run ASSERT, or merely observe? See helpers/testPolicy.
+  // t.Skipf passes; t.Fatalf does not.
+  const liveFail = liveStrict(model, target.name) ? 'Fatalf' : 'Skipf'
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -75,7 +79,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
     ? `\n\t\t\t"apikey": env["${PROJECTNAME}_APIKEY"],`
     : ''
 
-  const opnames = Object.keys(entity.op)
+  const opnames = Object.keys(entity.op || {})
   const hasLoad = opnames.includes('load')
   const hasList = opnames.includes('list')
 
@@ -83,8 +87,8 @@ const TestDirect = cmp(function TestDirect(props: any) {
     return
   }
 
-  const loadOp = entity.op.load
-  const listOp = entity.op.list
+  const loadOp = entity.op?.load
+  const listOp = entity.op?.list
 
   // Get load point info
   const loadPoint = loadOp?.points?.[0]
@@ -146,7 +150,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
     : ''
 
   // Build the ENTID env var name for this entity
-  const entidEnvVar = `${PROJECTNAME}_TEST_${nom(entity, 'NAME').replace(/[^A-Z_]/g, '_')}_ENTID`
+  const entidEnvVar = `${PROJECTNAME}_TEST_${envToken(entity.name)}_ENTID`
 
   File({ name: entity.name + '_direct_test.' + target.ext }, () => {
 
@@ -254,18 +258,19 @@ ${listSkipBlock}		client := setup.client
       }
 
       Content(`		if setup.live {
-			// Live mode is lenient: synthetic IDs frequently 4xx and the
-			// list-response shape varies wildly across public APIs. Skip
-			// rather than fail when the call doesn't return a usable list.
+			// Live-mode leniency is a model decision
+			// (main.kit.test.live.strict): synthetic IDs 4xx constantly
+			// against an arbitrary public API, so the default SKIPS here.
+			// A project that owns its test server sets strict and FAILS.
 			if err != nil {
-				t.Skipf("list call failed (likely synthetic IDs against live API): %v", err)
+				t.${liveFail}("list call failed (likely synthetic IDs against live API): %v", err)
 			}
 			if result["ok"] != true {
-				t.Skipf("list call not ok (likely synthetic IDs against live API): %v", result)
+				t.${liveFail}("list call not ok (likely synthetic IDs against live API): %v", result)
 			}
 			status := core.ToInt(result["status"])
 			if status < 200 || status >= 300 {
-				t.Skipf("expected 2xx status, got %v", result["status"])
+				t.${liveFail}("expected 2xx status, got %v", result["status"])
 			}
 		} else {
 			if err != nil {
@@ -413,10 +418,10 @@ ${loadSkipBlock}		client := setup.client
 				"params": listParams,
 			})
 			if listErr != nil {
-				t.Skipf("list call failed (likely synthetic IDs against live API): %v", listErr)
+				t.${liveFail}("list call failed (likely synthetic IDs against live API): %v", listErr)
 			}
 			if listResult["ok"] != true {
-				t.Skipf("list call not ok (likely synthetic IDs against live API): %v", listResult)
+				t.${liveFail}("list call not ok (likely synthetic IDs against live API): %v", listResult)
 			}
 
 			// Get first entity ID from list
@@ -468,16 +473,17 @@ ${loadSkipBlock}		client := setup.client
 		if setup.live {
 			// Live mode is lenient: synthetic IDs frequently 4xx. Skip
 			// rather than fail when the load endpoint isn't reachable with
-			// the IDs we can construct from setup.idmap.
+			// the IDs we can construct from setup.idmap — unless the model
+			// sets main.kit.test.live.strict.
 			if err != nil {
-				t.Skipf("load call failed (likely synthetic IDs against live API): %v", err)
+				t.${liveFail}("load call failed (likely synthetic IDs against live API): %v", err)
 			}
 			if result["ok"] != true {
-				t.Skipf("load call not ok (likely synthetic IDs against live API): %v", result)
+				t.${liveFail}("load call not ok (likely synthetic IDs against live API): %v", result)
 			}
 			status := core.ToInt(result["status"])
 			if status < 200 || status >= 300 {
-				t.Skipf("expected 2xx status, got %v", result["status"])
+				t.${liveFail}("expected 2xx status, got %v", result["status"])
 			}
 		} else {
 			if err != nil {

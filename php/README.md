@@ -36,7 +36,7 @@ $client = new ZefoyTiktokBotSDK([
 ### 4. Create, update, and remove
 
 ```php
-// create() returns the bare created Engagement record.
+// create() returns the ENTITY — call data_get() for the created Engagement record.
 $created = $client->Engagement()->create(["url" => "example_url"]);
 
 ```
@@ -121,7 +121,8 @@ Create a mock client for unit testing — no server required:
 ```php
 $client = ZefoyTiktokBotSDK::test();
 
-// Entity ops return the bare mock record (throws on error).
+// Entity ops return the ENTITY (throws on error);
+// call data_get() for the mock record.
 $engagement = $client->Engagement()->create(["url" => "example"]);
 print_r($engagement);
 ```
@@ -222,7 +223,7 @@ All entities share the same interface.
 
 ### Result shape
 
-Entity operations return the bare result data (an `array` for single-entity
+Entity operations return the ENTITY (call data_get() for the record) (an `array` for single-entity
 ops, a `list` for `list`) and throw on error. Wrap calls in
 `try`/`catch` to handle failures.
 
@@ -245,7 +246,7 @@ On error, `ok` is `false` and `$err` contains the error value.
 | Field | Description |
 | --- | --- |
 | `amount` |  |
-| `estimated_time` |  |
+| `estimatedTime` |  |
 | `message` |  |
 | `status` |  |
 | `success` |  |
@@ -276,7 +277,7 @@ Create an instance: `$engagement = $client->Engagement();`
 | Field | Type | Description |
 | --- | --- | --- |
 | `amount` | `int` |  |
-| `estimated_time` | `int` |  |
+| `estimatedTime` | `int` |  |
 | `message` | `string` |  |
 | `status` | `string` |  |
 | `success` | `bool` |  |

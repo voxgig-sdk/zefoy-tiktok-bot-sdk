@@ -6,7 +6,8 @@ import {
   collectDeps,
   pkgDescription,
   keywords,
-  repoInfo,
+  repoInfo, packageName,
+  packageVersion,
 } from '@voxgig/sdkgen'
 
 
@@ -26,13 +27,13 @@ const Package = cmp(async function Package(props: any) {
   // (`${model.name}_sdk`) used by `require` is unchanged.
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
-  const rockName = `${ns}-${pkgBase}`
+  const rockName = packageName(model, 'lua')
   const { repoUrl, issuesUrl } = repoInfo(model)
   const labels = keywords(model).map((k) => `"${k}"`).join(', ')
 
   // Single source for the version so the rockspec version and the source.tag
   // (which `make publish` pushes as lua/v<rockVersion>) can never drift apart.
-  const rockVersion = '0.0.1'
+  const rockVersion = packageVersion(model, target.name)
 
   File({ name: model.name + '.rockspec' }, () => {
     Content(`package = "${rockName}"
@@ -57,7 +58,7 @@ dependencies = {
 `)
 
     const seen = new Set<string>(['lua', 'dkjson'])
-    for (const d of collectDeps(model, target.name, target.deps)) {
+    for (const d of collectDeps(model, target.name, target.deps, ctx$.log)) {
       if (seen.has(d.name)) continue
       seen.add(d.name)
       const v = d.source === 'target' ? (d.version || '0.0') : d.version

@@ -6,7 +6,8 @@ import {
   collectDeps,
   pkgDescription,
   keywords,
-  repoInfo,
+  repoInfo, packageName,
+  authorInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -21,6 +22,12 @@ const Package = cmp(async function Package(props: any) {
 
   const model: Model = ctx$.model
 
+  // WHO WROTE THIS PACKAGE. Per target, falling back to the model-wide value
+  // and then to the publisher — so a manifest cannot go on naming Voxgig
+  // while the model names someone else, which is exactly what the hardcoded
+  // constant here did.
+  const author = authorInfo(model, target.name)
+
   // Package namespace mirrors the npm scope (model.origin, e.g. "voxgig-sdk").
   // If origin already ends in "-sdk" the slug stands alone; otherwise append
   // "-sdk" (matches the TS Package generator).
@@ -32,14 +39,14 @@ const Package = cmp(async function Package(props: any) {
   // Generate composer.json
   File({ name: 'composer.json' }, () => {
     Content(`{
-  "name": "${ns}/${pkgBase}",
+  "name": "${packageName(model, 'php')}",
   "description": "${pkgDescription(model, 'php')}",
   "type": "library",
   "keywords": [${kw}],
   "homepage": "${repoUrl}",
   "license": "MIT",
   "authors": [
-    { "name": "Voxgig", "homepage": "https://voxgig.com" }
+    { "name": "${author.name}"${'' === author.url ? '' : `, "homepage": "${author.url}"`} }
   ],
   "support": {
     "issues": "${issuesUrl}",
@@ -49,7 +56,7 @@ const Package = cmp(async function Package(props: any) {
   "require": {
     "php": ">=8.2"`)
 
-    for (const d of collectDeps(model, target.name, target.deps)) {
+    for (const d of collectDeps(model, target.name, target.deps, ctx$.log)) {
       const v = d.source === 'target' ? (d.version || '0.0') : d.version
       Content(`,
     "${d.name}": "^${v}"`)

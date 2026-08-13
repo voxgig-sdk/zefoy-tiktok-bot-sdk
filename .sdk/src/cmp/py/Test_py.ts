@@ -29,7 +29,10 @@ const Test = cmp(function Test(props: any) {
 
     // Generate exists test
     File({ name: 'test_exists.' + target.ext }, () => {
-      Content(`# ProjectName SDK exists test
+      // The header names the SDK like every other line here — a literal
+      // `ProjectName` is the raw placeholder, not a substituted value: Content
+      // does not apply the standard replacements.
+      Content(`# ${model.const.Name} SDK exists test
 
 import pytest
 from ${model.const.Name.toLowerCase()}_sdk import ${model.const.Name}SDK

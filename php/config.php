@@ -42,7 +42,7 @@ class ZefoyTiktokBotConfig
             ],
             [
               'active' => true,
-              'name' => 'estimated_time',
+              'name' => 'estimatedTime',
               'req' => false,
               'type' => '`$INTEGER`',
               'index$' => 1,
@@ -98,6 +98,7 @@ class ZefoyTiktokBotConfig
                 [
                   'active' => true,
                   'args' => [],
+                  'kind' => 'http',
                   'method' => 'POST',
                   'orig' => '/api/boost',
                   'parts' => [

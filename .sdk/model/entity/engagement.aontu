@@ -11,7 +11,7 @@ main: kit: entity: engagement: {
       type: "`$INTEGER`"
     }
     {
-      name: "estimated_time"
+      name: "estimatedTime"
       req: false
       type: "`$INTEGER`"
     }

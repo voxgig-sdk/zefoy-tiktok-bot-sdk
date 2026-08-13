@@ -17,6 +17,8 @@ import {
   cmp,
   snakify,
   isAuthActive,
+  jsProp,
+  jsOptProp, envName, envToken, liveStrict
 } from '@voxgig/sdkgen'
 
 
@@ -35,8 +37,11 @@ const TestDirect = cmp(function TestDirect(props: any) {
 
   const ff = projectPath('src/cmp/ts/fragment/')
 
-  const PROJECTNAME = nom(model, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
-  const entidEnvVar = `${PROJECTNAME}_TEST_${nom(entity, 'NAME').replace(/[^A-Z_]/g, '_')}_ENTID`
+  // Does a live run ASSERT, or merely observe? See helpers/testPolicy.
+  const strict = liveStrict(model, target.name)
+
+  const PROJECTNAME = envName(model)
+  const entidEnvVar = `${PROJECTNAME}_TEST_${envToken(entity.name)}_ENTID`
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -47,7 +52,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
       apikey: env.${PROJECTNAME}_APIKEY,`
     : ''
 
-  const opnames = Object.keys(entity.op)
+  const opnames = Object.keys(entity.op || {})
   const hasLoad = opnames.includes('load')
   const hasList = opnames.includes('list')
 
@@ -134,11 +139,11 @@ function unwrapListData(data: any): any[] | null {
         Slot({ name: 'direct' }, () => {
 
           if (hasLoad) {
-            generateDirectLoad(model, entity)
+            generateDirectLoad(model, entity, strict)
           }
 
           if (hasList) {
-            generateDirectList(model, entity)
+            generateDirectList(model, entity, strict)
           }
         })
 
@@ -148,8 +153,8 @@ function unwrapListData(data: any): any[] | null {
 })
 
 
-function generateDirectLoad(model: Model, entity: ModelEntity) {
-  const loadOp = entity.op.load
+function generateDirectLoad(model: Model, entity: ModelEntity, strict: boolean) {
+  const loadOp = entity.op?.load
   const loadPoint: ModelPoint | undefined = loadOp?.points?.[0]
 
   if (null == loadPoint) {
@@ -192,11 +197,11 @@ function generateDirectLoad(model: Model, entity: ModelEntity) {
     .filter((q: any) => q.reqd && undefined !== q.example && null !== q.example)
   const hasLiveQuery = liveQueryEntries.length > 0
   const liveQueryLines = liveQueryEntries
-    .map((q: any) => `      query.${q.name} = ${JSON.stringify(q.example)}`)
+    .map((q: any) => `      ${jsProp('query', q.name)} = ${JSON.stringify(q.example)}`)
     .join('\n')
 
   // Get list info for live mode bootstrapping
-  const listOp = entity.op.list
+  const listOp = entity.op?.list
   const listPoint = listOp?.points?.[0]
   const listParams = listPoint?.args?.params || []
   const listPath = listPoint ? normalizePathParams(listPoint.parts || [], listParams, listPoint.rename?.param) : ''
@@ -245,12 +250,12 @@ function generateDirectLoad(model: Model, entity: ModelEntity) {
   let liveParamsBlock = ''
   if (allLoadParamsHaveExamples) {
     const exampleLines = loadParams.map(
-      (p: any) => `      params.${p.name} = ${JSON.stringify(p.example)}`
+      (p: any) => `      ${jsProp('params', p.name)} = ${JSON.stringify(p.example)}`
     ).join('\n')
     liveParamsBlock = `    if (setup.live) {
 ${liveQueryPrefix}${exampleLines}
     } else {
-${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 1}'`).join('\n')}
+${loadParams.map((p: any, i: number) => `      ${jsProp('params', p.name)} = 'direct0${i + 1}'`).join('\n')}
     }`
   }
   else if (hasList) {
@@ -262,7 +267,7 @@ ${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 
     const listParamLines = liveListParams.map((lp: any) =>
       `        ${lp.name}: setup.idmap['${lp.key}'],`).join('\n')
     const ancestorParamLines = liveAncestorParams.map((lp: any) =>
-      `      params.${lp.name} = setup.idmap['${lp.key}']`).join('\n')
+      `      ${jsProp('params', lp.name)} = setup.idmap['${lp.key}']`).join('\n')
     // Try every load-path param name as the candidate field on listData[0].
     // Some APIs name the path param differently from the response field
     // (e.g. path uses {id} while response has mal_id), so we attempt the
@@ -286,14 +291,14 @@ ${listParamLines}
       if (null == listArr || listArr.length === 0) {
         return // skip: no entities to load in live mode
       }
-      const candidateId = listArr[0]?.${idParamName} ?? listArr[0]?.id
+      const candidateId = ${jsOptProp('listArr[0]', idParamName)} ?? listArr[0]?.id
       if (null == candidateId) {
         return // skip: list response shape does not expose load identifier
       }
-      params.${idParamName} = candidateId
+      ${jsProp('params', idParamName)} = candidateId
 ${ancestorParamLines}
     } else {
-${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 1}'`).join('\n')}
+${loadParams.map((p: any, i: number) => `      ${jsProp('params', p.name)} = 'direct0${i + 1}'`).join('\n')}
     }`
   } else if (hasLiveQuery || loadParams.length > 0) {
     // Synthetic-only fallback: if there are load params with no examples
@@ -306,7 +311,7 @@ ${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 
     liveParamsBlock = `    if (setup.live) {
 ${liveQueryPrefix.replace(/\n$/, '')}
     } else {
-${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 1}'`).join('\n')}
+${loadParams.map((p: any, i: number) => `      ${jsProp('params', p.name)} = 'direct0${i + 1}'`).join('\n')}
     }`
   } else {
     liveParamsBlock = ''
@@ -315,6 +320,31 @@ ${loadParams.map((p: any, i: number) => `      params.${p.name} = 'direct0${i + 
   const skipMissingLine = liveIdKeys.length > 0
     ? `    if (skipIfMissingIds(t, setup, ${JSON.stringify(liveIdKeys)})) return\n`
     : ''
+
+  // Live-mode leniency is a MODEL decision (main.kit.test.live.strict).
+  // The default stays lenient: a fleet SDK generated against an arbitrary
+  // public API 4xxes on synthetic IDs, and asserting would mean permanent
+  // red. A project that owns its test server wants the opposite — without
+  // it, the suite passes with nothing listening on the port.
+  const offlineChecks = `      assert(result.ok === true)
+      assert(result.status === 200)
+      assert(null != result.data)
+      assert(result.data.id === 'direct01')
+      assert(calls.length === 1)
+      assert(calls[0].init.method === 'GET')
+${paramAsserts}`
+
+  const loadChecks = strict ?
+    offlineChecks.replace(/^ {6}/gm, '    ').replace(/^ {4}$/gm, '') :
+    `    if (setup.live) {
+      // Live mode is lenient: synthetic IDs frequently 4xx. Skip rather
+      // than fail when the load endpoint isn't reachable with the IDs we
+      // can construct from setup.idmap.
+      if (!result.ok || result.status < 200 || result.status >= 300) {
+        return
+      }
+    } else {
+${offlineChecks}    }`
 
   Content(`
   test('direct-load-${entity.name}', async (t: any) => {
@@ -333,28 +363,14 @@ ${liveParamsBlock}
       query,
     })
 
-    if (setup.live) {
-      // Live mode is lenient: synthetic IDs frequently 4xx. Skip rather
-      // than fail when the load endpoint isn't reachable with the IDs we
-      // can construct from setup.idmap.
-      if (!result.ok || result.status < 200 || result.status >= 300) {
-        return
-      }
-    } else {
-      assert(result.ok === true)
-      assert(result.status === 200)
-      assert(null != result.data)
-      assert(result.data.id === 'direct01')
-      assert(calls.length === 1)
-      assert(calls[0].init.method === 'GET')
-${paramAsserts}    }
+${loadChecks}
   })
 `)
 }
 
 
-function generateDirectList(model: Model, entity: ModelEntity) {
-  const listOp = entity.op.list
+function generateDirectList(model: Model, entity: ModelEntity, strict: boolean) {
+  const listOp = entity.op?.list
   const listPoint: ModelPoint | undefined = listOp?.points?.[0]
 
   if (null == listPoint) {
@@ -369,7 +385,7 @@ function generateDirectList(model: Model, entity: ModelEntity) {
   const listQuery = listPoint.args?.query || []
   const liveQueryLines = listQuery
     .filter((q: any) => q.reqd && undefined !== q.example && null !== q.example)
-    .map((q: any) => `      query.${q.name} = ${JSON.stringify(q.example)}`)
+    .map((q: any) => `      ${jsProp('query', q.name)} = ${JSON.stringify(q.example)}`)
     .join('\n')
 
   // Build live params
@@ -388,10 +404,10 @@ function generateDirectList(model: Model, entity: ModelEntity) {
     const liveLines = [
       liveQueryLines,
       liveParams.map((lp: any) =>
-        `      params.${lp.name} = setup.idmap['${lp.key}']`).join('\n'),
+        `      ${jsProp('params', lp.name)} = setup.idmap['${lp.key}']`).join('\n'),
     ].filter(Boolean).join('\n')
     const mockLines = listParams.map((p: any, i: number) =>
-      `      params.${p.name} = 'direct0${i + 1}'`).join('\n')
+      `      ${jsProp('params', p.name)} = 'direct0${i + 1}'`).join('\n')
 
     paramsBlock = `    const params: any = {}
     const query: any = {}
@@ -416,6 +432,33 @@ ${mockLines}
     ? `    if (skipIfMissingIds(t, setup, ${JSON.stringify(liveIdKeys)})) return\n`
     : ''
 
+  // See generateDirectLoad: leniency is main.kit.test.live.strict.
+  const offlineChecks = `      assert(result.ok === true)
+      assert(result.status === 200)
+      assert(null != result.data)
+      const listArr = unwrapListData(result.data)
+      assert(Array.isArray(listArr))
+      assert(listArr!.length === 2)
+      assert(calls.length === 1)
+      assert(calls[0].init.method === 'GET')
+${paramAsserts}`
+
+  const listChecks = strict ?
+    offlineChecks.replace(/^ {6}/gm, '    ').replace(/^ {4}$/gm, '') :
+    `    if (setup.live) {
+      // Live mode is lenient: synthetic IDs frequently 4xx and the list-
+      // response shape varies wildly across public APIs. Skip rather than
+      // fail when the call doesn't return a usable list.
+      if (!result.ok || result.status < 200 || result.status >= 300) {
+        return
+      }
+      const listArr = unwrapListData(result.data)
+      if (!Array.isArray(listArr)) {
+        return
+      }
+    } else {
+${offlineChecks}    }`
+
   Content(`
   test('direct-list-${entity.name}', async (t: any) => {
     const setup = directSetup([{ id: 'direct01' }, { id: 'direct02' }])
@@ -430,27 +473,7 @@ ${paramsBlock}
       query,
     })
 
-    if (setup.live) {
-      // Live mode is lenient: synthetic IDs frequently 4xx and the list-
-      // response shape varies wildly across public APIs. Skip rather than
-      // fail when the call doesn't return a usable list.
-      if (!result.ok || result.status < 200 || result.status >= 300) {
-        return
-      }
-      const listArr = unwrapListData(result.data)
-      if (!Array.isArray(listArr)) {
-        return
-      }
-    } else {
-      assert(result.ok === true)
-      assert(result.status === 200)
-      assert(null != result.data)
-      const listArr = unwrapListData(result.data)
-      assert(Array.isArray(listArr))
-      assert(listArr!.length === 2)
-      assert(calls.length === 1)
-      assert(calls[0].init.method === 'GET')
-${paramAsserts}    }
+${listChecks}
   })
 `)
 }

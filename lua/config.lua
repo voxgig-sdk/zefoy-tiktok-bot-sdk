@@ -36,7 +36,7 @@ local function make_config()
           },
           {
             ["active"] = true,
-            ["name"] = "estimated_time",
+            ["name"] = "estimatedTime",
             ["req"] = false,
             ["type"] = "`$INTEGER`",
             ["index$"] = 1,
@@ -92,6 +92,7 @@ local function make_config()
               {
                 ["active"] = true,
                 ["args"] = {},
+                ["kind"] = "http",
                 ["method"] = "POST",
                 ["orig"] = "/api/boost",
                 ["parts"] = {

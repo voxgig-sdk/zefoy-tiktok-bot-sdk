@@ -23,8 +23,8 @@ module ZefoyTiktokBotTestRunner
   end
 
   def self.env_override(m)
-    live = getenv("ZEFOYTIKTOKBOT_TEST_LIVE")
-    override = getenv("ZEFOYTIKTOKBOT_TEST_OVERRIDE")
+    live = getenv("ZEFOY_TIKTOK_BOT_TEST_LIVE")
+    override = getenv("ZEFOY_TIKTOK_BOT_TEST_OVERRIDE")
 
     if live == "TRUE" || override == "TRUE"
       m.each_key do |key|
@@ -44,8 +44,8 @@ module ZefoyTiktokBotTestRunner
       end
     end
 
-    explain = getenv("ZEFOYTIKTOKBOT_TEST_EXPLAIN")
-    m["ZEFOYTIKTOKBOT_TEST_EXPLAIN"] = explain if explain && !explain.empty?
+    explain = getenv("ZEFOY_TIKTOK_BOT_TEST_EXPLAIN")
+    m["ZEFOY_TIKTOK_BOT_TEST_EXPLAIN"] = explain if explain && !explain.empty?
 
     m
   end

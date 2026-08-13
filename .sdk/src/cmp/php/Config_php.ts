@@ -11,6 +11,7 @@ import {
   each,
   isAuthActive,
   resolveAuthPrefix,
+  serverVariables,
 } from '@voxgig/sdkgen'
 
 
@@ -45,6 +46,16 @@ const Config = cmp(async function Config(props: any) {
 
   let baseUrl = ''
   try { baseUrl = getModelPath(model, `main.${KIT}.info.servers.0.url`) } catch (_e) { }
+
+  // Templated server URL: emit the spec's server-variable defaults so the
+  // runtime can substitute {name} placeholders in base (see MakeOptions).
+  // `$` is escaped so a default can never open a PHP interpolation.
+  const svars = serverVariables(model)
+  const phps = (s: string) => JSON.stringify(s).replace(/\$/g, '\\$')
+  const serverBlock = 0 === svars.length ? '' :
+    '                "server" => [\n' +
+    svars.map((v: any) => `                    ${phps(v.name)} => ${phps(v.dflt)},\n`).join('') +
+    '                ],\n'
 
   const authBlock = authActive
     ? `                "auth" => [
@@ -84,7 +95,7 @@ class ${model.const.Name}Config
       Content(`            ],
             "options" => [
                 "base" => "${baseUrl}",
-${authBlock}                "headers" => ${formatPhpArray(headers, 4)},
+${serverBlock}${authBlock}                "headers" => ${formatPhpArray(headers, 4)},
                 "entity" => (object)[],
             ],
             "entity" => (object)[],
@@ -94,7 +105,7 @@ ${authBlock}                "headers" => ${formatPhpArray(headers, 4)},
     Content(`            ],
             "options" => [
                 "base" => "${baseUrl}",
-${authBlock}                "headers" => ${formatPhpArray(headers, 4)},
+${serverBlock}${authBlock}                "headers" => ${formatPhpArray(headers, 4)},
                 "entity" => [
 `)
 

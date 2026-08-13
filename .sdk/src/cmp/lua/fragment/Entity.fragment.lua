@@ -23,6 +23,7 @@ function EntyClass.new(client, entopts)
   self._utility = client:get_utility()
   self._entopts = entopts
   self._data = {}
+  self._deleted = false
   self._match = {}
 
   self._entctx = self._utility.make_context({
@@ -47,6 +48,19 @@ function EntyClass:make()
     opts[k] = v
   end
   return EntyClass.new(self._client, opts)
+end
+
+
+-- Every operation resolves to the entity; `remove` additionally marks
+-- it. The instance KEEPS the data it held — a caller can still read what
+-- was deleted — but it is no longer a live record. See AGENTS.md.
+function EntyClass:mark_deleted()
+  self._deleted = true
+end
+
+
+function EntyClass:deleted()
+  return true == self._deleted
 end
 
 
@@ -277,7 +291,29 @@ function EntyClass:_run_op(ctx, post_done)
 
   post_done()
 
-  return utility.done(ctx)
+  local out, done_err = utility.done(ctx)
+  if done_err ~= nil then
+    return out, done_err
+  end
+
+  -- An operation resolves to the ENTITY, not the raw data. Entities are
+  -- stateful: post_done has just absorbed resdata/resmatch into this
+  -- instance, and the caller reaches the record through data(). Two
+  -- structural exceptions: `list` resolves to the ARRAY of entity
+  -- instances make_result built, and a failed op with throwing disabled
+  -- hands back the error payload unchanged. `remove` additionally marks
+  -- the entity deleted; it KEEPS its data, so a caller can still read
+  -- what was removed. See AGENTS.md "Entity operations return ENTITIES".
+  local opname = ctx.op ~= nil and ctx.op.name or nil
+
+  if ctx.result ~= nil and ctx.result.ok and opname ~= "list" then
+    if opname == "remove" then
+      self:mark_deleted()
+    end
+    return self, nil
+  end
+
+  return out, nil
 end
 
 

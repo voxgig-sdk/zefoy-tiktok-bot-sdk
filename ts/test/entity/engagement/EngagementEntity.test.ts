@@ -26,8 +26,8 @@ import {
 describe('EngagementEntity', async () => {
 
   // Per-test live pacing. Delay is read from sdk-test-control.json's
-  // `test.live.delayMs`; only sleeps when ZEFOYTIKTOKBOT_TEST_LIVE=TRUE.
-  afterEach(liveDelay('ZEFOYTIKTOKBOT_TEST_LIVE'))
+  // `test.live.delayMs`; only sleeps when ZEFOY_TIKTOK_BOT_TEST_LIVE=TRUE.
+  afterEach(liveDelay('ZEFOY_TIKTOK_BOT_TEST_LIVE'))
 
   test('instance', async () => {
     const testsdk = ZefoyTiktokBotSDK.test()
@@ -62,7 +62,7 @@ describe('EngagementEntity', async () => {
     const engagement_ref01_ent = client.Engagement()
     let engagement_ref01_data = setup.data.new.engagement['engagement_ref01']
 
-    engagement_ref01_data = await engagement_ref01_ent.create(engagement_ref01_data)
+    engagement_ref01_data = (await engagement_ref01_ent.create(engagement_ref01_data)).data()
     assert(null != engagement_ref01_data)
 
 

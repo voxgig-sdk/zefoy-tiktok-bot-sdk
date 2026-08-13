@@ -94,7 +94,7 @@ $engagement = $client->Engagement();
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `amount` | `int` | No |  |
-| `estimated_time` | `int` | No |  |
+| `estimatedTime` | `int` | No |  |
 | `message` | `string` | No |  |
 | `status` | `string` | No |  |
 | `success` | `bool` | No |  |
@@ -106,7 +106,7 @@ $engagement = $client->Engagement();
 | Field | create |
 | --- | --- |
 | `amount` | - |
-| `estimated_time` | - |
+| `estimatedTime` | - |
 | `message` | - |
 | `status` | - |
 | `success` | - |

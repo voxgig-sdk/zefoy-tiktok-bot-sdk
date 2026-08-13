@@ -1,2 +1,31 @@
 
-basic: set: []
+# preparePath: join ctx.point.parts with '/', dropping empty segments.
+#
+# Path templating is the highest-risk request-shaping step, and this fixture
+# was an empty `set: []` — so every language "passed" it while running zero
+# cases. The cases below were lifted from the per-language hand-written tests
+# (go/py) that had drifted out of the shared corpus, plus the empty/blank
+# segment edges that `join(..., true)` is specifically responsible for.
+
+basic: set: [
+  # Multi-segment path, placeholder left intact (params are substituted later,
+  # by makeUrl — preparePath only assembles the template).
+  { mark:10, ctx: {point:{parts:[api,planet,'{id}'],args:{params:[]}}}, out: 'api/planet/{id}' }
+
+  # Single segment: no separator introduced.
+  { mark:20, ctx: {point:{parts:[items],args:{params:[]}}}, out: 'items' }
+
+  # No parts at all -> empty path (an entity mounted at the prefix root).
+  { mark:30, ctx: {point:{parts:[],args:{params:[]}}}, out: '' }
+
+  # Empty segments are DROPPED, not rendered as '//' — a doubled slash changes
+  # the request URL and 404s on strict routers.
+  { mark:40, ctx: {point:{parts:[a,'',b],args:{params:[]}}}, out: 'a/b' }
+
+  # Leading/trailing blanks likewise collapse.
+  { mark:50, ctx: {point:{parts:['',a,''],args:{params:[]}}}, out: 'a' }
+
+  # Several placeholders in one path.
+  { mark:60, ctx: {point:{parts:[api,'{a}',sub,'{b}'],args:{params:[]}}},
+    out: 'api/{a}/sub/{b}' }
+]

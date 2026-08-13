@@ -8,6 +8,8 @@ local helpers = require("core.helpers")
 -- Load utility registration (populates Utility._registrar)
 require("utility.register")
 
+-- #TypesRequire
+
 -- Load features
 local BaseFeature = require("feature.base_feature")
 local features_factory = require("features")
@@ -177,7 +179,41 @@ function ProjectNameSDK:prepare(fetchargs)
 end
 
 
+-- Raw endpoint access is operator-controllable, like every entity op.
+-- Blocking it means denying BOTH the 'direct' and 'graphql' tokens, since
+-- either one reaches the same endpoint.
 function ProjectNameSDK:direct(fetchargs)
+  if not self:_op_allowed("direct") then
+    return self:_op_denied("direct"), nil
+  end
+
+  return self:_raw_request(fetchargs)
+end
+
+
+-- Is this raw-access op permitted by the SDK's allow.op option?
+function ProjectNameSDK:_op_allowed(op)
+  local allow = vs.getpath(self.options, "allow.op")
+  return type(allow) == "string" and allow:find(op, 1, true) ~= nil
+end
+
+
+function ProjectNameSDK:_op_denied(op)
+  local allow = vs.getpath(self.options, "allow.op")
+  if type(allow) ~= "string" then allow = "" end
+  return {
+    ok = false,
+    err = "ProjectNameSDK: " .. op .. ": operation not allowed by" ..
+      " SDK option allow.op value: \"" .. allow .. "\"",
+  }
+end
+
+
+-- Ungated request path shared by direct and graphql, each of which checks its
+-- own allow.op token first. Private, rather than a flag on fetchargs: a
+-- caller-supplied marker would let anyone opt straight back out of the gate
+-- by passing it.
+function ProjectNameSDK:_raw_request(fetchargs)
   local utility = self._utility
 
   local fetchdef, err = self:prepare(fetchargs)
@@ -243,6 +279,57 @@ function ProjectNameSDK:direct(fetchargs)
     ok = false,
     err = ctx:make_error("direct_invalid", "invalid response type"),
   }, nil
+end
+
+
+-- Raw GraphQL access: the pressure valve that makes the generated surface's
+-- deliberate omissions (per-call selection sets, typed filter builders,
+-- batching, subscriptions) livable — the whole schema stays reachable.
+--
+-- Thin wrapper over the same prepare/fetch path direct uses, with the one
+-- thing raw direct cannot do for GraphQL: a GraphQL failure rides HTTP 200 as
+-- a top-level `errors` array, so status alone would report a failed query as
+-- ok.
+--
+-- NOTE: like direct, this bypasses the feature pipeline — no retry, ratelimit
+-- or paging features apply.
+function ProjectNameSDK:graphql(query, variables, ctrl)
+  if not self:_op_allowed("graphql") then
+    return self:_op_denied("graphql"), nil
+  end
+
+  local res, err = self:_raw_request({
+    method = "POST",
+    headers = { ["content-type"] = "application/json" },
+    body = {
+      query = query,
+      variables = type(variables) == "table" and variables or {},
+    },
+    ctrl = type(ctrl) == "table" and ctrl or {},
+  })
+
+  if err ~= nil or type(res) ~= "table" then
+    return res, err
+  end
+
+  -- Errors are read BEFORE any status check: a GraphQL parse or validation
+  -- failure comes back as HTTP 400 carrying the standard { errors = {...} }
+  -- body, and the raw path represents a non-2xx as ok=false with no err — so
+  -- returning early on status would discard the server's own diagnostics,
+  -- which are the only useful part of that response.
+  local errors = vs.getpath(res, "data.errors")
+
+  if type(errors) == "table" and 0 < #errors then
+    local msg = vs.getprop(errors[1], "message")
+    if type(msg) ~= "string" or msg == "" then
+      msg = "graphql error"
+    end
+    res.ok = false
+    res.err = "ProjectNameSDK: graphql: " .. msg
+    res.graphql = errors
+  end
+
+  return res, nil
 end
 
 

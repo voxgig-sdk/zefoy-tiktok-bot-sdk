@@ -118,7 +118,7 @@ const engagement = client.Engagement()
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `amount` | `number` | No |  |
-| `estimated_time` | `number` | No |  |
+| `estimatedTime` | `number` | No |  |
 | `message` | `string` | No |  |
 | `status` | `string` | No |  |
 | `success` | `boolean` | No |  |
@@ -130,7 +130,7 @@ const engagement = client.Engagement()
 | Field | create |
 | --- | --- |
 | `amount` | - |
-| `estimated_time` | - |
+| `estimatedTime` | - |
 | `message` | - |
 | `status` | - |
 | `success` | - |

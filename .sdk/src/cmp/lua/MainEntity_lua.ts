@@ -1,11 +1,16 @@
 
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, entityCacheField } from '@voxgig/sdkgen'
 
 
 const MainEntity = cmp(async function MainEntity(props: any) {
   const { entity } = props
   const { model } = props.ctx$
+  // The cache slot must not alias one of the SDK's own fields: an entity
+  // named `utility` made client:Utility() hand back self._utility, the SDK's
+  // internal utility object, whose :load() is nil.
+  const field = entityCacheField(entity.name)
+
 
   Content(`
 -- Idiomatic facade: client:${entity.Name}():list() / client:${entity.Name}():load({ id = ... })
@@ -13,10 +18,10 @@ const MainEntity = cmp(async function MainEntity(props: any) {
 function ${model.const.Name}SDK:${entity.Name}(data)
   local EntityMod = require("entity.${entity.name}_entity")
   if data == nil then
-    if self._${entity.name} == nil then
-      self._${entity.name} = EntityMod.new(self, nil)
+    if self._${field} == nil then
+      self._${field} = EntityMod.new(self, nil)
     end
-    return self._${entity.name}
+    return self._${field}
   end
   return EntityMod.new(self, data)
 end

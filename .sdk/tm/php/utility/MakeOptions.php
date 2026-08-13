@@ -80,7 +80,7 @@ class ZefoyTiktokBotMakeOptions
             'headers' => ['`$CHILD`' => '`$STRING`'],
             'allow' => [
                 'method' => 'GET,PUT,POST,PATCH,DELETE,OPTIONS',
-                'op' => 'create,update,load,list,remove,command,direct',
+                'op' => 'create,update,load,list,remove,command,direct,graphql',
             ],
             'entity' => ['`$CHILD`' => ['`$OPEN`' => true, 'active' => false, 'alias' => (object)[]]],
             'feature' => ['`$CHILD`' => ['`$OPEN`' => true, 'active' => false]],
@@ -88,6 +88,11 @@ class ZefoyTiktokBotMakeOptions
             'system' => (object)[],
             'test' => ['active' => false, 'entity' => ['`$OPEN`' => true]],
             'clean' => ['keys' => 'key,token,id'],
+            // Server-variable values for a templated base URL (OpenAPI server
+            // variables): {name} placeholders in 'base' are substituted from
+            // this map at construction. Spec defaults arrive via the generated
+            // config; user values override them.
+            'server' => ['`$CHILD`' => ''],
         ];
 
         // Empty [] would be treated as a list and clobber the map under merge;
@@ -99,6 +104,45 @@ class ZefoyTiktokBotMakeOptions
         $opts = self::to_array_deep($validated);
         if (!is_array($opts)) {
             $opts = [];
+        }
+
+        // Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
+        // Every placeholder must resolve to a non-empty value: from
+        // $options['server'] (user), else the config default. A placeholder
+        // that resolves to '' is a construction ERROR in live mode — the URL
+        // cannot work — but in test mode substitutes the deterministic value
+        // "test-<name>" so offline tests need no configuration.
+        $base = $opts['base'] ?? null;
+        if (is_string($base) && strpos($base, '{') !== false) {
+            $testmode =
+                \Voxgig\Struct\Struct::getpath($opts, 'test.active') === true
+                || \Voxgig\Struct\Struct::getpath($opts, 'feature.test.active') === true;
+            $server = is_array($opts['server'] ?? null) ? $opts['server'] : [];
+            $sdkname = \Voxgig\Struct\Struct::getpath($config, 'main.name');
+            if (!is_string($sdkname) || $sdkname === '') {
+                $sdkname = 'SDK';
+            }
+            $opts['base'] = preg_replace_callback(
+                '/\{([A-Za-z0-9_]+)\}/',
+                function ($m) use ($server, $testmode, $sdkname, $base) {
+                    $name = $m[1];
+                    $val = $server[$name] ?? '';
+                    if (!is_string($val)) {
+                        $val = '';
+                    }
+                    if ($val === '') {
+                        if ($testmode) {
+                            return 'test-' . $name;
+                        }
+                        throw new \InvalidArgumentException(
+                            $sdkname . ": the server variable '" . $name . "' is required: " .
+                            "the API base URL is '" . $base . "' — pass " .
+                            "['server' => ['" . $name . "' => '...']] in the SDK options");
+                    }
+                    return $val;
+                },
+                $base
+            );
         }
 
         if ($sys_fetch) {

@@ -26,6 +26,7 @@ local prepare_method = require("utility.prepare_method")
 local prepare_params = require("utility.prepare_params")
 local prepare_path = require("utility.prepare_path")
 local prepare_query = require("utility.prepare_query")
+local graphql = require("utility.graphql")
 local result_basic = require("utility.result_basic")
 local result_body = require("utility.result_body")
 local result_headers = require("utility.result_headers")
@@ -58,6 +59,8 @@ local function register_all(u)
   u.prepare_params = prepare_params
   u.prepare_path = prepare_path
   u.prepare_query = prepare_query
+  u.graphql_body = graphql.body
+  u.graphql_errors = graphql.errors
   u.result_basic = result_basic
   u.result_body = result_body
   u.result_headers = result_headers

@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName, exampleVarName, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -19,6 +19,17 @@ function pyLit(type: any, placeholder: string = 'example'): string {
   if ('ARRAY' === k) return '[]'
   if ('OBJECT' === k) return '{}'
   return `"${placeholder}"`
+}
+
+
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('py', ent, 'list', idF, idLiteral(ent, 'list', idF))
 }
 
 
@@ -46,7 +57,7 @@ client = ${ctor}
     const eName = nom(exampleEntity, 'Name')
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Python keyword (e.g. `class`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'py')
+    const eVar = exampleVarName(eName.toLowerCase(), 'py')
     const opnames = Object.keys(exampleEntity.op || {})
     // Model-driven id key: null when the entity has no id-like field, in which
     // case the load example takes no match argument.
@@ -56,7 +67,7 @@ client = ${ctor}
 
     if (opnames.includes('list')) {
       Content(`# List all ${eName.toLowerCase()}s (returns a list, raises on error)
-${eVar}s = client.${eName}().list()
+${eVar}s = client.${eName}().list(${listMatchArg(exampleEntity)})
 for ${eVar} in ${eVar}s:
     print(${eVar})
 `)

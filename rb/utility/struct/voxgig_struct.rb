@@ -1834,7 +1834,7 @@ module VoxgigStruct
       pkeys = keysof(pval)
 
       if pkeys.length > 0 && getprop(pval, '`$OPEN`') != true
-        badkeys = ckeys.select { |ck| !haskey(pval, ck) }
+        badkeys = ckeys.select { |ck| !(pval.is_a?(Hash) && pval.key?(strkey(ck))) }
         if badkeys.length > 0
           inj.errs << ('Unexpected keys at field ' + pathify(inj.path, 1) + S_VIZ + join(badkeys, ', '))
         end

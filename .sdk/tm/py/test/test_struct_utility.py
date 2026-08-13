@@ -13,8 +13,8 @@ from test.struct_runner import (
     StructTestClient,
 )
 
-from utility.voxgig_struct import voxgig_struct as vs
-from utility.voxgig_struct.voxgig_struct import (
+from projectname_sdk.utility.voxgig_struct import voxgig_struct as vs
+from projectname_sdk.utility.voxgig_struct.voxgig_struct import (
     T_noval, T_scalar, T_function, T_symbol, T_any, T_node, T_instance, T_null,
 )
 
@@ -308,7 +308,7 @@ class TestStructUtility(unittest.TestCase):
 
 
     def test_minor_joinurl(self):
-        from utility.voxgig_struct.voxgig_struct import join as struct_join
+        from projectname_sdk.utility.voxgig_struct.voxgig_struct import join as struct_join
         runsetflags(minorSpec["join"], {"null": False},
             lambda vin: struct_join(vin.get("val"), vin.get("sep"), vin.get("url")))
 

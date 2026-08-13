@@ -587,6 +587,10 @@ class PrimaryUtilityTest extends TestCase
     {
         $calls = [];
         $live_client = new ZefoyTiktokBotSDK([
+            // Concrete base: a live construction must satisfy any server
+            // variables a templated base URL declares; a literal base
+            // sidesteps the requirement.
+            'base' => 'http://localhost:8080',
             'system' => [
                 'fetch' => function (string $url, array $fetchdef) use (&$calls) {
                     $calls[] = ['url' => $url, 'init' => $fetchdef];
@@ -614,6 +618,7 @@ class PrimaryUtilityTest extends TestCase
     public function test_fetcher_blocked_test_mode(): void
     {
         $blocked_client = new ZefoyTiktokBotSDK([
+            'base' => 'http://localhost:8080',
             'system' => [
                 'fetch' => function (string $url, array $fetchdef) {
                     return [[], null];
@@ -1136,16 +1141,18 @@ class PrimaryUtilityTest extends TestCase
 
     public function test_prepare_path_basic(): void
     {
+        // Was hand-written cases that had drifted out of the shared corpus
+        // (the preparePath fixture shipped as an empty `set: []`).
+        $spec = self::load_test_spec();
+        $primary = self::get_spec($spec, 'primary');
         $client = ZefoyTiktokBotSDK::test(null, null);
         $utility = $client->get_utility();
-        $ctx = self::make_test_full_ctx($client, $utility);
-        $ctx->point = [
-            'parts' => ['api', 'planet', '{id}'],
-            'args' => ['params' => []],
-        ];
 
-        $path = ($utility->prepare_path)($ctx);
-        $this->assertEquals('api/planet/{id}', $path);
+        $this->runset(self::get_spec($primary, 'preparePath', 'basic'), function (array $entry) use ($client, $utility) {
+            $ctxmap = $entry['ctx'] ?? [];
+            $ctx = self::make_ctx_from_map($ctxmap, $client, $utility);
+            return [($utility->prepare_path)($ctx), null];
+        });
     }
 
 

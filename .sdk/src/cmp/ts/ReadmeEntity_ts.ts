@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, entityIdField, opRequestShape, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -12,6 +12,17 @@ import { exampleValue } from './utility_ts'
 // Operation method spelling differs between Go and other languages — Go
 // uses PascalCase methods with explicit ctrl arg, others use lowercase
 // methods with optional ctrl. The op descriptions are language-agnostic.
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('ts', ent, 'list', idF, idLiteral(ent, 'list', idF))
+}
+
+
 const OP_DESC: Record<string, { method: string, desc: string }> = {
   load:   { method: 'load(match)',   desc: 'Load a single entity by match criteria.' },
   list:   { method: 'list(match)',   desc: 'List entities matching the criteria.' },
@@ -46,7 +57,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     // Model-driven id key: null when this entity has no id-like field.
     const idF = entityIdField(entity)
     // Variable-safe lowercase name (a `Delete` entity must not bind `delete`).
-    const eVar = safeVarName(entity.name, target.name)
+    const eVar = exampleVarName(entity.name, target.name)
 
     Content(`
 ### ${entity.Name}
@@ -108,7 +119,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
           (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
       const loadArg = 0 < loadItems.length
         ? `{ ${loadItems.map((it: any) =>
-          `${it.name}: ${exampleValue(entity, entity.op && entity.op.load, it.name,
+          `${jsKey(it.name)}: ${exampleValue(entity, entity.op && entity.op.load, it.name,
             it.name === idF ? entity.name + '_id' : it.name)}`).join(', ')} }`
         : ''
       Content(`#### Example: Load
@@ -124,7 +135,7 @@ const ${eVar} = await client.${entity.Name}().load(${loadArg})
       Content(`#### Example: List
 
 \`\`\`ts
-const ${eVar}s = await client.${entity.Name}().list()
+const ${eVar}s = await client.${entity.Name}().list(${listMatchArg(entity)})
 \`\`\`
 
 `)
@@ -143,7 +154,7 @@ const ${eVar}s = await client.${entity.Name}().list()
 const ${eVar} = await client.${entity.Name}().create({
 `)
       createItems.map((it: any) => {
-        Content(`  ${it.name}: ${exampleValue(entity, entity.op && entity.op.create, it.name, 'example_' + it.name)},
+        Content(`  ${jsKey(it.name)}: ${exampleValue(entity, entity.op && entity.op.create, it.name, 'example_' + it.name)},
 `)
       })
       Content(`})

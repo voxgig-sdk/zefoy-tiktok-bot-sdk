@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -30,14 +30,19 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
   // Sanitise the local variable name — an entity whose lowercased name is a
   // Python keyword (e.g. `class`) would otherwise emit uncompilable code.
-  const eVar = safeVarName(eName.toLowerCase(), 'py')
+  const eVar = exampleVarName(eName.toLowerCase(), 'py')
   // Model-driven id key: null when the entity has no id-like field, so a
   // match op takes no argument.
   const idF = exampleEntity ? entityIdField(exampleEntity) : null
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
   let testArg = ''
   if (exampleEntity && isMatchOp) {
-    testArg = idF ? `{"${idF}": "test01"}` : ''
+    const items = opRequestShape(exampleEntity, primaryOp).items
+      .filter((it: any) => !it.optional || it.name === idF)
+      .sort((a: any, b: any) => (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+    testArg = 0 < items.length
+      ? `{${items.map((it: any) => `"${it.name}": ${it.name === idF ? '"test01"' : pyLit(it.type)}`).join(', ')}}`
+      : ''
   } else if (exampleEntity && ('create' === primaryOp || 'update' === primaryOp)) {
     const items = opRequestShape(exampleEntity, primaryOp).items
       .filter((it: any) => it.name !== idF && it.name !== 'id')
@@ -49,7 +54,8 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // The op-driven test-mode line, shown only when the SDK has an entity op.
   // A direct()-only SDK (no ops anywhere) shows a direct() call instead.
   const testModeExample = primaryOp
-    ? `# Entity ops return the bare record and raise on error.
+    ? `# Entity ops return the ENTITY and raises on error;
+# call data_get() for the record.
 ${eVar} = client.${eName}().${primaryOp}(${testArg})
 # ${eVar} contains the mock response record`
     : `result = client.direct({"path": "/api/resource", "method": "GET"})

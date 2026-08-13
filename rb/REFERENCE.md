@@ -95,7 +95,7 @@ engagement = client.Engagement
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `amount` | `Integer` | No |  |
-| `estimated_time` | `Integer` | No |  |
+| `estimatedTime` | `Integer` | No |  |
 | `message` | `String` | No |  |
 | `status` | `String` | No |  |
 | `success` | `Boolean` | No |  |
@@ -107,7 +107,7 @@ engagement = client.Engagement
 | Field | create |
 | --- | --- |
 | `amount` | - |
-| `estimated_time` | - |
+| `estimatedTime` | - |
 | `message` | - |
 | `status` | - |
 | `success` | - |

@@ -40,9 +40,18 @@ network, and no credentials:
 ### TypeScript
 
 ```ts
-const client = ZefoyTiktokBotSDK.test()
+// The offline mock starts EMPTY — seed it with the records the test needs.
+// Shape: { entity: { <entity-name>: { <id>: <record> } } }
+const client = ZefoyTiktokBotSDK.test({
+  entity: {
+    engagement: {
+      test01: { id: 'test01', url: 'example_url' },
+    },
+  },
+})
 const engagement = await client.Engagement().create({ url: 'example_url' })
-// engagement is a bare Engagement populated with mock data
+// engagement is the Engagement entity, populated with mock data
+// — call engagement.data() for the record itself
 console.log(engagement)
 ```
 
@@ -334,6 +343,9 @@ Pass custom features via the `extend` option at construction time.
 
 This SDK is generated from the upstream OpenAPI specification. It is an
 unofficial client and is not affiliated with the API provider.
+
+The OpenAPI spec(s) this SDK was generated from are kept in the
+[`.sdk/def/`](.sdk/def/) folder.
 
 - Upstream API: [https://github.com/xtekky/zefoy](https://github.com/xtekky/zefoy)
 

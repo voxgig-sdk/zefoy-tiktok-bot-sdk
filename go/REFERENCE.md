@@ -100,7 +100,7 @@ fmt.Println(engagement.GetName()) // "engagement"
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
 | `amount` | `int` | No |  |
-| `estimated_time` | `int` | No |  |
+| `estimatedTime` | `int` | No |  |
 | `message` | `string` | No |  |
 | `status` | `string` | No |  |
 | `success` | `bool` | No |  |
@@ -112,7 +112,7 @@ fmt.Println(engagement.GetName()) // "engagement"
 | Field | create |
 | --- | --- |
 | `amount` | - |
-| `estimated_time` | - |
+| `estimatedTime` | - |
 | `message` | - |
 | `status` | - |
 | `success` | - |

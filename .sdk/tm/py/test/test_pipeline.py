@@ -16,11 +16,11 @@
 import pytest
 
 from projectname_sdk import ZefoyTiktokBotSDK
-from core.error import ZefoyTiktokBotError
-from core.result import ZefoyTiktokBotResult
-from core.response import ZefoyTiktokBotResponse
-from core.spec import ZefoyTiktokBotSpec
-from feature.base_feature import ZefoyTiktokBotBaseFeature
+from projectname_sdk.core.error import ZefoyTiktokBotError
+from projectname_sdk.core.result import ZefoyTiktokBotResult
+from projectname_sdk.core.response import ZefoyTiktokBotResponse
+from projectname_sdk.core.spec import ZefoyTiktokBotSpec
+from projectname_sdk.feature.base_feature import ZefoyTiktokBotBaseFeature
 
 
 def _client():

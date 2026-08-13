@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -58,7 +58,7 @@ client = ${model.const.Name}SDK.test()
     // A list() result is a list — name the variable accordingly (the root
     // README doc gate concatenates blocks, so reusing the singular name for
     // a different type is a mypy assignment error).
-    const eVar = safeVarName(eName.toLowerCase(), 'py') + ('list' === primaryOp ? 's' : '')
+    const eVar = exampleVarName(eName.toLowerCase(), 'py') + ('list' === primaryOp ? 's' : '')
     Content(`${eVar} = client.${eName}().${primaryOp}(${arg})
 print(${eVar})
 `)

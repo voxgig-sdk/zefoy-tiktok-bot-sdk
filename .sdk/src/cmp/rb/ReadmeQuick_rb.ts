@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -45,7 +45,7 @@ client = ${ctor}
     const article = /^[aeiou]/i.test(eName) ? "an" : "a"
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Ruby keyword (e.g. `self`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'rb')
+    const eVar = exampleVarName(eName.toLowerCase(), 'rb')
     const opnames = entityOps(exampleEntity)
     // Model-driven id keys: `idF` is the load-MATCH key (null when the entity
     // has no id-like field — a response-wrapped spec); when null, load/remove
@@ -102,7 +102,7 @@ end
     if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
       const neArticle = /^[aeiou]/i.test(neName) ? "an" : "a"
-      const neVar = safeVarName(neName.toLowerCase(), 'rb')
+      const neVar = exampleVarName(neName.toLowerCase(), 'rb')
 
       // Model-driven match: every REQUIRED load-match key — the same shape
       // the runtime resolves path params from, so the example always works.
@@ -125,7 +125,7 @@ ${neName} is nested under ${parentName}, so provide the \`${parentParam}\`.
 
 \`\`\`ruby
 begin
-  # load returns the bare ${neName} record (raises on error).
+  # load returns the ENTITY — call data_get for the ${neName} record (raises on error).
   ${neVar} = client.${neName}.load({ ${neMatch.join(', ')} })
   puts ${neVar}
 rescue => err
@@ -153,7 +153,7 @@ end
 
 \`\`\`ruby
 begin
-  # load returns the bare ${eName} record (raises on error).
+  # load returns the ENTITY — call data_get for the ${eName} record (raises on error).
   ${eVar} = client.${eName}.load(${loadArg})
   puts ${eVar}
 rescue => err
@@ -193,7 +193,7 @@ end
       return it && it.type
     }
     const idValueFor = (opname: string): string => (null != dataIdF && opnames.includes('create'))
-      ? `created["${dataIdF}"]`
+      ? `created.data_get["${dataIdF}"]`
       : rbLit(idParamType(opname), 'example_id')
 
     if (opnames.includes('create') || opnames.includes('update') || opnames.includes('remove')) {
@@ -202,7 +202,7 @@ end
 \`\`\`ruby
 `)
       if (opnames.includes('create')) {
-        Content(`# create returns the bare created ${eName} record.
+        Content(`# create returns the ENTITY — call data_get for the created ${eName} record.
 created = client.${eName}.create({ ${examplePairs('create').join(', ')} })
 
 `)
@@ -210,7 +210,7 @@ created = client.${eName}.create({ ${examplePairs('create').join(', ')} })
       if (opnames.includes('update')) {
         const updatePairs = (idF ? [`"${idF}" => ${idValueFor('update')}`] : []).concat(examplePairs('update'))
         const fromCreated = null != dataIdF && opnames.includes('create')
-        Content(`# Update${fromCreated ? ` — index the bare record directly (created["${dataIdF}"]).` : ''}
+        Content(`# Update${fromCreated ? ` — index the record via data_get (created.data_get["${dataIdF}"]).` : ''}
 client.${eName}.update({ ${updatePairs.join(', ')} })
 
 `)

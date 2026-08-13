@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -59,7 +59,7 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
     // base name — an entity whose lowercased name is a Ruby keyword (e.g.
     // `self`) would otherwise emit uncompilable code. The fixture KEY (`ename`)
     // stays raw so the mock lookup resolves.
-    const eVar = safeVarName(ename, 'rb') + ('list' === primaryOp ? 's' : '')
+    const eVar = exampleVarName(ename, 'rb') + ('list' === primaryOp ? 's' : '')
     Content(`\`\`\`ruby
 # Seed fixture data so offline calls resolve without a live server.
 client = ${model.const.Name}SDK.test({

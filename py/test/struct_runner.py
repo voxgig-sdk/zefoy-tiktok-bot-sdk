@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any, Dict, List, Callable, TypedDict, Optional, Union
 
-from utility.voxgig_struct import voxgig_struct as vs
+from zefoytiktokbot_sdk.utility.voxgig_struct import voxgig_struct as vs
 
 
 NULLMARK = '__NULL__'  # Value is JSON null

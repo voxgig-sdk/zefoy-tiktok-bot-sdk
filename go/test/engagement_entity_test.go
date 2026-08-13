@@ -44,7 +44,7 @@ func TestEngagementEntity(t *testing.T) {
 		// The basic flow consumes synthetic IDs from the fixture. In live mode
 		// without an *_ENTID env override, those IDs hit the live API and 4xx.
 		if setup.syntheticOnly {
-			t.Skip("live entity test uses synthetic IDs from fixture — set ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID JSON to run live")
+			t.Skip("live entity test uses synthetic IDs from fixture — set ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID JSON to run live")
 			return
 		}
 		client := setup.client
@@ -58,7 +58,7 @@ func TestEngagementEntity(t *testing.T) {
 		if err != nil {
 			t.Fatalf("create failed: %v", err)
 		}
-		engagementRef01Data = core.ToMapAny(engagementRef01DataResult)
+		engagementRef01Data = core.ToMapAny(entityData(engagementRef01DataResult))
 		if engagementRef01Data == nil {
 			t.Fatal("expected create result to be a map")
 		}
@@ -103,38 +103,38 @@ func engagementBasicSetup(extra map[string]any) *entityTestSetup {
 	// Detect ENTID env override before envOverride consumes it. When live
 	// mode is on without a real override, the basic test runs against synthetic
 	// IDs from the fixture and 4xx's. Surface this so the test can skip.
-	entidEnvRaw := os.Getenv("ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID")
+	entidEnvRaw := os.Getenv("ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID")
 	idmapOverridden := entidEnvRaw != "" && strings.HasPrefix(strings.TrimSpace(entidEnvRaw), "{")
 
 	env := envOverride(map[string]any{
-		"ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID": idmap,
-		"ZEFOYTIKTOKBOT_TEST_LIVE":      "FALSE",
-		"ZEFOYTIKTOKBOT_TEST_EXPLAIN":   "FALSE",
-		"ZEFOYTIKTOKBOT_APIKEY":         "NONE",
+		"ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID": idmap,
+		"ZEFOY_TIKTOK_BOT_TEST_LIVE":      "FALSE",
+		"ZEFOY_TIKTOK_BOT_TEST_EXPLAIN":   "FALSE",
+		"ZEFOY_TIKTOK_BOT_APIKEY":         "NONE",
 	})
 
-	idmapResolved := core.ToMapAny(env["ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID"])
+	idmapResolved := core.ToMapAny(env["ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID"])
 	if idmapResolved == nil {
 		idmapResolved = core.ToMapAny(idmap)
 	}
 
-	if env["ZEFOYTIKTOKBOT_TEST_LIVE"] == "TRUE" {
+	if env["ZEFOY_TIKTOK_BOT_TEST_LIVE"] == "TRUE" {
 		mergedOpts := vs.Merge([]any{
 			map[string]any{
-				"apikey": env["ZEFOYTIKTOKBOT_APIKEY"],
+				"apikey": env["ZEFOY_TIKTOK_BOT_APIKEY"],
 			},
 			extra,
 		})
 		client = sdk.NewZefoyTiktokBotSDK(core.ToMapAny(mergedOpts))
 	}
 
-	live := env["ZEFOYTIKTOKBOT_TEST_LIVE"] == "TRUE"
+	live := env["ZEFOY_TIKTOK_BOT_TEST_LIVE"] == "TRUE"
 	return &entityTestSetup{
 		client:        client,
 		data:          entityData,
 		idmap:         idmapResolved,
 		env:           env,
-		explain:       env["ZEFOYTIKTOKBOT_TEST_EXPLAIN"] == "TRUE",
+		explain:       env["ZEFOY_TIKTOK_BOT_TEST_EXPLAIN"] == "TRUE",
 		live:          live,
 		syntheticOnly: live && !idmapOverridden,
 		now:           time.Now().UnixMilli(),

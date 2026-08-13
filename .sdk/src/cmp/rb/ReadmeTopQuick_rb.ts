@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -45,7 +45,7 @@ client = ${ctor}
     const eName = nom(exampleEntity, 'Name')
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Ruby keyword (e.g. `self`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'rb')
+    const eVar = exampleVarName(eName.toLowerCase(), 'rb')
     const opnames = Object.keys(exampleEntity.op || {})
     // Model-driven id key: null when the entity has no id-like field, in which
     // case the load example takes no match argument.
@@ -75,7 +75,7 @@ puts ${eVar}s
             it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')} }`
         : ''
       Content(`
-# Load a specific ${eName.toLowerCase()} (returns the bare record; raises on error)
+# Load a specific ${eName.toLowerCase()} (returns the ENTITY; call data_get for the record)
 ${eVar} = client.${eName}.load(${loadArg})
 puts ${eVar}
 `)

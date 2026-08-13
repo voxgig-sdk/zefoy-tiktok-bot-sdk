@@ -31,6 +31,8 @@ func registerAll(u *core.Utility) {
 	u.PrepareParams = prepareParamsUtil
 	u.PreparePath = preparePathUtil
 	u.PrepareQuery = prepareQueryUtil
+	u.GraphqlBody = graphqlBodyUtil
+	u.GraphqlErrors = graphqlErrorsUtil
 	u.ResultBasic = resultBasicUtil
 	u.ResultBody = resultBodyUtil
 	u.ResultHeaders = resultHeadersUtil

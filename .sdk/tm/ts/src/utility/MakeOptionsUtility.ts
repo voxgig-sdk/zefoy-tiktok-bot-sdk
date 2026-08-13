@@ -55,7 +55,7 @@ function makeOptions(ctx: Context) {
     },
     allow: {
       method: 'GET,PUT,POST,PATCH,DELETE,OPTIONS',
-      op: 'create,update,load,list,remove,command,direct'
+      op: 'create,update,load,list,remove,command,direct,graphql'
     },
     entity: {
       '`$CHILD`': {
@@ -82,15 +82,53 @@ function makeOptions(ctx: Context) {
     },
     clean: {
       keys: 'key,token,id'
+    },
+    // Server-variable values for a templated base URL (OpenAPI server
+    // variables): `{name}` placeholders in `base` are substituted from
+    // this map at construction. Spec defaults arrive via the generated
+    // Config; user values override them.
+    server: {
+      '`$CHILD`': ''
     }
   }
 
   // JavaScript specific option values.
   optspec.system.fetch = opts.system?.fetch || global.fetch
 
-  opts = merge([{}, cfgopts, opts])
+  // Clone the config side before merging: `config` is a module-level
+  // singleton in ts/js, and merge would otherwise use its nested maps as
+  // merge TARGETS — one instance's options (server, headers, ...) would
+  // contaminate every instance constructed after it.
+  opts = merge([{}, struct.clone(cfgopts), opts])
 
   opts = validate(opts, optspec)
+
+  // Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
+  // Every placeholder must resolve to a non-empty value: from
+  // options.server (user), else the Config default. A placeholder that
+  // resolves to '' is a construction ERROR in live mode — the URL cannot
+  // work — but in test mode substitutes the deterministic value
+  // `test-<name>` so offline tests need no configuration.
+  if ('string' === typeof opts.base && opts.base.includes('{')) {
+    const testmode = true === opts.test.active ||
+      true === (opts.feature && opts.feature.test && opts.feature.test.active)
+    const server = opts.server || {}
+    opts.base = opts.base.replace(/\{([A-Za-z0-9_]+)\}/g,
+      (_m: string, name: string) => {
+        let val = server[name]
+        val = 'string' === typeof val ? val : ''
+        if ('' === val) {
+          if (testmode) {
+            return 'test-' + name
+          }
+          throw new Error(
+            `${config?.main?.name || 'SDK'}: the server variable '${name}' is required: ` +
+            `the API base URL is '${opts.base}' — pass { server: { ${name}: '...' } } ` +
+            `in the SDK options`)
+        }
+        return val
+      })
+  }
 
   // Resolve the feature add-order: an explicit array order (above) wins;
   // otherwise order the map test-first, then the remaining names sorted, so

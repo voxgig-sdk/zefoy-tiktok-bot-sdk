@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, entityIdField, opRequestShape, safeVarName, exampleVarName, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -25,6 +25,17 @@ function pyLit(type: any, placeholder: string = 'example'): string {
 // Operation method spelling differs between Go and other languages — Go
 // uses PascalCase methods with explicit ctrl arg, others use lowercase
 // methods with optional ctrl. The op descriptions are language-agnostic.
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('py', ent, 'list', idF, idLiteral(ent, 'list', idF))
+}
+
+
 const OP_DESC: Record<string, { method: string, desc: string }> = {
   load:   { method: 'load(match)',   desc: 'Load a single entity by match criteria.' },
   list:   { method: 'list()',        desc: 'List entities, optionally matching the given criteria.' },
@@ -60,7 +71,7 @@ const ReadmeEntity = cmp(function ReadmeEntity(props: any) {
     const idF = entityIdField(entity)
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Python keyword (e.g. `class`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(entity.name, 'py')
+    const eVar = exampleVarName(entity.name, 'py')
 
     Content(`
 ### ${entity.Name}
@@ -138,7 +149,7 @@ ${eVar} = client.${entity.Name}().load(${loadArg})
       Content(`#### Example: List
 
 \`\`\`python
-${eVar}s = client.${entity.Name}().list()
+${eVar}s = client.${entity.Name}().list(${listMatchArg(entity)})
 \`\`\`
 
 `)

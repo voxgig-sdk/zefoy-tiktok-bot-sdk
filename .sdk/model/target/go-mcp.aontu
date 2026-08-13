@@ -37,6 +37,21 @@ main: kit: feature: &: target: 'go-mcp': deps: &: {
 
 # Publication: tag-only — the Go module proxy resolves versions from the
 # go-mcp/vX.Y.Z GitHub tag; there is no package registry to upload to.
+#
+# `target add <t>` OVERWRITES this file, so a project must never set its
+# publication values here — voxgig-solardemo-sdk lost its pinned npm package
+# name exactly that way. Set them in the project's own model
+# (`model/sdk.aontu`), where they survive a resync.
+#
+# For that to work this file must LEAVE THOSE KEYS UNSET: in aontu a concrete
+# value does not yield to another concrete value, it CONFLICTS, and two
+# defaults conflict too. The schema (@voxgig/sdkgen/model/sdkgen.aontu)
+# already defaults `tag.active`, `registry.state`, `registry.active` and
+# `registry.package`, so a project's concrete value wins over the default and
+# repeating them here would only take that away.
+#
+# What remains below is per-target registry IDENTITY, which is not a project
+# choice and stays concrete.
 main: kit: target: 'go-mcp': publish: {
-  tag: { active: true, via: 'root' }
+  tag: { via: 'root' }
 }

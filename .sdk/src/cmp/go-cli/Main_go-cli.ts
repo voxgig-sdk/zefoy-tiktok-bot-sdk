@@ -2,8 +2,8 @@
 import * as Path from 'node:path'
 
 import {
-  cmp, each,
-  File, Content, Fragment, Slot,
+  cmp, each, deriveEntityNames,
+  File, Content, Fragment, Slot, goModule, goVersion
 } from '@voxgig/sdkgen'
 
 import type {
@@ -16,18 +16,32 @@ import {
 } from '@voxgig/apidef'
 
 
-// Published aql/eng/go version. Tagged at aql-lang/aql under
-// eng/go/v<X.Y.Z>. Bump here when adopting a newer engine.
-const AQL_ENG_VERSION = 'v0.0.1'
+// Published boru/eng/go version. The engine module
+// github.com/boru-lang/boru/eng/go is not yet tagged under the boru path (the
+// eng/go/v0.0.1 tag predates the aql->boru rename and still declares the old
+// aql-lang/aql module path), so we pin a commit pseudo-version. Bump here —
+// to a real eng/go/v<X.Y.Z> once one is published, or a newer pseudo-version —
+// when adopting a newer engine.
+const BORU_ENG_VERSION = 'v0.0.2-0.20260804163932-0d66b55c5110'
 
-// go.sum entries for AQL_ENG_VERSION and its transitive deps. The sibling
+// go.sum entries for BORU_ENG_VERSION and its transitive deps. The sibling
 // SDK dep needs no entry (path replace). Deterministic because the version
 // is pinned above — regenerate with `go mod tidy` and update BOTH constants
-// together when bumping AQL_ENG_VERSION.
-const AQL_ENG_GOSUM = `github.com/aql-lang/aql/eng/go v0.0.1 h1:qvopmpIX5xL6cpAC4otSUO7fUDA46x/y+2lT2zoxTaA=
-github.com/aql-lang/aql/eng/go v0.0.1/go.mod h1:7LmNG+pASY2jlPZB0iFAt/ZNdmc8qxvaf+njVmaSFks=
-github.com/jsonicjs/jsonic/go v0.1.6 h1:oUw4vxCK6tqa7SGN87vjCtx3sCpeHXdqfl25hx5LKP0=
-github.com/jsonicjs/jsonic/go v0.1.6/go.mod h1:ObNKlCG7esWoi4AHCpdgkILvPINV8bpvkbCd4llGGUg=
+// together when bumping BORU_ENG_VERSION.
+const BORU_ENG_GOSUM = `github.com/boru-lang/boru/eng/go v0.0.2-0.20260804163932-0d66b55c5110 h1:iwMbEPhByhVhJgt6xhyhT+jXMiARvbG4wHIrc4OPcvU=
+github.com/boru-lang/boru/eng/go v0.0.2-0.20260804163932-0d66b55c5110/go.mod h1:KQLjjCq4QVAfdSuhmQ58ZFA9JK7LV2+A/aLRb3m4s5k=
+github.com/cockroachdb/apd/v3 v3.2.3 h1:4Zx+I3R35bFXMnltzmjP79i2cravE4jTRL6ps9Aux80=
+github.com/cockroachdb/apd/v3 v3.2.3/go.mod h1:klXJcjp+FffLTHlhIG69tezTDvdP065naDsHzKhYSqc=
+github.com/lib/pq v1.10.7 h1:p7ZhMD+KsSRozJr34udlUrhboJwWAgCg34+/ZZNvZZw=
+github.com/lib/pq v1.10.7/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/tabnas/debug/go v0.2.3 h1:cptiwHcHKw+lqtZuKp6gX7yY1NunJLS5PHD7ykVcIvM=
+github.com/tabnas/debug/go v0.2.3/go.mod h1:EXSNFdN6Ct9pcAUk8ZGozNbIltb3Hw0wcne+5vWQyns=
+github.com/tabnas/json/go v0.4.0 h1:1BxLHyCullkKXkvui/SuZ4s6OMrFVDuEB13IX/5S1eM=
+github.com/tabnas/json/go v0.4.0/go.mod h1:MJzyziKcvZk3OZCaSDxhMdf/Wkq2UJ0uLGWFtp9zsJs=
+github.com/tabnas/jsonic/go v0.4.0 h1:y5k/P21C3q3jWaA+VxEhXxzZ8xJgpgAehMBEseDN31g=
+github.com/tabnas/jsonic/go v0.4.0/go.mod h1:eDpkddhkuTFuIXMkSqTZl7cU7M23swbMpkXR1W5bApQ=
+github.com/tabnas/parser/go v0.4.0 h1:M8+qRT4KaCtr4OCpg9NDNUXJIdbbweqeqbpEpVGNEqU=
+github.com/tabnas/parser/go v0.4.0/go.mod h1:WrlfEVyZ1QjEIowWiyEu3K1iHj7wxuPut5zoH9Trehk=
 `
 
 
@@ -36,10 +50,18 @@ const Main = cmp(function Main(props: any) {
   const { model } = props.ctx$
 
   const org = model.origin || 'voxgig-sdk'
-  const sdkModule = `github.com/${org}/${model.name}-sdk/go`
-  const cliModule = `github.com/${org}/${model.name}-sdk/go-cli`
+  const sdkModule = goModule(model, 'go')
+  const cliModule = goModule(model, 'go-cli')
 
   const entityMap: any = getModelPath(model, `main.${KIT}.entity`)
+  // Derive each entity's PascalCase `Name` here rather than relying on another
+  // TARGET having run first. This target sets `phase.entity: { active: false }`
+  // (see model/target/go-{cli,mcp}.aontu), so create-sdkgen's Root.ts never
+  // calls names() for it — the accessor emitted below used to read `Name` off
+  // objects the `go` target happened to have named as a side effect, which
+  // yields `client.undefined(nil)` whenever this target is generated without
+  // `go`, or before it in target order.
+  deriveEntityNames(entityMap)
   const entityNames = Object.keys(entityMap).map(n => n.toLowerCase())
 
   const FRAGMENT = Path.normalize(__dirname + '/../../../src/cmp/go-cli/fragment')
@@ -56,7 +78,7 @@ const Main = cmp(function Main(props: any) {
   // EVERYTHING here is MODEL-DRIVEN: verbs, examples and how-to sections are
   // gated on whether an active entity actually exposes that op
   // (op.<name>.active !== false) — never document an operation no entity
-  // supports. The CLI implements three AQL words (list / load / update; see
+  // supports. The CLI implements three boru words (list / load / update; see
   // words.fragment.go + runOp).
   // ==========================================================================
   const bin = `${model.name}-cli`
@@ -121,7 +143,7 @@ const Main = cmp(function Main(props: any) {
   ex.push('# 3. Provide credentials once, via the environment')
   ex.push(`export ${apiKeyEnv}=sk_live_xxx`)
   ex.push('')
-  ex.push('# 4. Each command line is ONE AQL expression, run against the API:')
+  ex.push('# 4. Each command line is ONE boru expression, run against the API:')
   if (firstHas('list')) ex.push(`./${bin} list ${firstEntity}`)
   if (firstHas('load')) {
     ex.push(`./${bin} load 1 ${firstEntity}            # {id:1} shorthand`)
@@ -150,7 +172,7 @@ const Main = cmp(function Main(props: any) {
 \`\`\`
 
 \`list <entity>\` returns the first page of records. \`<entity>\` is a bareword —
-it is auto-quoted as an AQL atom, so no quotes are needed.`)
+it is auto-quoted as an boru atom, so no quotes are needed.`)
 
   if (firstHas('load')) howtos.push(`### Load a single record
 
@@ -186,7 +208,7 @@ Both are injectable by a secrets vault, so the key never has to be typed inline.
   howtos.push(`### Explore interactively with the REPL
 
 Run with no arguments to open a REPL (prompt \`${model.name}>\`). Each line is
-evaluated as its own AQL expression:
+evaluated as its own boru expression:
 
 \`\`\`text
 $ ./${bin}
@@ -210,10 +232,10 @@ below — this SDK exposes ${entityCount} ${entityNoun}.`)
 
   File({ name: 'README.md' }, () => Content(`# ${model.name}-cli
 
-AQL-driven command-line client **and** interactive REPL for the ${model.Name}
-SDK. Each command line is parsed as a single [AQL](https://github.com/aql-lang/aql)
+boru-driven command-line client **and** interactive REPL for the ${model.Name}
+SDK. Each command line is parsed as a single [boru](https://github.com/boru-lang/boru)
 expression and evaluated against the live API; run it with no arguments to drop
-into a REPL. Built on \`github.com/aql-lang/aql/eng/go\` and the sibling Go SDK
+into a REPL. Built on \`github.com/boru-lang/boru/eng/go\` and the sibling Go SDK
 at \`../go\`.
 
 ## Examples
@@ -240,7 +262,7 @@ ${exampleBlock}
    export ${apiKeyEnv}=sk_live_xxx
    \`\`\`
 
-3. **Run a query.** Evaluate an AQL expression against the API (or run with no
+3. **Run a query.** Evaluate an boru expression against the API (or run with no
    arguments to open the REPL):
 
    \`\`\`sh
@@ -250,7 +272,7 @@ ${exampleBlock}
 4. **Go interactive.** Run the binary with no arguments to open the REPL, then
    type \`/help\` for the word and entity lists and \`/quit\` to leave.
 
-That is the whole loop: *build → set key → evaluate AQL expressions*.
+That is the whole loop: *build → set key → evaluate boru expressions*.
 
 ## How-to guides
 
@@ -260,13 +282,13 @@ ${howtoBlock}
 
 ### Words
 
-The CLI registers these AQL words, each bound to the SDK:
+The CLI registers these boru words, each bound to the SDK:
 
 | Word     | Signatures                                    | Returns                        |
 |----------|-----------------------------------------------|--------------------------------|
 ${verbRows}
 
-- \`<entity>\` is a bareword, auto-quoted as an AQL atom (e.g. \`${firstEntity}\`).
+- \`<entity>\` is a bareword, auto-quoted as an boru atom (e.g. \`${firstEntity}\`).
 - \`<query>\` is either a **Map** (\`{id:1}\`) or a **Scalar** (\`1\`, treated as
   \`{id:1}\`). A scalar is always wrapped as \`{id:<value>}\`.
 
@@ -285,7 +307,7 @@ Unset variables fall back to the SDK's built-in defaults.
 
 ### REPL commands
 
-Meta-commands use the \`/\` prefix (everything else on a line is evaluated as AQL):
+Meta-commands use the \`/\` prefix (everything else on a line is evaluated as boru):
 
 - \`/quit\` / \`/q\` / \`/exit\` — exit the REPL
 - \`/help\` / \`/h\` / \`/?\`     — show the word list, entity list and meta commands
@@ -313,25 +335,25 @@ ${entityList}
 
 ## Explanation
 
-### Why AQL?
+### Why boru?
 
-The whole command line is one [AQL](https://github.com/aql-lang/aql) expression,
+The whole command line is one [boru](https://github.com/boru-lang/boru) expression,
 not a fixed \`verb --flag\` grammar. That means the same binary works one-shot
 (\`./${bin} <expr>\`) and interactively (the REPL), and expressions compose the
-same way in both. \`list\` / \`load\` / \`update\` are ordinary AQL *words* bound to
+same way in both. \`list\` / \`load\` / \`update\` are ordinary boru *words* bound to
 the SDK — adding SDK operations is adding words, not re-parsing flags.
 
 ### How it is wired
 
 \`main.go\` builds the SDK client (configured from the environment), creates an
-AQL registry, and \`words.go\` registers \`list\` / \`load\` / \`update\` as native
+boru registry, and \`words.go\` registers \`list\` / \`load\` / \`update\` as native
 words that dispatch on the entity atom and call the sibling Go SDK at \`../go\`.
 Results are unwrapped from their \`Entity\` wrappers to plain data before being
 printed.
 
 ### Output format
 
-Each result value is printed as its AQL string form (a JSON-like rendering of
+Each result value is printed as its boru string form (a JSON-like rendering of
 the record or list of records). One-shot mode prints to stdout; errors go to
 stderr with a non-zero exit code.
 
@@ -342,25 +364,30 @@ this repo, or upstream at
 \`github.com/voxgig/sdkgen/project/.sdk/src/cmp/go-cli/\`.
 `))
 
-  // go.mod — sibling SDK via relative replace; aql/eng/go from the
-  // public Go module proxy. The go directive must be >= aql/eng/go's own
-  // (go 1.24.7 at eng/go/v0.0.1) — keep in step with AQL_ENG_VERSION.
+  // go.mod — sibling SDK via relative replace; boru/eng/go from the
+  // public Go module proxy. The go directive must be >= boru/eng/go's own
+  // (go 1.24.7) — keep in step with BORU_ENG_VERSION.
   File({ name: 'go.mod' }, () => Content(`module ${cliModule}
 
-go 1.24.7
+go ${goVersion(model, 'go-cli', '1.24.7')}
 
 require ${sdkModule} v0.0.0
-require github.com/aql-lang/aql/eng/go ${AQL_ENG_VERSION}
+require github.com/boru-lang/boru/eng/go ${BORU_ENG_VERSION}
 
-require github.com/jsonicjs/jsonic/go v0.1.6 // indirect
+require (
+	github.com/cockroachdb/apd/v3 v3.2.3 // indirect
+	github.com/tabnas/json/go v0.4.0 // indirect
+	github.com/tabnas/jsonic/go v0.4.0 // indirect
+	github.com/tabnas/parser/go v0.4.0 // indirect
+)
 
 replace ${sdkModule} => ../go
 `))
 
-  // go.sum — required for `go build` to accept the aql/eng/go dependency
+  // go.sum — required for `go build` to accept the boru/eng/go dependency
   // (the path-replaced sibling SDK needs no entry). Pinned alongside
-  // AQL_ENG_VERSION above.
-  File({ name: 'go.sum' }, () => Content(AQL_ENG_GOSUM))
+  // BORU_ENG_VERSION above.
+  File({ name: 'go.sum' }, () => Content(BORU_ENG_GOSUM))
 
   // Makefile — `make build` for the current machine, `make build-all` to
   // cross-compile for the three desktop OSes (linux, darwin, windows) on

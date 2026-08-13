@@ -7,7 +7,7 @@
 
 export interface Engagement {
   amount?: number
-  estimated_time?: number
+  estimatedTime?: number
   message?: string
   status?: string
   success?: boolean
@@ -17,7 +17,7 @@ export interface Engagement {
 
 export interface EngagementCreateData {
   amount?: number
-  estimated_time?: number
+  estimatedTime?: number
   message?: string
   status?: string
   success?: boolean

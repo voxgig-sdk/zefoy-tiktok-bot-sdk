@@ -1,12 +1,12 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, goModule } from '@voxgig/sdkgen'
 
 
 const ReadmeExplanation = cmp(function ReadmeExplanation(props: any) {
   const { target, ctx$: { model } } = props
 
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
 
   Content(`### Data as maps
 

@@ -6,9 +6,9 @@ import time
 
 import pytest
 
-from utility.voxgig_struct import voxgig_struct as vs
+from zefoytiktokbot_sdk.utility.voxgig_struct import voxgig_struct as vs
 from zefoytiktokbot_sdk import ZefoyTiktokBotSDK
-from core import helpers
+from zefoytiktokbot_sdk.core import helpers
 
 _TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 from test import runner
@@ -36,7 +36,7 @@ class TestEngagementEntity:
         # without an *_ENTID env override, those IDs hit the live API and 4xx.
         if setup.get("synthetic_only"):
             pytest.skip("live entity test uses synthetic IDs from fixture — "
-                        "set ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID JSON to run live")
+                        "set ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID JSON to run live")
         client = setup["client"]
 
         # CREATE
@@ -44,7 +44,7 @@ class TestEngagementEntity:
         engagement_ref01_data = helpers.to_map(vs.getprop(
             vs.getpath(setup["data"], "new.engagement"), "engagement_ref01"))
 
-        engagement_ref01_data = helpers.to_map(engagement_ref01_ent.create(engagement_ref01_data, None))
+        engagement_ref01_data = helpers.to_map(runner.entity_data(engagement_ref01_ent.create(engagement_ref01_data, None)))
         assert engagement_ref01_data is not None
 
 
@@ -78,37 +78,37 @@ def _engagement_basic_setup(extra):
     # mode is on without a real override, the basic test runs against synthetic
     # IDs from the fixture and 4xx's. We surface this so the test can skip.
     _entid_env_raw = os.environ.get(
-        "ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID")
+        "ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID")
     _idmap_overridden = _entid_env_raw is not None and _entid_env_raw.strip().startswith("{")
 
     env = runner.env_override({
-        "ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID": idmap,
-        "ZEFOYTIKTOKBOT_TEST_LIVE": "FALSE",
-        "ZEFOYTIKTOKBOT_TEST_EXPLAIN": "FALSE",
-        "ZEFOYTIKTOKBOT_APIKEY": "NONE",
+        "ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID": idmap,
+        "ZEFOY_TIKTOK_BOT_TEST_LIVE": "FALSE",
+        "ZEFOY_TIKTOK_BOT_TEST_EXPLAIN": "FALSE",
+        "ZEFOY_TIKTOK_BOT_APIKEY": "NONE",
     })
 
     idmap_resolved = helpers.to_map(
-        env.get("ZEFOYTIKTOKBOT_TEST_ENGAGEMENT_ENTID"))
+        env.get("ZEFOY_TIKTOK_BOT_TEST_ENGAGEMENT_ENTID"))
     if idmap_resolved is None:
         idmap_resolved = helpers.to_map(idmap)
 
-    if env.get("ZEFOYTIKTOKBOT_TEST_LIVE") == "TRUE":
+    if env.get("ZEFOY_TIKTOK_BOT_TEST_LIVE") == "TRUE":
         merged_opts = vs.merge([
             {
-                "apikey": env.get("ZEFOYTIKTOKBOT_APIKEY"),
+                "apikey": env.get("ZEFOY_TIKTOK_BOT_APIKEY"),
             },
             extra or {},
         ])
         client = ZefoyTiktokBotSDK(helpers.to_map(merged_opts))
 
-    _live = env.get("ZEFOYTIKTOKBOT_TEST_LIVE") == "TRUE"
+    _live = env.get("ZEFOY_TIKTOK_BOT_TEST_LIVE") == "TRUE"
     return {
         "client": client,
         "data": entity_data,
         "idmap": idmap_resolved,
         "env": env,
-        "explain": env.get("ZEFOYTIKTOKBOT_TEST_EXPLAIN") == "TRUE",
+        "explain": env.get("ZEFOY_TIKTOK_BOT_TEST_EXPLAIN") == "TRUE",
         "live": _live,
         "synthetic_only": _live and not _idmap_overridden,
         "now": int(time.time() * 1000),

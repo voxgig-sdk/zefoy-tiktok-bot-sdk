@@ -264,7 +264,7 @@ Only `Direct()` returns a response envelope — a `map[string]any` with
 | Field | Description |
 | --- | --- |
 | `"amount"` |  |
-| `"estimated_time"` |  |
+| `"estimatedTime"` |  |
 | `"message"` |  |
 | `"status"` |  |
 | `"success"` |  |
@@ -295,7 +295,7 @@ Create an instance: `engagement := client.Engagement(nil)`
 | Field | Type | Description |
 | --- | --- | --- |
 | `amount` | `int` |  |
-| `estimated_time` | `int` |  |
+| `estimatedTime` | `int` |  |
 | `message` | `string` |  |
 | `status` | `string` |  |
 | `success` | `bool` |  |

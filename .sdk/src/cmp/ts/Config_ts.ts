@@ -12,6 +12,7 @@ import {
   indent,
   isAuthActive,
   resolveAuthPrefix,
+  serverVariables,
 } from '@voxgig/sdkgen'
 
 
@@ -53,12 +54,22 @@ const Config = cmp(async function Config(props: any) {
     `
     : ''
 
+  // Templated server URL: emit the spec's server-variable defaults so the
+  // runtime can substitute {name} placeholders in base (see makeOptions).
+  const svars = serverVariables(model)
+  const serverBlock = 0 === svars.length ? '' :
+    'server: {\n' +
+    svars.map((v: any) => `      ${JSON.stringify(v.name)}: ${JSON.stringify(v.dflt)},\n`).join('') +
+    '    },\n\n    '
+
   File({ name: 'Config.' + target.ext }, () => {
 
     Fragment({
       from: ff + 'Config.fragment.ts',
 
       replace: {
+
+        "'SERVERBLOCK'": serverBlock,
 
         "'AUTHBLOCK'": authBlock,
 

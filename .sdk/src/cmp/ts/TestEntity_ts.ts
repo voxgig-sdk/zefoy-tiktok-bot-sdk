@@ -30,6 +30,7 @@ import {
   cmp,
   each,
   isAuthActive,
+  entityDataIdField, envName, envToken
 } from '@voxgig/sdkgen'
 
 
@@ -60,8 +61,8 @@ const TestEntity = cmp(function TestEntity(props: any) {
   const target = props.target
   const entity: ModelEntity = props.entity
 
-  const PROJENVNAME = nom(model.const, 'NAME').replace(/[^A-Z_]/g, '_')
-  const ENTENVNAME = nom(entity, 'NAME').replace(/[^A-Z_]/g, '_')
+  const PROJENVNAME = envName(model)
+  const ENTENVNAME = envToken(entity.name)
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
     ? `\n    '${PROJENVNAME}_APIKEY': 'NONE',`
@@ -299,7 +300,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   const hasEntIdC = null != entity.id
 
   Content(`
-    ${datavar} = await ${entvar}.create(${datavar})
+    ${datavar} = (await ${entvar}.create(${datavar})).data()
 `)
   if (hasEntIdC) {
     Content(`    assert(null != ${datavar}.id)
@@ -314,6 +315,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
 
 const generateList: OpGen = (ctx, step, index) => {
   const { entity, flow } = ctx
+  const hasDataId = null != entityDataIdField(entity)
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))
@@ -339,7 +341,7 @@ const generateList: OpGen = (ctx, step, index) => {
   })
 
   Content(`
-    const ${listvar} = await ${entvar}.list(${matchvar})
+    const ${listvar} = (await ${entvar}.list(${matchvar})).map((e: any) => e.data())
 `)
   const allSteps = flow.step
   for (let vI = 0; vI < step.valid.length; vI++) {
@@ -348,12 +350,18 @@ const generateList: OpGen = (ctx, step, index) => {
     const hasRefData = validRef && allSteps.some(s => 'create' === s.op &&
       ((s.input.ref ?? entity.name + '_ref01') === validRef))
 
-    if ('ItemExists' === validator.apply && hasRefData) {
+    // Guard on a DATA id field (entityDataIdField), NOT entity.id (the load-MATCH
+    // key): an entity can have a match id in its path while its RESPONSE record
+    // has no `id` field (e.g. Multichannel's Template — data fields meta/status/…,
+    // no id). Then `${validRef}_data.id` is undefined and select(list, { id:
+    // undefined }) spuriously matches id-less records, so ItemExists/ItemNotExists
+    // are meaningless. Emit them only when `.id` is a real data field.
+    if ('ItemExists' === validator.apply && hasRefData && hasDataId) {
       Content(`
     assert(!isempty(select(${listvar}, { id: ${validRef}_data.id })))
 `)
     }
-    else if ('ItemNotExists' === validator.apply && hasRefData) {
+    else if ('ItemNotExists' === validator.apply && hasRefData && hasDataId) {
       Content(`
     assert(isempty(select(${listvar}, { id: ${validRef}_data.id })))
 `)
@@ -412,7 +420,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-    const ${resdatavar} = await ${entvar}.update(${datavar})
+    const ${resdatavar} = (await ${entvar}.update(${datavar})).data()
 `)
   if (hasEntIdU) {
     Content(`    assert(${resdatavar}.id === ${datavar}.id)
@@ -500,13 +508,13 @@ const generateLoad: OpGen = (ctx, step, index) => {
   if (hasEntId) {
     Content(`    const ${matchvar}: any = {}
     ${matchvar}.id = ${srcdatavar}.id
-    const ${datavar} = await ${entvar}.load(${matchvar})
+    const ${datavar} = (await ${entvar}.load(${matchvar})).data()
     assert(${datavar}.id === ${srcdatavar}.id)
 `)
   }
   else {
     Content(`    const ${matchvar}: any = {}
-    const ${datavar} = await ${entvar}.load(${matchvar})
+    const ${datavar} = (await ${entvar}.load(${matchvar})).data()
     assert(null != ${datavar})
 `)
   }
@@ -524,6 +532,14 @@ const generateRemove: OpGen = (ctx, step, index) => {
   const needsEnt = !priorSteps.some(s =>
     ['create', 'list', 'load', 'update', 'remove'].includes(s.op))
 
+  // "Remove what you created" needs the created record's id. An entity with
+  // no DATA id field (entityDataIdField null — e.g. Multichannel's Template)
+  // returns records without `.id`, so `${srcdatavar}.id` is absent (a py
+  // KeyError; a silent nil elsewhere). Skip the flow-remove step for those —
+  // the remove op is still exercised by the direct() test.
+  if (null == entityDataIdField(entity)) {
+    return
+  }
   Content(`
     // REMOVE
 `)

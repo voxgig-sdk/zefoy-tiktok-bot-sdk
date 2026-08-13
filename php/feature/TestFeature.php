@@ -48,11 +48,39 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
         $entity->data = $entity_data;
 
         $test_fetcher = function (ZefoyTiktokBotContext $fctx, string $_fullurl, array $_fetchdef) use ($entity): array {
-            $respond = function (int $status, mixed $data, ?array $extra = null): array {
+            // Shape the mock payload the way the real API would, so the op's
+            // response transform recovers the entity from it. A point carrying
+            // transform.res of `body.item` describes an API that answers
+            // {"item": {...}}; handing back the bare entity means the
+            // transform unwraps a property that is not there and the caller
+            // gets null. The mock has to agree with the model, or it only
+            // ever simulates APIs whose responses happen to be unwrapped.
+            // Mirrors the ts/py mocks.
+            $envelope = function (mixed $data) use ($fctx): mixed {
+                $point = $fctx->point ?? null;
+                if ($data === null || !is_array($point)) {
+                    return $data;
+                }
+                $transform = $point['transform'] ?? null;
+                if (!is_array($transform)) {
+                    return $data;
+                }
+                $restf = $transform['res'] ?? null;
+                if (!is_string($restf)) {
+                    return $data;
+                }
+                if (!preg_match('/^`body\.([^`.]+)`$/', $restf, $m)) {
+                    return $data;
+                }
+                return [$m[1] => $data];
+            };
+
+            $respond = function (int $status, mixed $data, ?array $extra = null) use ($envelope): array {
+                $payload = $envelope($data);
                 $out = [
                     'status' => $status,
                     'statusText' => 'OK',
-                    'json' => function () use ($data) { return $data; },
+                    'json' => function () use ($payload) { return $payload; },
                     'body' => 'not-used',
                 ];
                 if ($extra) {

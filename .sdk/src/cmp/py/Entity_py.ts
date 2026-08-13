@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, camelify, names,
   File, Content, Folder, Fragment, Line, FeatureHook, Slot,
-  entityClassName,
+  entityClassName, entityCollection, opTypeName,
 } from '@voxgig/sdkgen'
 
 import {
@@ -15,12 +15,6 @@ import {
 import { EntityOperation } from './EntityOperation_py'
 
 
-// Op -> generated request-type suffix (keep in sync with EntityTypes_py.ts).
-const OP_SUFFIX: Record<string, 'Match' | 'Data'> = {
-  load: 'Match', list: 'Match', remove: 'Match', create: 'Data', update: 'Data',
-}
-
-
 const Entity = cmp(function Entity(props: any) {
   const { model, stdrep } = props.ctx$
   const { target, entity } = props
@@ -29,7 +23,7 @@ const Entity = cmp(function Entity(props: any) {
   // `<Name>Entity`, disambiguated when it would clash with another entity's
   // data-type name. The DATA type stays `<Name>`. The snake-cased source-file
   // name is unaffected; only the class identifier changes.
-  const entityColl = getModelPath(model, `main.${KIT}.entity`)
+  const entityColl = entityCollection(model)
   const cls = entityClassName(entity, entityColl)
 
   const entrep = {
@@ -44,24 +38,28 @@ const Entity = cmp(function Entity(props: any) {
   const opnamesAll = Object.keys(entity.op || {})
   ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
     if (opnamesAll.includes(opname)) {
-      const suffix = OP_SUFFIX[opname] || 'Match'
-      const cap = opname.charAt(0).toUpperCase() + opname.slice(1)
-      typeNames.push(entity.Name + cap + suffix)
+      typeNames.push(opTypeName(entity.Name, opname))
     }
   })
-  const typesModule = model.const.Name.toLowerCase() + '_types'
+  // The generated dataclasses live inside the SDK package alongside
+  // everything else, so the import is package-qualified.
+  const typesModule = model.const.Name.toLowerCase() + '_sdk.' +
+    model.const.Name.toLowerCase() + '_types'
   const typeImport =
     'from ' + typesModule + ' import (\n    ' +
     typeNames.join(',\n    ') + ',\n)'
 
   const ff = Path.normalize(__dirname + '/../../../src/cmp/py/fragment/')
 
-  // Entity files go to entity/ folder
+  // Entity files go to <name>_sdk/entity/ — inside the SDK package, not at
+  // the language root. See the note in Main_py.ts: a top-level `entity`
+  // package is shadowable by any entity.py sitting beside the caller.
+  Folder({ name: model.const.Name.toLowerCase() + '_sdk' }, () => {
   Folder({ name: 'entity' }, () => {
 
     File({ name: entity.name + '_entity.' + target.ext }, () => {
 
-      const opnames = Object.keys(entity.op)
+      const opnames = Object.keys(entity.op || {})
 
       const opfrags =
         (['load', 'list', 'create', 'update', 'remove']
@@ -102,6 +100,7 @@ const Entity = cmp(function Entity(props: any) {
       })
 
     })
+  })
   })
 })
 

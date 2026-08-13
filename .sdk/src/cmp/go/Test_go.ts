@@ -8,7 +8,7 @@ import type {
   ModelEntity
 } from '@voxgig/apidef'
 
-import { cmp, each, Folder, File, Content } from '@voxgig/sdkgen'
+import { cmp, each, Folder, File, Content, goModule } from '@voxgig/sdkgen'
 
 
 import { TestEntity } from './TestEntity_go'
@@ -22,7 +22,7 @@ const Test = cmp(function Test(props: any) {
 
   // Module name: concatenated lowercase
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
 
   Folder({ name: 'test' }, () => {
 

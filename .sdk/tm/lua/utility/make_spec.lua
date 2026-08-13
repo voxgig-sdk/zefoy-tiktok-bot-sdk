@@ -1,6 +1,7 @@
 -- ZefoyTiktokBot SDK utility: make_spec
 
 local vs = require("utility.struct.struct")
+local graphql = require("utility.graphql")
 local Spec = require("core.spec")
 
 local function make_spec_util(ctx)
@@ -53,8 +54,23 @@ local function make_spec_util(ctx)
   ctx.spec.params = utility.prepare_params(ctx)
   ctx.spec.query = utility.prepare_query(ctx)
   ctx.spec.headers = utility.prepare_headers(ctx)
-  ctx.spec.body = utility.prepare_body(ctx)
-  ctx.spec.path = utility.prepare_path(ctx)
+
+  if "graphql" == vs.getprop(ctx.point, "kind") then
+    -- GraphQL addresses one endpoint: no path parts, no query string, and
+    -- the body carries the operation. prepare_body is skipped deliberately
+    -- — it only emits a body for data-input ops, whereas every GraphQL op
+    -- posts one, including load/list/remove.
+    ctx.spec.body = utility.graphql_body(ctx)
+    ctx.spec.path = ""
+    -- prepare_query already copied the op's match arguments into the query
+    -- string. Those same values are bound as operation variables, so
+    -- leaving them would send /graphql?id=i1.
+    ctx.spec.query = {}
+    ctx.spec.headers["content-type"] = graphql.CONTENT_TYPE
+  else
+    ctx.spec.body = utility.prepare_body(ctx)
+    ctx.spec.path = utility.prepare_path(ctx)
+  end
 
   if ctx.ctrl.explain ~= nil then
     ctx.ctrl.explain["spec"] = ctx.spec

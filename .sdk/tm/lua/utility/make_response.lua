@@ -28,6 +28,12 @@ local function make_response_util(ctx)
   utility.result_basic(ctx)
   utility.result_headers(ctx)
   utility.result_body(ctx)
+
+  -- GraphQL reports failures as a top-level `errors` array under HTTP 200,
+  -- so result_basic's status check never sees them. Lift them here, before
+  -- the response transform tries to unwrap data that is not there.
+  utility.graphql_errors(ctx)
+
   utility.transform_response(ctx)
 
   if result.err == nil then

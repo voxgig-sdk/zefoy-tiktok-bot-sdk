@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -51,7 +51,7 @@ $client = ${ctor};
 
     if (opnames.includes('list')) {
       Content(`// List all ${eName.toLowerCase()}s (returns an array; throws on error)
-$${eName.toLowerCase()}s = $client->${eName}()->list();
+$${eName.toLowerCase()}s = $client->${phpEntityAccessor(eName)}()->list();
 print_r($${eName.toLowerCase()}s);
 `)
       hasCall = true
@@ -71,8 +71,8 @@ print_r($${eName.toLowerCase()}s);
             it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')}]`
         : ''
       Content(`
-// Load a specific ${eName.toLowerCase()} (returns the bare record; throws on error)
-$${eName.toLowerCase()} = $client->${eName}()->load(${loadArg});
+// Load a specific ${eName.toLowerCase()} (returns the ENTITY; call data_get() for the record; throws on error)
+$${eName.toLowerCase()} = $client->${phpEntityAccessor(eName)}()->load(${loadArg});
 print_r($${eName.toLowerCase()});
 `)
       hasCall = true

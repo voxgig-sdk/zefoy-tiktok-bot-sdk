@@ -66,7 +66,7 @@ local function make_options_util(ctx)
     },
     allow = {
       method = "GET,PUT,POST,PATCH,DELETE,OPTIONS",
-      op = "create,update,load,list,remove,command,direct",
+      op = "create,update,load,list,remove,command,direct,graphql",
     },
     entity = {
       ["`$CHILD`"] = {
@@ -92,6 +92,13 @@ local function make_options_util(ctx)
     clean = {
       keys = "key,token,id",
     },
+    -- Server-variable values for a templated base URL (OpenAPI server
+    -- variables): {name} placeholders in `base` are substituted from this
+    -- map at construction. Spec defaults arrive via the generated config;
+    -- user values override them.
+    server = {
+      ["`$CHILD`"] = "",
+    },
   }
 
   -- Preserve system.fetch before merge/validate.
@@ -103,6 +110,38 @@ local function make_options_util(ctx)
     validated = {}
   end
   opts = validated
+
+  -- Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
+  -- Every placeholder must resolve to a non-empty value: from
+  -- options.server (user), else the config default. A placeholder that
+  -- resolves to "" is a construction ERROR in live mode — the URL cannot
+  -- work — but in test mode substitutes the deterministic value
+  -- "test-<name>" so offline tests need no configuration.
+  local base = opts.base
+  if type(base) == "string" and string.find(base, "{", 1, true) then
+    local testmode = vs.getpath(opts, "test.active") == true
+      or vs.getpath(opts, "feature.test.active") == true
+    local server = type(opts.server) == "table" and opts.server or {}
+    local sdkname = vs.getpath(config, "main.name")
+    if type(sdkname) ~= "string" or sdkname == "" then
+      sdkname = "SDK"
+    end
+    opts.base = string.gsub(base, "{([%w_]+)}", function(name)
+      local val = server[name]
+      if type(val) ~= "string" then
+        val = ""
+      end
+      if val == "" then
+        if testmode then
+          return "test-" .. name
+        end
+        error(sdkname .. ": the server variable '" .. name .. "' is required: " ..
+          "the API base URL is '" .. base .. "' — pass " ..
+          "{ server = { " .. name .. " = \"...\" } } in the SDK options", 0)
+      end
+      return val
+    end)
+  end
 
   -- Restore system.fetch.
   if sys_fetch ~= nil then

@@ -1,4 +1,4 @@
-# ProjectName SDK exists test
+# ZefoyTiktokBot SDK exists test
 
 import pytest
 from zefoytiktokbot_sdk import ZefoyTiktokBotSDK

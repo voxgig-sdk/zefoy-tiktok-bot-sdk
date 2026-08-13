@@ -1,2 +1,17 @@
 
+# PENDING — this section is deliberately empty.
+#
+# makeResult needs a ctx carrying a constructed Spec AND Result (built via the
+# SDK's own NewSpec/NewResult constructors), plus the error path for each being
+# absent. The shared runner builds a ctx from a literal map and has no
+# constructor hook, so the cases cannot be expressed here yet. Covered
+# per-language today (e.g. go's makeResult-basic / -no-spec / -no-result),
+# which is exactly the drift risk this corpus exists to remove — promoting it
+# needs a runner change, not just fixture data.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: test/corpus.test.ts here, and the PENDING lists in the language
+# runners, keep a deliberately-deferred section distinct from an accidentally
+# blanked one.
+
 basic: set: []

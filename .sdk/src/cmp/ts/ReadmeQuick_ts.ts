@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, packageName, envName, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, packageName, envName, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -8,6 +8,17 @@ import {
 } from '@voxgig/apidef'
 
 import { exampleValue } from './utility_ts'
+
+
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('ts', ent, 'list', idF, idLiteral(ent, 'list', idF))
+}
 
 
 const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
@@ -48,7 +59,7 @@ const client = ${ctor}
     const eName = nom(exampleEntity, 'Name')
     // Variable-safe lowercase name — a `Delete`/`Class` entity must not bind a
     // reserved word (`const delete = ...` is a TS1109 syntax error).
-    const eVar = safeVarName(eName.toLowerCase(), 'ts')
+    const eVar = exampleVarName(eName.toLowerCase(), 'ts')
     const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
     const opnames = entityOps(exampleEntity)
     // Model-driven id key: `idF` is the entity's id-like MATCH field name, or
@@ -63,10 +74,12 @@ const client = ${ctor}
     if (opnames.includes('list')) {
       Content(`### 2. List ${eName.toLowerCase()} records
 
-\`list()\` resolves to an array of ${eName} objects — iterate it directly:
+\`list()\` resolves to an array of ${eName} ENTITIES — every operation
+resolves to entities, not raw records. Iterate them directly, and call
+\`.data()\` on one for the record it holds:
 
 \`\`\`ts
-const ${eVar}s = await client.${eName}().list()
+const ${eVar}s = await client.${eName}().list(${listMatchArg(exampleEntity)})
 
 for (const ${eVar} of ${eVar}s) {
   console.log(${eVar})
@@ -78,7 +91,7 @@ for (const ${eVar} of ${eVar}s) {
 
     if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
-      const neVar = safeVarName(neName.toLowerCase(), 'ts')
+      const neVar = exampleVarName(neName.toLowerCase(), 'ts')
       const neArticle = /^[aeiou]/i.test(neName) ? 'an' : 'a'
       const loadOp = nestedEntity.op && nestedEntity.op.load
 
@@ -94,7 +107,7 @@ for (const ${eVar} of ${eVar}s) {
       const parentParam = parentItem && parentItem.name
       const parentName = parentParam ? parentParam.replace(/_id$/, '') : 'its parent'
       const neMatchLines = neRequired.map((it: any) =>
-        `    ${it.name}: ${exampleValue(nestedEntity, loadOp, it.name,
+        `    ${jsKey(it.name)}: ${exampleValue(nestedEntity, loadOp, it.name,
           it.name === neIdF ? 'example_id' : 'example_' + it.name)},`)
 
       Content(`### 3. Load ${neArticle} ${neName.toLowerCase()}
@@ -124,7 +137,7 @@ ${neMatchLines.join('\n')}
           (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
       const loadArg = 0 < loadRequired.length
         ? `{ ${loadRequired.map((it: any) =>
-          `${it.name}: ${exampleValue(exampleEntity, exampleEntity.op && exampleEntity.op.load, it.name,
+          `${jsKey(it.name)}: ${exampleValue(exampleEntity, exampleEntity.op && exampleEntity.op.load, it.name,
             it.name === idF ? 'example_id' : 'example_' + it.name)}`).join(', ')} }`
         : ''
 
@@ -169,16 +182,36 @@ try {
           ? (required.length ? required : items.slice(0, 2))
           : required.concat(optional).slice(0, Math.max(2, required.length))
         return chosen.map((it: any) =>
-          `  ${it.name}: ${exampleValue(exampleEntity, exampleEntity.op[opname], it.name, 'example_' + it.name)},`)
+          `  ${jsKey(it.name)}: ${exampleValue(exampleEntity, exampleEntity.op[opname], it.name, 'example_' + it.name)},`)
       }
 
       // The id VALUE for an update/remove match. When the entity's DATA type
       // carries the id (dataIdF) AND a `created` record exists, take it off the
       // returned record; otherwise use a type-correct literal — reading
       // `created.id` off an id-less data type is a TS2339.
-      const canUseCreatedId = null != dataIdF && opnames.includes('create')
-      const idValueFor = (opname: string): string => canUseCreatedId
-        ? `created.${dataIdF}!`
+      // Type of the data field we would read off `created` (e.g. number for an
+      // integer id). null when unknown.
+      const dataFields: any[] = exampleEntity.fields ? each(exampleEntity.fields) : []
+      const dataIdType = dataIdF
+        ? (dataFields.find((f: any) => f && f.name === dataIdF) || {}).type
+        : null
+      // `created.<dataIdF>` is only usable as an op's id-match value when its
+      // type matches that op's id PARAM type. An id that is integer in the data
+      // type but string in the match path (a spec quirk seen on management
+      // APIs) would be a TS2322 otherwise — fall back to a type-correct literal.
+      const usesCreatedId = (opname: string): boolean => {
+        if (null == dataIdF || !opnames.includes('create')) {
+          return false
+        }
+        const matchItem = opRequestShape(exampleEntity, opname).items
+          .find((it: any) => it.name === idF)
+        const matchType = matchItem ? matchItem.type : null
+        return null == matchType || null == dataIdType || matchType === dataIdType
+      }
+      // `create` resolves to the ENTITY, so the id is reached through
+      // `.data()` — `created.id` is a TS2339 on the entity class.
+      const idValueFor = (opname: string): string => usesCreatedId(opname)
+        ? `created.data().${dataIdF}!`
         : exampleValue(exampleEntity, exampleEntity.op[opname], idF as string, 'example_id')
 
       Content(`### 4. Create, update, and remove
@@ -188,7 +221,7 @@ try {
       if (opnames.includes('create')) {
         const createLines = exampleFields('create')
         const createBody = createLines.length ? '\n' + createLines.join('\n') + '\n' : ''
-        Content(`// Create — returns the created ${eName}
+        Content(`// Create — returns the created ${eName} ENTITY (.data() for the record)
 const created = await client.${eName}().create({${createBody}})
 
 `)
@@ -198,7 +231,7 @@ const created = await client.${eName}().create({${createBody}})
         // type carries one, else a literal), plus a couple of patch fields.
         const updateLines = (idF ? [`  ${idF}: ${idValueFor('update')},`] : []).concat(exampleFields('update'))
         const updateBody = updateLines.length ? '\n' + updateLines.join('\n') + '\n' : ''
-        Content(`// Update${canUseCreatedId ? ' — the id comes straight off the returned entity' : ''}
+        Content(`// Update${usesCreatedId('update') ? ' — the id comes off the returned entity\'s data()' : ''}
 const updated = await client.${eName}().update({${updateBody}})
 
 `)
@@ -211,8 +244,8 @@ const updated = await client.${eName}().update({${updateBody}})
           .sort((a: any, b: any) =>
             (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
           .map((it: any) => it.name === idF
-            ? `  ${it.name}: ${idValueFor('remove')},`
-            : `  ${it.name}: ${exampleValue(exampleEntity, exampleEntity.op.remove, it.name, 'example_' + it.name)},`)
+            ? `  ${jsKey(it.name)}: ${idValueFor('remove')},`
+            : `  ${jsKey(it.name)}: ${exampleValue(exampleEntity, exampleEntity.op.remove, it.name, 'example_' + it.name)},`)
         Content(`// Remove
 await client.${eName}().remove(${removeLines.length ? `{\n${removeLines.join('\n')}\n}` : ''})
 `)

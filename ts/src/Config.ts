@@ -21,7 +21,7 @@ class Config {
 
 
   main = {
-    name: 'ProjectName',
+    name: 'ZefoyTiktokBot',
   }
 
 
@@ -67,7 +67,7 @@ class Config {
         },
         {
           "active": true,
-          "name": "estimated_time",
+          "name": "estimatedTime",
           "req": false,
           "type": "`$INTEGER`",
           "index$": 1
@@ -123,6 +123,7 @@ class Config {
             {
               "active": true,
               "args": {},
+              "kind": "http",
               "method": "POST",
               "orig": "/api/boost",
               "parts": [

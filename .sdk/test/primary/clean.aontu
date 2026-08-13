@@ -1,2 +1,15 @@
 
-basic: set: []
+# clean(ctx, val): redact sensitive values before they reach a log sink.
+#
+# The masking body is currently commented out in every port, so clean is a
+# PASSTHROUGH — and that is exactly what needs pinning across languages: a
+# port that "helpfully" implements masking early, or that clones/reshapes the
+# value on the way through, diverges from the reference without any test
+# noticing (this fixture was an empty `set: []`).
+
+basic: set: [
+  { mark:10, args: [ {options:{}}, {a:'A'} ], out: {a:'A'} }
+  { mark:20, args: [ {options:{}}, {} ], out: {} }
+  { mark:30, args: [ {options:{}}, 'plain' ], out: 'plain' }
+  { mark:40, args: [ {options:{}}, [1,2] ], out: [1,2] }
+]

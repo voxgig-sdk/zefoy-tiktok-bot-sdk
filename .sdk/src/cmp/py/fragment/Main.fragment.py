@@ -1,16 +1,16 @@
 # ProjectName SDK
 
-from utility.voxgig_struct import voxgig_struct as vs
-from core.utility_type import ProjectNameUtility
-from core.spec import ProjectNameSpec
-from core import helpers
+from projectname_sdk.utility.voxgig_struct import voxgig_struct as vs
+from projectname_sdk.core.utility_type import ProjectNameUtility
+from projectname_sdk.core.spec import ProjectNameSpec
+from projectname_sdk.core import helpers
 
 # Load utility registration (populates Utility._registrar)
-from utility import register
+from projectname_sdk.utility import register
 
 # Load features
-from feature.base_feature import ProjectNameBaseFeature
-from features import _make_feature
+from projectname_sdk.feature.base_feature import ProjectNameBaseFeature
+from projectname_sdk.features import _make_feature
 
 
 class ProjectNameSDK:
@@ -23,7 +23,7 @@ class ProjectNameSDK:
         utility = ProjectNameUtility()
         self._utility = utility
 
-        from config import make_config
+        from projectname_sdk.config import make_config
         config = make_config()
 
         self._rootctx = utility.make_context({
@@ -155,7 +155,34 @@ class ProjectNameSDK:
 
         return fetchdef
 
+    # Raw endpoint access is operator-controllable, like every entity op.
+    # Blocking it means denying BOTH the 'direct' and 'graphql' tokens, since
+    # either one reaches the same endpoint.
     def direct(self, fetchargs=None):
+        if not self._op_allowed("direct"):
+            return self._op_denied("direct")
+
+        return self._raw_request(fetchargs)
+
+    # Is this raw-access op permitted by the SDK's allow.op option?
+    def _op_allowed(self, op):
+        allow_op = vs.getpath(self.options, "allow.op")
+        return isinstance(allow_op, str) and op in allow_op
+
+    def _op_denied(self, op):
+        allow_op = vs.getpath(self.options, "allow.op")
+        return {
+            "ok": False,
+            "err": Exception(
+                "ProjectNameSDK: " + op + ": operation not allowed by"
+                ' SDK option allow.op value: "' + str(allow_op) + '"'),
+        }
+
+    # Ungated request path shared by direct and graphql, each of which checks
+    # its own allow.op token first. Private, rather than a flag on fetchargs:
+    # a caller-supplied marker would let anyone opt straight back out of the
+    # gate by passing it.
+    def _raw_request(self, fetchargs=None):
         utility = self._utility
 
         try:
@@ -221,6 +248,46 @@ class ProjectNameSDK:
             "ok": False,
             "err": ctx.make_error("direct_invalid", "invalid response type"),
         }
+
+    # Raw GraphQL access: the pressure valve that makes the generated
+    # surface's deliberate omissions (per-call selection sets, typed filter
+    # builders, batching, subscriptions) livable — the whole schema stays
+    # reachable.
+    #
+    # Thin wrapper over the same prepare/fetch path direct uses, with the one
+    # thing raw direct cannot do for GraphQL: a GraphQL failure rides HTTP 200
+    # as a top-level `errors` array, so status alone would report a failed
+    # query as ok.
+    #
+    # NOTE: like direct, this bypasses the feature pipeline — no retry,
+    # ratelimit or paging features apply.
+    def graphql(self, query, variables=None, ctrl=None):
+        if not self._op_allowed("graphql"):
+            return self._op_denied("graphql")
+
+        res = self._raw_request({
+            "method": "POST",
+            "headers": {"content-type": "application/json"},
+            "body": {"query": query, "variables": variables or {}},
+            "ctrl": ctrl or {},
+        })
+
+        # Errors are read BEFORE any status check: a GraphQL parse or
+        # validation failure comes back as HTTP 400 carrying the standard
+        # { errors: [...] } body, and the raw path represents a non-2xx as
+        # ok:False with no err — so returning early on status would discard
+        # the server's own diagnostics, which are the only useful part of
+        # that response.
+        errors = vs.getpath(res, "data.errors")
+
+        if isinstance(errors, list) and 0 < len(errors):
+            first = errors[0] if isinstance(errors[0], dict) else {}
+            msg = first.get("message") or "graphql error"
+            res["ok"] = False
+            res["err"] = Exception("ProjectNameSDK: graphql: " + str(msg))
+            res["graphql"] = errors
+
+        return res
 
     # <[SLOT]>
 

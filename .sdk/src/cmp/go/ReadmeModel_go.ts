@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, entityIdField, entityPrimaryOp } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, entityIdField, entityPrimaryOp, goModule } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -44,7 +44,7 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const resultShapeRows = resultRows.join('\n')
 
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
 
   const apikeyOptionRow = isAuthActive(model)
     ? '| `"apikey"` | `string` | API key for authentication. |\n'

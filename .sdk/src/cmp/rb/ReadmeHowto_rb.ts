@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -32,7 +32,7 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // Ruby keyword (e.g. `self`) would otherwise emit uncompilable code. The
   // fixture KEY (`"${eName.toLowerCase()}"`) stays raw — it must match the
   // entity's registered name for the mock lookup to resolve.
-  const eVar = safeVarName(eName.toLowerCase(), 'rb')
+  const eVar = exampleVarName(eName.toLowerCase(), 'rb')
   // Model-driven id key: null when the entity has no id-like field (a
   // response-wrapped spec). When null the fixture seeds no id and a match op
   // takes no argument.
@@ -48,7 +48,12 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // remove, a required-field body for create/update, nothing for list.
   let testCallArg = ''
   if (exampleEntity && isMatchOp) {
-    testCallArg = idF ? `{ "${idF}" => "test01" }` : ''
+    const items = opRequestShape(exampleEntity, primaryOp).items
+      .filter((it: any) => !it.optional || it.name === idF)
+      .sort((a: any, b: any) => (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+    testCallArg = 0 < items.length
+      ? `{ ${items.map((it: any) => `"${it.name}" => ${it.name === idF ? '"test01"' : rbLit(it.type)}`).join(', ')} }`
+      : ''
   } else if (exampleEntity && ('create' === primaryOp || 'update' === primaryOp)) {
     const items = opRequestShape(exampleEntity, primaryOp).items
       .filter((it: any) => it.name !== idF && it.name !== 'id')
@@ -60,7 +65,8 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // The op-driven test-mode line, shown only when the SDK has an entity op.
   // A direct()-only SDK (no ops anywhere) shows a direct() call instead.
   const testModeExample = primaryOp
-    ? `# Entity ops return the bare mock record (raises on error).
+    ? `# Entity ops return the ENTITY (raises on error);
+# call data_get for the mock record.
 ${eVar} = client.${eName}.${primaryOp}(${testCallArg})
 puts ${eVar}`
     : `result = client.direct({ "path" => "/api/resource", "method" => "GET" })

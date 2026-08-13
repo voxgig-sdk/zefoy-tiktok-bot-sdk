@@ -4,6 +4,10 @@ require_relative '../utility/struct/voxgig_struct'
 require_relative 'base_feature'
 
 class ZefoyTiktokBotTestFeature < ZefoyTiktokBotBaseFeature
+  # The `body.<key>` form of an op's response transform: the mock wraps its
+  # payload in <key> so the transform can unwrap it again.
+  ENVELOPE_RES_RE = /\A`body\.([^`.]+)`\z/
+
   def initialize
     super
     @version = "0.0.1"
@@ -33,11 +37,30 @@ class ZefoyTiktokBotTestFeature < ZefoyTiktokBotBaseFeature
     test_self = self
 
     test_fetcher = ->(fctx, _fullurl, _fetchdef) {
+      # Shape the mock payload the way the real API would, so the op's
+      # response transform recovers the entity from it. A point carrying
+      # transform.res of `body.item` describes an API that answers
+      # {"item" => {...}}; handing back the bare entity means the transform
+      # unwraps a property that is not there and the caller gets nil. The mock
+      # has to agree with the model, or it only ever simulates APIs whose
+      # responses happen to be unwrapped. Mirrors the ts mock.
+      envelope = ->(data) {
+        point = fctx.point
+        next data if data.nil? || !point.is_a?(Hash)
+        transform = point["transform"]
+        next data unless transform.is_a?(Hash)
+        restf = transform["res"]
+        next data unless restf.is_a?(String)
+        m = ENVELOPE_RES_RE.match(restf)
+        m.nil? ? data : { m[1] => data }
+      }
+
       respond = ->(status, data, extra) {
+        payload = envelope.call(data)
         out = {
           "status" => status,
           "statusText" => "OK",
-          "json" => -> { data },
+          "json" => -> { payload },
           "body" => "not-used",
         }
         extra&.each { |k, v| out[k] = v }

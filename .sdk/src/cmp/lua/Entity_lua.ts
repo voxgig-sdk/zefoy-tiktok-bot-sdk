@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, camelify, names,
   File, Content, Folder, Fragment, Line, FeatureHook, Slot,
-  entityClassName,
+  entityClassName, entityCollection,
 } from '@voxgig/sdkgen'
 
 import {
@@ -24,7 +24,7 @@ const Entity = cmp(function Entity(props: any) {
   // data-type name. The class is a module-local table (snake-cased file name),
   // so this is used only for the local identifier — kept uniform with the other
   // languages.
-  const entityColl = getModelPath(model, `main.${KIT}.entity`)
+  const entityColl = entityCollection(model)
   const cls = entityClassName(entity, entityColl)
 
   const entrep = {
@@ -40,7 +40,7 @@ const Entity = cmp(function Entity(props: any) {
 
     File({ name: entity.name + '_entity.' + target.ext }, () => {
 
-      const opnames = Object.keys(entity.op)
+      const opnames = Object.keys(entity.op || {})
 
       const opfrags =
         (['load', 'list', 'create', 'update', 'remove']

@@ -11,7 +11,7 @@ import {
   File,
   cmp,
   snakify,
-  isAuthActive,
+  isAuthActive, envName, envToken
 } from '@voxgig/sdkgen'
 
 
@@ -60,7 +60,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
   const target = props.target
   const entity: ModelEntity = props.entity
 
-  const PROJECTNAME = nom(model, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
+  const PROJECTNAME = envName(model)
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -70,7 +70,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
     ? `\n      "apikey" => env["${PROJECTNAME}_APIKEY"],`
     : ''
 
-  const opnames = Object.keys(entity.op)
+  const opnames = Object.keys(entity.op || {})
   const hasLoad = opnames.includes('load')
   const hasList = opnames.includes('list')
 
@@ -78,8 +78,8 @@ const TestDirect = cmp(function TestDirect(props: any) {
     return
   }
 
-  const loadOp = entity.op.load
-  const listOp = entity.op.list
+  const loadOp = entity.op?.load
+  const listOp = entity.op?.list
 
   const loadPoint = loadOp?.points?.[0]
   const loadPath = loadPoint ? normalizePathParams(loadPoint.parts || [], loadPoint?.args?.params || [], loadPoint?.rename?.param) : ''
@@ -125,7 +125,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
     ? loadParams.map((p: any) => `      params["${p.name}"] = ${JSON.stringify(p.example)}`).join('\n')
     : ''
 
-  const entidEnvVar = `${PROJECTNAME}_TEST_${nom(entity, 'NAME').replace(/[^A-Z_]/g, '_')}_ENTID`
+  const entidEnvVar = `${PROJECTNAME}_TEST_${envToken(entity.name)}_ENTID`
 
   File({ name: entity.name + '_direct_test.' + target.ext }, () => {
 

@@ -6,7 +6,8 @@ import {
   camelify,
   canonKey,
   each,
-  safeVarName,
+  exampleVarName,
+  names,
 } from '@voxgig/sdkgen'
 
 import {
@@ -77,7 +78,8 @@ function exampleValue(entity: any, op: any, paramName: string, placeholder: stri
 // `type`/`range` entity must not bind a Go keyword).
 function goVarName(name: string): string {
   const pascal = camelify(name)
-  return safeVarName(pascal.charAt(0).toLowerCase() + pascal.slice(1), 'go')
+  // exampleVarName also guards `client`, the doc examples' SDK-instance var.
+  return exampleVarName(pascal.charAt(0).toLowerCase() + pascal.slice(1), 'go')
 }
 
 
@@ -148,7 +150,31 @@ function clean(o: any) {
 }
 
 
+
+// The Go identifier fragment for a feature's generated constructor
+// (New<Fname>Feature / New<Fname>FeatureFunc).
+//
+// SHARED because the identifier is DECLARED in Main_go.ts (registry.go and the
+// root init()) and REFERENCED in Config_go.ts (makeFeature). Two copies of the
+// derivation is a latent undefined-identifier bug in the generated SDK: they
+// were both `name.charAt(0).toUpperCase() + name.slice(1)`, consistently wrong
+// for a name needing real normalisation but at least agreeing, until one side
+// was fixed alone and `rate_limit` became NewRateLimitFeatureFunc in the
+// registry and NewRate_limitFeatureFunc in config.
+//
+// Uses the jostraca-derived PascalCase `Name` (deriving it if absent), which is
+// what Main_ts.ts uses, so a hyphenated or underscored feature name yields a
+// legal Go identifier instead of `NewRate-limitFeatureFunc`.
+function goFeatureName(feat: any): string {
+  if (null == feat.Name) {
+    names(feat, feat.name)
+  }
+  return feat.Name
+}
+
+
 export {
+  goFeatureName,
   clean,
   exampleValue,
   formatGoMap,

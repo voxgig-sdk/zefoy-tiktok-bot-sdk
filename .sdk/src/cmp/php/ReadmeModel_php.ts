@@ -93,7 +93,7 @@ ${opRows}
 
 ### Result shape
 
-Entity operations return the bare result data (an \`array\` for single-entity
+Entity operations return the ENTITY (call data_get() for the record) (an \`array\` for single-entity
 ops, a \`list\` for \`list\`) and throw on error. Wrap calls in
 \`try\`/\`catch\` to handle failures.
 

@@ -24,6 +24,7 @@ require_relative 'prepare_method'
 require_relative 'prepare_params'
 require_relative 'prepare_path'
 require_relative 'prepare_query'
+require_relative 'graphql'
 require_relative 'result_basic'
 require_relative 'result_body'
 require_relative 'result_headers'
@@ -55,6 +56,8 @@ ZefoyTiktokBotUtility.registrar = ->(u) {
   u.prepare_params = ZefoyTiktokBotUtilities::PrepareParams
   u.prepare_path = ZefoyTiktokBotUtilities::PreparePath
   u.prepare_query = ZefoyTiktokBotUtilities::PrepareQuery
+  u.graphql_body = ZefoyTiktokBotUtilities::GraphqlBody
+  u.graphql_errors = ZefoyTiktokBotUtilities::GraphqlErrors
   u.result_basic = ZefoyTiktokBotUtilities::ResultBasic
   u.result_body = ZefoyTiktokBotUtilities::ResultBody
   u.result_headers = ZefoyTiktokBotUtilities::ResultHeaders

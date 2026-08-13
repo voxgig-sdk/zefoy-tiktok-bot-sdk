@@ -24,6 +24,8 @@ import {
   buildIdNames,
   getMatchEntries,
   isAuthActive,
+  entityDataIdField, envName, envToken,
+  phpEntityAccessor,
 } from '@voxgig/sdkgen'
 
 
@@ -52,7 +54,7 @@ const TestEntity = cmp(function TestEntity(props: any) {
   // it only applies to entities that declare a list op. Others (e.g. Batch =
   // create/load) have no list endpoint — make_point errors and the stream
   // yields nothing — so skip the stream test for them.
-  const hasList = !!(entity.op && (entity.op as any).list)
+  const hasList = !!(entity.op && (entity.op as any)?.list)
 
   const basicflow: ModelEntityFlow | undefined =
     getModelPath(model, `main.${KIT}.flow.Basic${nom(entity, 'Name')}Flow`)
@@ -60,15 +62,16 @@ const TestEntity = cmp(function TestEntity(props: any) {
     return
   }
 
-  // PHP method names are case-insensitive — an entity literally named 'test'
-  // collides with the static `test()` test-mode constructor on the SDK class.
-  // Mirror the mangling done in MainEntity_php.ts.
+  // The accessor may be mangled to avoid colliding with an SDK class member.
+  // This used to carry its own copy of the rule, which only knew about `test`
+  // — so an entity named `graph_ql` emitted `$client->GraphQl(null)` here,
+  // which PHP resolves (case-insensitively) to the SDK's own
+  // `graphql(string $query)` and fails with "Argument #1 must be of type
+  // string, null given". One helper, one answer.
   const entName = nom(entity, 'Name')
-  const accessor = 'test' === entName.toLowerCase()
-    ? entName + '_'
-    : entName
+  const accessor = phpEntityAccessor(entName)
 
-  const PROJUPPER = nom(model.const, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
+  const PROJUPPER = envName(model)
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -166,7 +169,7 @@ ${hasList ? `
         // The basic flow consumes synthetic IDs from the fixture. In live mode
         // without an *_ENTID env override, those IDs hit the live API and 4xx.
         if (!empty($setup["synthetic_only"])) {
-            $this->markTestSkipped("live entity test uses synthetic IDs from fixture — set ${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID JSON to run live");
+            $this->markTestSkipped("live entity test uses synthetic IDs from fixture — set ${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID JSON to run live");
             return;
         }
         $client = $setup["client"];
@@ -237,17 +240,17 @@ ${hasList ? `
     Content(`    // Detect ENTID env override before envOverride consumes it. When live
     // mode is on without a real override, the basic test runs against synthetic
     // IDs from the fixture and 4xx's. Surface this so the test can skip.
-    $entid_env_raw = getenv("${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID");
+    $entid_env_raw = getenv("${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID");
     $idmap_overridden = $entid_env_raw !== false && str_starts_with(trim($entid_env_raw), "{");
 
     $env = Runner::env_override([
-        "${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID" => $idmap,
+        "${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID" => $idmap,
         "${PROJUPPER}_TEST_LIVE" => "FALSE",
         "${PROJUPPER}_TEST_EXPLAIN" => "FALSE",${apikeyEnvEntry}
     ]);
 
     $idmap_resolved = Helpers::to_map(
-        $env["${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID"]);
+        $env["${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID"]);
     if ($idmap_resolved === null) {
         $idmap_resolved = Helpers::to_map($idmap);
     }
@@ -332,7 +335,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
 
   Content(`
         $${datavar}_result = $${entvar}->create($${datavar}, null);
-        $${datavar} = Helpers::to_map($${datavar}_result);
+        $${datavar} = Helpers::to_map(is_object($${datavar}_result) && method_exists($${datavar}_result, 'data_get') ? $${datavar}_result->data_get() : $${datavar}_result);
         $this->assertNotNull($${datavar});
 `)
   if (null != ctx.entity.id) {
@@ -344,6 +347,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
 
 const generateList: OpGen = (ctx, step, index) => {
   const { entity, flow, accessor } = ctx
+  const hasDataId = null != entityDataIdField(entity)
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))
@@ -388,7 +392,7 @@ const generateList: OpGen = (ctx, step, index) => {
       const hasRefData = validRef && allSteps.some((s: any) => 'create' === s.op &&
         ((s.input.ref ?? entity.name + '_ref01') === validRef))
 
-      if ('ItemExists' === validator.apply && hasRefData) {
+      if ('ItemExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
         $found_item = sdk_select(
@@ -396,7 +400,7 @@ const generateList: OpGen = (ctx, step, index) => {
             ["id" => $${refDataVar}["id"]]);
         $this->assertNotEmpty($found_item);
 `)
-      } else if ('ItemNotExists' === validator.apply && hasRefData) {
+      } else if ('ItemNotExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
         $not_found_item = sdk_select(
@@ -465,7 +469,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
 
   Content(`
         $${resdatavar}_result = $${entvar}->update($${datavar}_up, null);
-        $${resdatavar} = Helpers::to_map($${resdatavar}_result);
+        $${resdatavar} = Helpers::to_map(is_object($${resdatavar}_result) && method_exists($${resdatavar}_result, 'data_get') ? $${resdatavar}_result->data_get() : $${resdatavar}_result);
         $this->assertNotNull($${resdatavar});
 `)
   if (hasEntIdU) {
@@ -530,7 +534,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
             "id" => $${srcdatavar}["id"],
         ];
         $${datavar}_loaded = $${entvar}->load($${matchvar}, null);
-        $${datavar}_load_result = Helpers::to_map($${datavar}_loaded);
+        $${datavar}_load_result = Helpers::to_map(is_object($${datavar}_loaded) && method_exists($${datavar}_loaded, 'data_get') ? $${datavar}_loaded->data_get() : $${datavar}_loaded);
         $this->assertNotNull($${datavar}_load_result);
         $this->assertEquals($${datavar}_load_result["id"], $${srcdatavar}["id"]);
 `)
@@ -546,6 +550,9 @@ const generateLoad: OpGen = (ctx, step, index) => {
 
 const generateRemove: OpGen = (ctx, step, index) => {
   const { entity, flow, accessor } = ctx
+  if (null == entityDataIdField(entity)) {
+    return
+  }
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))

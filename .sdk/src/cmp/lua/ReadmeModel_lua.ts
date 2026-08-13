@@ -40,9 +40,16 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   if (opUnion.has('list')) resultRows.push('| `list` | an array (`table`) of entity records |')
   const resultShapeRows = resultRows.join('\n')
 
-  const exEnt: any = entityList[0] || {}
+  // The Result-shape illustration calls `load`, so the example entity must
+  // actually HAVE load — entityList[0] need not. api-tools' first entity is
+  // Cryptography (create-only), so the generated README demonstrated
+  // `client:Cryptography():load()` and the readme_examples test died with
+  // "attempt to call a nil value (method 'load')".
+  const exEnt: any =
+    entityList.find((e: any) => (e.op || {}).load) || entityList[0] || {}
   const eName = exEnt.Name || 'Entity'
   const eLower = String(exEnt.name || 'entity').toLowerCase()
+  const hasLoad = null != (exEnt.op || {}).load
   // Model-driven id key: null when the example entity has no id-like field, so
   // the Result-shape load illustration takes no match argument.
   const idF = entityIdField(exEnt)
@@ -119,9 +126,10 @@ ${resultShapeRows}
 
 Check \`err\` first (it is non-\`nil\` on failure), then use \`value\`:
 
-    local ${eLower}, err = client:${eName}():load(${idF ? `{ ${idF} = "example_id" }` : ''})
+    local ${eLower}, err = client:${eName}():${hasLoad ? 'load' : 'list'}(${
+      hasLoad && idF ? `{ ${idF} = "example_id" }` : ''})
     if err then error(err) end
-    -- ${eLower} is the loaded record
+    -- ${eLower} is the ${hasLoad ? 'loaded record' : 'record list'}
 
 Only \`direct()\` returns a response envelope — a \`table\` with \`ok\`,
 \`status\`, \`headers\`, and \`data\` keys.

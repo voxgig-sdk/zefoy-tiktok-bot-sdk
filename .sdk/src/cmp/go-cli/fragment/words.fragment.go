@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	eng "github.com/aql-lang/aql/eng/go"
+	eng "github.com/boru-lang/boru/eng/go"
 	sdk "GOMODULE"
 )
 
-// registerSDKWords installs three native AQL words bound to the SDK:
+// registerSDKWords installs three native boru words bound to the SDK:
 // list / load / update. Each is declared with two overloads matching
 // the signature  [query?:(Node or Scalar) entity:atom]:
 //
@@ -18,31 +18,34 @@ import (
 //                              `load {id:1} book`, `load 1 book`)
 //
 // The entity slot is /q-quoted so a bareword `book` parses as the
-// Atom "book" rather than dispatching as an undefined word.
+// Atom "book" rather than dispatching as an undefined word. Both
+// overloads are all-forward (BarrierAllForward), so args are collected
+// from the tokens following the word.
 func registerSDKWords(r *eng.Registry, client *sdk.ProjectNameSDK) {
 	for _, op := range []string{"list", "load", "update"} {
 		op := op
-		single := eng.NativeSig{
+		single := eng.Signature{
 			Args:      []*eng.Type{eng.TAtom},
 			QuoteArgs: map[int]bool{0: true},
-			Handler: func(args []eng.Value, _ map[string]eng.Value, _ []eng.Value, _ *eng.Registry) ([]eng.Value, error) {
+			Impl: eng.Go(func(args []eng.Value, _ map[string]eng.Value, _ []eng.Value, _ *eng.Registry) ([]eng.Value, error) {
 				return runOp(client, op, nil, args[0])
-			},
-			Returns: []*eng.Type{eng.TAny},
+			}),
+			Returns:    []*eng.Type{eng.TAny},
+			BarrierPos: eng.BarrierAllForward,
 		}
-		dual := eng.NativeSig{
+		dual := eng.Signature{
 			Args:      []*eng.Type{eng.TAny, eng.TAtom},
 			QuoteArgs: map[int]bool{1: true},
-			Handler: func(args []eng.Value, _ map[string]eng.Value, _ []eng.Value, _ *eng.Registry) ([]eng.Value, error) {
+			Impl: eng.Go(func(args []eng.Value, _ map[string]eng.Value, _ []eng.Value, _ *eng.Registry) ([]eng.Value, error) {
 				q := args[0]
 				return runOp(client, op, &q, args[1])
-			},
-			Returns: []*eng.Type{eng.TAny},
+			}),
+			Returns:    []*eng.Type{eng.TAny},
+			BarrierPos: eng.BarrierAllForward,
 		}
 		r.RegisterNativeFunc(eng.NativeFunc{
-			Name:        op,
-			ForwardArgs: true,
-			Signatures:  []eng.NativeSig{single, dual},
+			Name:       op,
+			Signatures: []eng.Signature{single, dual},
 		})
 	}
 }
@@ -91,22 +94,22 @@ func entityFor(client *sdk.ProjectNameSDK, name string) (sdk.ProjectNameEntity, 
 	return nil, fmt.Errorf("unknown entity %q", name)
 }
 
-// queryToMap converts an AQL Value (Map or Scalar) into the
+// queryToMap converts a boru Value (Map or Scalar) into the
 // `map[string]any` shape the SDK expects. Maps are unwrapped via
 // eng.ToNative. Scalars are wrapped as {"id": <value>} so the
 // shorthand `load 1 book` becomes `load {id:1} book`.
 func queryToMap(v eng.Value) (map[string]any, error) {
-	if v.VType.Matches(eng.TMap) {
+	if v.Parent.ConformsTo(eng.TMap) {
 		m, ok := eng.ToNative(v).(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("query map could not be unwrapped")
 		}
 		return m, nil
 	}
-	if v.VType.Matches(eng.TScalar) {
+	if v.Parent.ConformsTo(eng.TScalar) {
 		return map[string]any{"id": eng.ToNative(v)}, nil
 	}
-	return nil, fmt.Errorf("query must be a Map or Scalar, got %s", v.VType)
+	return nil, fmt.Errorf("query must be a Map or Scalar, got %s", v.Parent)
 }
 
 // extractData walks an SDK result and replaces any sdk.Entity wrapper

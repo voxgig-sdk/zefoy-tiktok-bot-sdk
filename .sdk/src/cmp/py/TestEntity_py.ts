@@ -24,6 +24,7 @@ import {
   buildIdNames,
   getMatchEntries,
   isAuthActive,
+  entityDataIdField, envName, envToken
 } from '@voxgig/sdkgen'
 
 
@@ -55,7 +56,7 @@ const TestEntity = cmp(function TestEntity(props: any) {
     return
   }
 
-  const PROJUPPER = nom(model.const, 'Name').toUpperCase().replace(/[^A-Z_]/g, '_')
+  const PROJUPPER = envName(model)
 
   const authActive = isAuthActive(model)
   const apikeyEnvEntry = authActive
@@ -81,7 +82,7 @@ const TestEntity = cmp(function TestEntity(props: any) {
   // it only applies to entities that actually declare a `list` op. Others
   // (e.g. Batch = create/load) have no list endpoint — make_point would error
   // and the stream would yield nothing — so skip the test for them.
-  const hasList = !!(entity.op && (entity.op as any).list)
+  const hasList = !!(entity.op && (entity.op as any)?.list)
 
   File({ name: 'test_' + entity.name + '_entity.' + target.ext }, () => {
 
@@ -93,9 +94,9 @@ import time
 
 import pytest
 
-from utility.voxgig_struct import voxgig_struct as vs
+from ${model.const.Name.toLowerCase()}_sdk.utility.voxgig_struct import voxgig_struct as vs
 from ${model.const.Name.toLowerCase()}_sdk import ${model.const.Name}SDK
-from core import helpers
+from ${model.const.Name.toLowerCase()}_sdk.core import helpers
 
 _TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 from test import runner
@@ -129,7 +130,7 @@ ${hasList ? `
         assert len(seen) == 3
 
         # Inbound: streaming active -> yields each item from the feature.
-        from config import make_config
+        from ${model.const.Name.toLowerCase()}_sdk.config import make_config
         cfg = make_config()
         if isinstance(cfg.get("feature"), dict) and "streaming" in cfg["feature"]:
             sdk = ${model.const.Name}SDK.test(
@@ -157,7 +158,7 @@ ${hasList ? `
         # without an *_ENTID env override, those IDs hit the live API and 4xx.
         if setup.get("synthetic_only"):
             pytest.skip("live entity test uses synthetic IDs from fixture — "
-                        "set ${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID JSON to run live")
+                        "set ${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID JSON to run live")
         client = setup["client"]
 
 `)
@@ -228,17 +229,17 @@ def _${entity.name}_basic_setup(extra):
     # mode is on without a real override, the basic test runs against synthetic
     # IDs from the fixture and 4xx's. We surface this so the test can skip.
     _entid_env_raw = os.environ.get(
-        "${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID")
+        "${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID")
     _idmap_overridden = _entid_env_raw is not None and _entid_env_raw.strip().startswith("{")
 
     env = runner.env_override({
-        "${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID": idmap,
+        "${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID": idmap,
         "${PROJUPPER}_TEST_LIVE": "FALSE",
         "${PROJUPPER}_TEST_EXPLAIN": "FALSE",${apikeyEnvEntry}
     })
 
     idmap_resolved = helpers.to_map(
-        env.get("${PROJUPPER}_TEST_${entity.name.toUpperCase().replace(/[^A-Z_]/g, '_')}_ENTID"))
+        env.get("${PROJUPPER}_TEST_${envToken(entity.name)}_ENTID"))
     if idmap_resolved is None:
         idmap_resolved = helpers.to_map(idmap)
 `)
@@ -320,7 +321,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
   const hasEntIdC = null != ctx.entity.id
 
   Content(`
-        ${datavar} = helpers.to_map(${entvar}.create(${datavar}, None))
+        ${datavar} = helpers.to_map(runner.entity_data(${entvar}.create(${datavar}, None)))
         assert ${datavar} is not None
 `)
   if (hasEntIdC) {
@@ -332,6 +333,7 @@ const generateCreate: OpGen = (ctx, step, index) => {
 
 const generateList: OpGen = (ctx, step, index) => {
   const { entity, flow } = ctx
+  const hasDataId = null != entityDataIdField(entity)
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))
@@ -376,7 +378,7 @@ const generateList: OpGen = (ctx, step, index) => {
       const hasRefData = validRef && allSteps.some((s: any) => 'create' === s.op &&
         ((s.input.ref ?? entity.name + '_ref01') === validRef))
 
-      if ('ItemExists' === validator.apply && hasRefData) {
+      if ('ItemExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
         found_item = vs.select(
@@ -384,7 +386,7 @@ const generateList: OpGen = (ctx, step, index) => {
             {"id": ${refDataVar}["id"]})
         assert not vs.isempty(found_item)
 `)
-      } else if ('ItemNotExists' === validator.apply && hasRefData) {
+      } else if ('ItemNotExists' === validator.apply && hasRefData && hasDataId) {
         const refDataVar = validRef + '_data'
         Content(`
         not_found_item = vs.select(
@@ -452,7 +454,7 @@ const generateUpdate: OpGen = (ctx, step, index) => {
   }
 
   Content(`
-        ${resdatavar} = helpers.to_map(${entvar}.update(${datavar}_up, None))
+        ${resdatavar} = helpers.to_map(runner.entity_data(${entvar}.update(${datavar}_up, None)))
         assert ${resdatavar} is not None
 `)
   if (hasEntIdU) {
@@ -516,7 +518,7 @@ const generateLoad: OpGen = (ctx, step, index) => {
             "id": ${srcdatavar}["id"],
         }
         ${datavar}_loaded = ${entvar}.load(${matchvar}, None)
-        ${datavar}_load_result = helpers.to_map(${datavar}_loaded)
+        ${datavar}_load_result = helpers.to_map(runner.entity_data(${datavar}_loaded))
         assert ${datavar}_load_result is not None
         assert ${datavar}_load_result["id"] == ${srcdatavar}["id"]
 `)
@@ -532,6 +534,9 @@ const generateLoad: OpGen = (ctx, step, index) => {
 
 const generateRemove: OpGen = (ctx, step, index) => {
   const { entity, flow } = ctx
+  if (null == entityDataIdField(entity)) {
+    return
+  }
   const ref = step.input.ref ?? entity.name + '_ref01'
   const entvar = step.input.entvar ?? ref + '_ent'
   const matchvar = step.input.matchvar ?? (ref + '_match' + (step.input.suffix ?? ''))

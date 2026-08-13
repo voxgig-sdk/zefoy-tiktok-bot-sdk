@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -186,7 +186,7 @@ Prepare a fetch definition without sending the request. Returns the
       }
 
       Content(`\`\`\`php
-$${ent.name} = $client->${ent.Name}();
+$${ent.name} = $client->${phpEntityAccessor(ent.Name)}();
 \`\`\`
 
 `)
@@ -270,14 +270,14 @@ ${info.desc}
                   it.name === idF ? ent.name + '_id' : it.name)}`).join(', ')}]`
               : ''
             Content(`\`\`\`php
-$result = $client->${ent.Name}()->${opname}(${arg});
+$result = $client->${phpEntityAccessor(ent.Name)}()->${opname}(${arg});
 \`\`\`
 
 `)
           }
           else if ('list' === opname) {
             Content(`\`\`\`php
-$results = $client->${ent.Name}()->list();
+$results = $client->${phpEntityAccessor(ent.Name)}()->list();
 \`\`\`
 
 `)
@@ -289,7 +289,7 @@ $results = $client->${ent.Name}()->list();
             const createItems = opRequestShape(ent, 'create').items
               .filter((it: any) => !it.optional)
             Content(`\`\`\`php
-$result = $client->${ent.Name}()->create([
+$result = $client->${phpEntityAccessor(ent.Name)}()->create([
 `)
             createItems.map((it: any) => {
               Content(`  "${it.name}" => null, // ${canonToType(it.type, target.name)}
@@ -311,7 +311,7 @@ $result = $client->${ent.Name}()->create([
               `  "${it.name}" => ${phpLit(it.type,
                 it.name === idF ? ent.name + '_id' : it.name)},\n`).join('')
             Content(`\`\`\`php
-$result = $client->${ent.Name}()->update([
+$result = $client->${phpEntityAccessor(ent.Name)}()->update([
 ${updateLines}  // Fields to update
 ]);
 \`\`\`

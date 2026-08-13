@@ -1,5 +1,5 @@
 
-import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, canonKey, entityIdField, pickExampleEntity, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -60,7 +60,7 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
 $client = ${model.const.Name}SDK::test([
     "entity" => ["${ename}" => ["test01" => ${recBody}]],
 ]);
-$${eVar} = $client->${eName}()->${primaryOp}(${callArg});
+$${eVar} = $client->${phpEntityAccessor(eName)}()->${primaryOp}(${callArg});
 \`\`\`
 `)
   } else {

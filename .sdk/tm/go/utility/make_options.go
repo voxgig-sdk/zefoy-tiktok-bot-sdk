@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"regexp"
 	"sort"
 	"strings"
 
@@ -8,6 +9,9 @@ import (
 
 	"GOMODULE/core"
 )
+
+// {name} placeholders in a templated server URL (OpenAPI server variables).
+var serverVarRe = regexp.MustCompile(`\{[A-Za-z0-9_]+\}`)
 
 func makeOptionsUtil(ctx *core.Context) map[string]any {
 	options := ctx.Options
@@ -82,7 +86,7 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 		},
 		"allow": map[string]any{
 			"method": "GET,PUT,POST,PATCH,DELETE,OPTIONS",
-			"op":     "create,update,load,list,remove,command,direct",
+			"op":     "create,update,load,list,remove,command,direct,graphql",
 		},
 		"entity": map[string]any{
 			"`$CHILD`": map[string]any{
@@ -108,6 +112,13 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 		"clean": map[string]any{
 			"keys": "key,token,id",
 		},
+		// Server-variable values for a templated base URL (OpenAPI server
+		// variables): {name} placeholders in "base" are substituted from this
+		// map at construction. Spec defaults arrive via the generated config;
+		// user values override them.
+		"server": map[string]any{
+			"`$CHILD`": "",
+		},
 	}
 
 	// Preserve system.fetch before merge/validate.
@@ -119,6 +130,43 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 	merged := vs.Merge([]any{map[string]any{}, cfgopts, opts})
 	validated, _ := vs.Validate(merged, optspec)
 	opts = validated.(map[string]any)
+
+	// Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
+	// Every placeholder must resolve to a non-empty value: from
+	// options["server"] (user), else the config default. A placeholder that
+	// resolves to "" is a construction error in live mode — the URL cannot
+	// work — but in test mode substitutes the deterministic value
+	// "test-<name>" so offline tests need no configuration. The SDK
+	// constructor has no error return, so a missing required variable
+	// PANICS (construction-time misconfiguration, as regexp.MustCompile).
+	if base, ok := opts["base"].(string); ok && strings.Contains(base, "{") {
+		testmode := false
+		if ta, ok := vs.GetPath([]any{"test", "active"}, opts).(bool); ok && ta {
+			testmode = true
+		}
+		if fa, ok := vs.GetPath([]any{"feature", "test", "active"}, opts).(bool); ok && fa {
+			testmode = true
+		}
+		server := core.ToMapAny(opts["server"])
+		sdkname := "SDK"
+		if mn, ok := vs.GetPath([]any{"main", "name"}, config).(string); ok && mn != "" {
+			sdkname = mn
+		}
+		resolved := serverVarRe.ReplaceAllStringFunc(base, func(ph string) string {
+			name := ph[1 : len(ph)-1]
+			val, _ := server[name].(string)
+			if val == "" {
+				if testmode {
+					return "test-" + name
+				}
+				panic(sdkname + ": the server variable '" + name + "' is required: " +
+					"the API base URL is '" + base + "' — pass " +
+					`options["server"].(map)["` + name + `"] in the SDK options`)
+			}
+			return val
+		})
+		opts["base"] = resolved
+	}
 
 	// Restore system.fetch.
 	if sysFetch != nil {

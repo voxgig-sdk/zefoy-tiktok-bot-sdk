@@ -29,7 +29,7 @@ import {
   File, Content, Folder,
 } from '@voxgig/sdkgen'
 
-import { canonToType, opTypeName, opRequestShape } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -50,9 +50,12 @@ function validName(name: string): boolean {
 // Emit one typed PHP property line. `mixed` is already nullable in PHP and
 // rejects the `?` prefix, so it is special-cased; every other optional field
 // becomes `?type` with a `= null` default so the property is safely optional.
+// A `$NULL`-typed field maps to the 'null' type name, which is not usable as
+// a property type here (`?null` is a fatal, and standalone `null` needs
+// PHP >= 8.2), so it degrades to `mixed` too.
 function propLine(name: string, sentinel: unknown, optional: boolean): string {
   const type = canonToType(sentinel, LANG)
-  if ('mixed' === type) {
+  if ('mixed' === type || 'null' === type) {
     return optional
       ? `    public mixed $${name} = null;\n`
       : `    public mixed $${name};\n`
@@ -64,14 +67,27 @@ function propLine(name: string, sentinel: unknown, optional: boolean): string {
 
 
 const EntityTypes = cmp(function EntityTypes(props: any) {
-  const { model } = props.ctx$
+  const { model, log } = props.ctx$
 
-  const entity = getModelPath(model, `main.${KIT}.entity`)
-  const entityList = each(entity).filter((e: any) => e.active !== false)
+  // only_active:false — getModelPath DROPS active:false entries by default,
+  // but the consumer scaffold (create-sdkgen Root.ts) iterates the RAW entity
+  // collection, so inactive entities still get generated entity code that
+  // references these typed names. The typed model must cover them too.
+  const entity = getModelPath(model, `main.${KIT}.entity`, { only_active: false, required: false })
+  // Emit for EVERY entity that gets generated entity code: the consumer
+  // scaffold (create-sdkgen Root.ts) iterates entities WITHOUT an active
+  // filter, so inactive entities still get class files referencing these
+  // typed names. Filter on `name` (always present), NOT `active` — parity
+  // with the go emitter's fix.
+  const entityList = deriveEntityNames(entity)
   // Derive the PascalCase Name up-front — it is set LAZILY by names(), so an
   // entity not yet named (e.g. a fieldless placeholder) would otherwise read
   // `Name = undefined` below. Parity with the go emitter's fix.
-  entityList.forEach((e: any) => { if (null == e.Name) names(e, e.name) })
+
+  // Surface duplicate generated type names (two entities with the same
+  // PascalCase Name) — they would redeclare a type in statically-typed
+  // targets. Detection only; renaming is a model-level decision.
+  warnEntityTypeCollisions(entity, log, LANG)
 
   Folder({ name: 'types' }, () => {
 

@@ -37,6 +37,7 @@ func plCtx(client *sdk.ZefoyTiktokBotSDK, utility *sdk.Utility, ctrl map[string]
 
 // plEntity is a minimal fake entity for the list-wrap test.
 type plEntity struct {
+	deleted bool
 	name string
 	made *[]any
 }
@@ -50,6 +51,11 @@ func (e *plEntity) Data(args ...any) any {
 	return nil
 }
 func (e *plEntity) Match(args ...any) any { return nil }
+
+// Every operation resolves to the entity; `remove` marks it. The fake has
+// to satisfy the same interface the real entities do.
+func (e *plEntity) MarkDeleted() { e.deleted = true }
+func (e *plEntity) Deleted() bool { return e.deleted }
 
 func TestPipelineMakeResponse(t *testing.T) {
 	client, utility := plClient(t, nil)

@@ -7,6 +7,7 @@ class ZefoyTiktokBotUtility
                 :make_point, :make_spec, :make_url, :param, :prepare_auth,
                 :prepare_body, :prepare_headers, :prepare_method,
                 :prepare_params, :prepare_path, :prepare_query,
+                :graphql_body, :graphql_errors,
                 :result_basic, :result_body, :result_headers,
                 :transform_request, :transform_response, :custom
 

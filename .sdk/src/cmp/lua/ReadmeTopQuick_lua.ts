@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -48,7 +48,7 @@ local client = ${ctor}
     const eName = nom(exampleEntity, 'Name')
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Lua keyword (e.g. `end`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'lua')
+    const eVar = exampleVarName(eName.toLowerCase(), 'lua')
     const opnames = Object.keys(exampleEntity.op || {})
     // Model-driven id key: null when the entity has no id-like field, in which
     // case the load example takes no match argument.

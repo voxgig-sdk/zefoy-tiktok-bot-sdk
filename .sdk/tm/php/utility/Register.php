@@ -23,6 +23,7 @@ require_once __DIR__ . '/MakeUrl.php';
 require_once __DIR__ . '/Param.php';
 require_once __DIR__ . '/PrepareAuth.php';
 require_once __DIR__ . '/PrepareBody.php';
+require_once __DIR__ . '/Graphql.php';
 require_once __DIR__ . '/PrepareHeaders.php';
 require_once __DIR__ . '/PrepareMethod.php';
 require_once __DIR__ . '/PrepareParams.php';
@@ -59,6 +60,8 @@ ZefoyTiktokBotUtility::setRegistrar(function (ZefoyTiktokBotUtility $u): void {
     $u->prepare_params = [ZefoyTiktokBotPrepareParams::class, 'call'];
     $u->prepare_path = [ZefoyTiktokBotPreparePath::class, 'call'];
     $u->prepare_query = [ZefoyTiktokBotPrepareQuery::class, 'call'];
+    $u->graphql_body = [ZefoyTiktokBotGraphql::class, 'body'];
+    $u->graphql_errors = [ZefoyTiktokBotGraphql::class, 'errors'];
     $u->result_basic = [ZefoyTiktokBotResultBasic::class, 'call'];
     $u->result_body = [ZefoyTiktokBotResultBody::class, 'call'];
     $u->result_headers = [ZefoyTiktokBotResultHeaders::class, 'call'];

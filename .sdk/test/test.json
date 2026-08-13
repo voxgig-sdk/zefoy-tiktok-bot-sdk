@@ -40,7 +40,58 @@
     },
     "clean": {
       "basic": {
-        "set": []
+        "set": [
+          {
+            "args": [
+              {
+                "options": {}
+              },
+              {
+                "a": "A"
+              }
+            ],
+            "mark": 10,
+            "out": {
+              "a": "A"
+            }
+          },
+          {
+            "args": [
+              {
+                "options": {}
+              },
+              {}
+            ],
+            "mark": 20,
+            "out": {}
+          },
+          {
+            "args": [
+              {
+                "options": {}
+              },
+              "plain"
+            ],
+            "mark": 30,
+            "out": "plain"
+          },
+          {
+            "args": [
+              {
+                "options": {}
+              },
+              [
+                1,
+                2
+              ]
+            ],
+            "mark": 40,
+            "out": [
+              1,
+              2
+            ]
+          }
+        ]
       }
     },
     "done": {
@@ -731,6 +782,76 @@
             "ctx": {
               "opname": "bad"
             }
+          },
+          {
+            "ctx": {
+              "opname": "update",
+              "point": {
+                "method": "POST"
+              }
+            },
+            "out": "POST"
+          },
+          {
+            "ctx": {
+              "opname": "update",
+              "point": {
+                "method": "PATCH"
+              }
+            },
+            "out": "PATCH"
+          },
+          {
+            "ctx": {
+              "opname": "remove",
+              "point": {
+                "method": "POST"
+              }
+            },
+            "out": "POST"
+          },
+          {
+            "ctx": {
+              "opname": "load",
+              "point": {
+                "method": "POST"
+              }
+            },
+            "out": "POST"
+          },
+          {
+            "ctx": {
+              "opname": "create",
+              "point": {
+                "method": "POST"
+              }
+            },
+            "out": "POST"
+          },
+          {
+            "ctx": {
+              "opname": "update",
+              "point": {
+                "method": "post"
+              }
+            },
+            "out": "POST"
+          },
+          {
+            "ctx": {
+              "opname": "update",
+              "point": {
+                "method": ""
+              }
+            },
+            "out": "PUT"
+          },
+          {
+            "ctx": {
+              "opname": "remove",
+              "point": {}
+            },
+            "out": "DELETE"
           }
         ]
       }
@@ -842,7 +963,99 @@
     },
     "preparePath": {
       "basic": {
-        "set": []
+        "set": [
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": [
+                  "api",
+                  "planet",
+                  "{id}"
+                ]
+              }
+            },
+            "mark": 10,
+            "out": "api/planet/{id}"
+          },
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": [
+                  "items"
+                ]
+              }
+            },
+            "mark": 20,
+            "out": "items"
+          },
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": []
+              }
+            },
+            "mark": 30,
+            "out": ""
+          },
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": [
+                  "a",
+                  "",
+                  "b"
+                ]
+              }
+            },
+            "mark": 40,
+            "out": "a/b"
+          },
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": [
+                  "",
+                  "a",
+                  ""
+                ]
+              }
+            },
+            "mark": 50,
+            "out": "a"
+          },
+          {
+            "ctx": {
+              "point": {
+                "args": {
+                  "params": []
+                },
+                "parts": [
+                  "api",
+                  "{a}",
+                  "sub",
+                  "{b}"
+                ]
+              }
+            },
+            "mark": 60,
+            "out": "api/{a}/sub/{b}"
+          }
+        ]
       }
     },
     "prepareQuery": {

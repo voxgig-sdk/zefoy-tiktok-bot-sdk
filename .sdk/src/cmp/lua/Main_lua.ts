@@ -55,7 +55,19 @@ const Main = cmp(async function Main(props: any) {
         replace: {
           ...props.ctx$.stdrep,
 
-          '#BuildFeatures': ({ indent }: any) => {
+          // Load the LuaLS typed-model annotations module so it is part of
+          // the loaded program (module body is empty — no runtime effect) and
+          // does not depend on workspace-wide language-server scanning.
+          // NOTE: plain marker keys must EMBED the lua comment prefix
+          // (`-- #X`) — jostraca's bare `#X` form only matches `//`-style
+          // comment lines (cf. the `'-- #LoadOp'` keys in Entity_lua.ts).
+          '-- #TypesRequire': ({ indent }: any) => Content({ indent },
+            `-- Typed-model annotations (LuaLS ---@class); empty at runtime.\n` +
+            `require("${model.name}_types")`),
+
+          // Same embedded `-- ` prefix requirement as above (the bare
+          // '#BuildFeatures' key never matched the lua comment line).
+          '-- #BuildFeatures': ({ indent }: any) => {
             each(feature, (feat: any) => {
               const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
               Content({ indent }, `  -- feature: ${feat.name}

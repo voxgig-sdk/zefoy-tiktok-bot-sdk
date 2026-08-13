@@ -26,8 +26,8 @@ import {
 describe('EntityNameEntity', async () => {
 
   // Per-test live pacing. Delay is read from sdk-test-control.json's
-  // `test.live.delayMs`; only sleeps when PROJECTNAME_TEST_LIVE=TRUE.
-  afterEach(liveDelay('PROJECTNAME_TEST_LIVE'))
+  // `test.live.delayMs`; only sleeps when PROJECTENV_TEST_LIVE=TRUE.
+  afterEach(liveDelay('PROJECTENV_TEST_LIVE'))
 
   test('instance', async () => {
     const testsdk = ProjectNameSDK.test()

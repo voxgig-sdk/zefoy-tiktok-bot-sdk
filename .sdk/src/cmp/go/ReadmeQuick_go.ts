@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, opRequestShape, entityIdField, entityOps } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, opRequestShape, entityIdField, entityOps, goModule } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -20,7 +20,7 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
 
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 

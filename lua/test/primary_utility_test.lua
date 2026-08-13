@@ -576,6 +576,9 @@ describe("PrimaryUtility", function()
   it("fetcher-live", function()
     local calls = {}
     local live_client = sdk.new({
+      -- Concrete base: a live construction must satisfy any server variables
+      -- a templated base URL declares; a literal base sidesteps the requirement.
+      base = "http://localhost:8080",
       system = {
         fetch = function(url, fetchdef)
           table.insert(calls, { url = url, init = fetchdef })
@@ -600,6 +603,7 @@ describe("PrimaryUtility", function()
 
   it("fetcher-blocked-test-mode", function()
     local blocked_client = sdk.new({
+      base = "http://localhost:8080",
       system = {
         fetch = function(url, fetchdef)
           return {}, nil
@@ -1052,14 +1056,16 @@ describe("PrimaryUtility", function()
 
 
   it("preparePath-basic", function()
-    local ctx = make_test_full_ctx(client, utility)
-    ctx.point = {
-      parts = { "api", "planet", "{id}" },
-      args = { params = {} },
-    }
-
-    local path = utility.prepare_path(ctx)
-    assert.are.equal("api/planet/{id}", path)
+    -- Was hand-written cases that had drifted out of the shared corpus
+    -- (the preparePath fixture shipped as an empty `set: []`).
+    runset(get_spec(primary, "preparePath", "basic"), function(entry)
+      local ctxmap = entry["ctx"]
+      if type(ctxmap) ~= "table" then
+        ctxmap = {}
+      end
+      local ctx = make_ctx_from_map(ctxmap, client, utility)
+      return utility.prepare_path(ctx), nil
+    end)
   end)
 
 

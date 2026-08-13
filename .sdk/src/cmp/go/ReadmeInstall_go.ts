@@ -8,7 +8,9 @@ const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
 
   // Go module path == repo path on GitHub (org from model.origin).
   const gomodule = packageName(model, 'go')
-  const { releasesUrl } = repoInfo(model)
+  // `repo` is the directory a `git clone` of this project creates — not
+  // `<slug>-sdk`, which is only the DEFAULT repo name.
+  const { releasesUrl, repo } = repoInfo(model)
 
   Content(`\`\`\`bash
 go get ${gomodule}@latest
@@ -22,7 +24,7 @@ project and add a \`replace\` directive pointing at the checked-out
 \`go/\` directory:
 
 \`\`\`bash
-go mod edit -replace ${gomodule}=../${model.name}-sdk/go
+go mod edit -replace ${gomodule}=../${repo}/go
 \`\`\`
 
 `)

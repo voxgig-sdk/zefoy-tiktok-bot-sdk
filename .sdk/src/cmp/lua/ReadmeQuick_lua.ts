@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -45,7 +45,7 @@ local client = ${ctor}
     const article = /^[aeiou]/i.test(eName) ? "an" : "a"
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Lua keyword (e.g. `end`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'lua')
+    const eVar = exampleVarName(eName.toLowerCase(), 'lua')
     const opnames = entityOps(exampleEntity)
     // Model-driven id key: `idF` is the MATCH key (null when none). `dataIdF`
     // is the id on the RETURNED record's data type — an entity can key its match
@@ -108,7 +108,7 @@ end
     if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
       const neArticle = /^[aeiou]/i.test(neName) ? "an" : "a"
-      const neVar = safeVarName(neName.toLowerCase(), 'lua')
+      const neVar = exampleVarName(neName.toLowerCase(), 'lua')
 
       // Model-driven match: every REQUIRED load-match key — the same shape
       // the runtime resolves path params from, so the example always works.
@@ -190,7 +190,7 @@ print(${eVar})
       return it && it.type
     }
     const idValueFor = (opname: string): string => (null != dataIdF && opnames.includes('create'))
-      ? `created["${dataIdF}"]`
+      ? `created:data_get()["${dataIdF}"]`
       : luaLit(idParamType(opname), 'example_id')
 
     if (opnames.includes('create') || opnames.includes('update') || opnames.includes('remove')) {

@@ -3,11 +3,16 @@ package feature
 import (
 	"fmt"
 	"math/rand"
+	"regexp"
 
 	vs "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/utility/struct"
 
 	"github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/core"
 )
+
+// The `body.<key>` form of an op's response transform: the mock wraps its
+// payload in <key> so the transform can unwrap it again.
+var envelopeResRe = regexp.MustCompile("^`body\\.([^`.]+)`$")
 
 type TestFeature struct {
 	BaseFeature
@@ -49,11 +54,38 @@ func (f *TestFeature) Init(ctx *core.Context, options map[string]any) {
 	self := f
 
 	testFetcher := func(ctx *core.Context, _fullurl string, _fetchdef map[string]any) (any, error) {
+		// Shape the mock payload the way the real API would, so the op's
+		// response transform recovers the entity from it. A point carrying
+		// `transform.res: ` + "`body.item`" + ` describes an API that answers
+		// {"item": {...}}; handing back the bare entity means the transform
+		// unwraps a property that is not there and the caller gets nil. The
+		// mock has to agree with the model, or it only ever simulates APIs
+		// whose responses happen to be unwrapped. Mirrors the ts mock.
+		envelope := func(data any) any {
+			if data == nil || ctx.Point == nil {
+				return data
+			}
+			tm, ok := ctx.Point["transform"].(map[string]any)
+			if !ok {
+				return data
+			}
+			restf, ok := tm["res"].(string)
+			if !ok {
+				return data
+			}
+			m := envelopeResRe.FindStringSubmatch(restf)
+			if m == nil {
+				return data
+			}
+			return map[string]any{m[1]: data}
+		}
+
 		respond := func(status int, data any, extra map[string]any) map[string]any {
+			payload := envelope(data)
 			out := map[string]any{
 				"status":     status,
 				"statusText": "OK",
-				"json":       (func() any)(func() any { return data }),
+				"json":       (func() any)(func() any { return payload }),
 				"body":       "not-used",
 			}
 			if extra != nil {

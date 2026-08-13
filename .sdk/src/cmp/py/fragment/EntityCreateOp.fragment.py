@@ -1,5 +1,5 @@
-from utility.voxgig_struct import voxgig_struct as vs
-from core import helpers
+from projectname_sdk.utility.voxgig_struct import voxgig_struct as vs
+from projectname_sdk.core import helpers
 
 entity_create_op = None
 

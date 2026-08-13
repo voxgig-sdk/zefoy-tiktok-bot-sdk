@@ -1,6 +1,7 @@
 package sdktest
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -119,7 +120,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("done-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "done", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "done", getSpec(primary, "done", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			fixctx(ctx, client)
@@ -128,7 +129,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeError-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeError", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeError", getSpec(primary, "makeError", "basic"), func(entry map[string]any) (any, error) {
 			args, _ := entry["args"].([]any)
 			if len(args) == 0 {
 				args = []any{map[string]any{}}
@@ -251,6 +252,10 @@ func TestPrimaryUtility(t *testing.T) {
 	t.Run("fetcher-live", func(t *testing.T) {
 		calls := []map[string]any{}
 		liveClient := sdk.NewZefoyTiktokBotSDK(map[string]any{
+			// Concrete base: a live construction must satisfy any server
+			// variables a templated base URL declares; a literal base
+			// sidesteps the requirement.
+			"base": "http://localhost:8080",
 			"system": map[string]any{
 				"fetch": func(url string, fetchdef map[string]any) (map[string]any, error) {
 					calls = append(calls, map[string]any{"url": url, "init": fetchdef})
@@ -281,6 +286,7 @@ func TestPrimaryUtility(t *testing.T) {
 	t.Run("fetcher-blocked-test-mode", func(t *testing.T) {
 		// Create a live SDK then set mode to test (not using TestSDK, which installs test feature)
 		blockedClient := sdk.NewZefoyTiktokBotSDK(map[string]any{
+			"base": "http://localhost:8080",
 			"system": map[string]any{
 				"fetch": func(url string, fetchdef map[string]any) (map[string]any, error) {
 					return map[string]any{}, nil
@@ -306,7 +312,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeContext-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeContext", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeContext", getSpec(primary, "makeContext", "basic"), func(entry map[string]any) (any, error) {
 			in := entry["in"]
 			if inMap, ok := in.(map[string]any); ok {
 				ctx := utility.MakeContext(inMap, nil)
@@ -395,7 +401,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeOptions-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeOptions", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeOptions", getSpec(primary, "makeOptions", "basic"), func(entry map[string]any) (any, error) {
 			in, _ := entry["in"].(map[string]any)
 			ctx := utility.MakeContext(map[string]any{
 				"options": in["options"],
@@ -408,7 +414,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeRequest-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeRequest", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeRequest", getSpec(primary, "makeRequest", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			ctx.Options = client.OptionsMap()
@@ -432,7 +438,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeResponse-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeResponse", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeResponse", getSpec(primary, "makeResponse", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			fixctx(ctx, client)
@@ -521,7 +527,7 @@ func TestPrimaryUtility(t *testing.T) {
 		specClient := sdk.TestSDK(nil, setupOpts)
 		specUtility := specClient.GetUtility()
 
-		runset(t, getSpec(primary, "makeSpec", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeSpec", getSpec(primary, "makeSpec", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, specClient, specUtility)
 			ctx.Options = specClient.OptionsMap()
@@ -574,7 +580,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("makeUrl-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "makeUrl", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "makeUrl", getSpec(primary, "makeUrl", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			if ctx.Result == nil {
@@ -585,7 +591,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("operator-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "operator", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "operator", getSpec(primary, "operator", "basic"), func(entry map[string]any) (any, error) {
 			in, _ := entry["in"].(map[string]any)
 			op := sdk.NewOperation(in)
 			return map[string]any{
@@ -598,7 +604,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("param-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "param", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "param", getSpec(primary, "param", "basic"), func(entry map[string]any) (any, error) {
 			args, _ := entry["args"].([]any)
 			if len(args) < 2 {
 				return nil, nil
@@ -647,7 +653,7 @@ func TestPrimaryUtility(t *testing.T) {
 		authClient := sdk.TestSDK(nil, setupOpts)
 		authUtility := authClient.GetUtility()
 
-		runset(t, getSpec(primary, "prepareAuth", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareAuth", getSpec(primary, "prepareAuth", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, authClient, authUtility)
 			fixctx(ctx, authClient)
@@ -670,7 +676,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("prepareBody-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "prepareBody", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareBody", getSpec(primary, "prepareBody", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			fixctx(ctx, client)
@@ -679,7 +685,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("prepareHeaders-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "prepareHeaders", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareHeaders", getSpec(primary, "prepareHeaders", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			return utility.PrepareHeaders(ctx), nil
@@ -687,7 +693,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("prepareMethod-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "prepareMethod", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareMethod", getSpec(primary, "prepareMethod", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			return utility.PrepareMethod(ctx), nil
@@ -695,41 +701,39 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("prepareParams-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "prepareParams", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareParams", getSpec(primary, "prepareParams", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			return utility.PrepareParams(ctx), nil
 		})
 	})
 
+	// Was two hand-written cases that had drifted out of the shared corpus
+	// (the preparePath fixture shipped as an empty `set: []`). Now driven by
+	// the corpus like every other section, so all ports assert the same
+	// separator/blank-segment behaviour.
 	t.Run("preparePath-basic", func(t *testing.T) {
-		ctx := makeTestFullCtx(client, utility)
-		ctx.Point = map[string]any{
-			"parts": []any{"api", "planet", "{id}"},
-			"args":  map[string]any{"params": []any{}},
-		}
-
-		path := utility.PreparePath(ctx)
-		if path != "api/planet/{id}" {
-			t.Errorf("expected api/planet/{id}, got %s", path)
-		}
+		runsetNamed(t, "preparePath", getSpec(primary, "preparePath", "basic"), func(entry map[string]any) (any, error) {
+			ctxmap, _ := entry["ctx"].(map[string]any)
+			ctx := makeCtxFromMap(ctxmap, client, utility)
+			return utility.PreparePath(ctx), nil
+		})
 	})
 
-	t.Run("preparePath-single", func(t *testing.T) {
-		ctx := makeTestFullCtx(client, utility)
-		ctx.Point = map[string]any{
-			"parts": []any{"items"},
-			"args":  map[string]any{"params": []any{}},
-		}
-
-		path := utility.PreparePath(ctx)
-		if path != "items" {
-			t.Errorf("expected items, got %s", path)
-		}
+	t.Run("clean-corpus", func(t *testing.T) {
+		runsetNamed(t, "clean", getSpec(primary, "clean", "basic"), func(entry map[string]any) (any, error) {
+			args, _ := entry["args"].([]any)
+			if 2 != len(args) {
+				return nil, fmt.Errorf("clean: expected 2 args, got %d", len(args))
+			}
+			ctxmap, _ := args[0].(map[string]any)
+			ctx := makeCtxFromMap(ctxmap, client, utility)
+			return utility.Clean(ctx, args[1]), nil
+		})
 	})
 
 	t.Run("prepareQuery-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "prepareQuery", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "prepareQuery", getSpec(primary, "prepareQuery", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			return utility.PrepareQuery(ctx), nil
@@ -737,7 +741,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("resultBasic-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "resultBasic", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "resultBasic", getSpec(primary, "resultBasic", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 			fixctx(ctx, client)
@@ -759,7 +763,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("resultBody-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "resultBody", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "resultBody", getSpec(primary, "resultBody", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 
@@ -778,7 +782,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("resultHeaders-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "resultHeaders", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "resultHeaders", getSpec(primary, "resultHeaders", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 
@@ -797,7 +801,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("transformRequest-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "transformRequest", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "transformRequest", getSpec(primary, "transformRequest", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 
@@ -816,7 +820,7 @@ func TestPrimaryUtility(t *testing.T) {
 	})
 
 	t.Run("transformResponse-basic", func(t *testing.T) {
-		runset(t, getSpec(primary, "transformResponse", "basic"), func(entry map[string]any) (any, error) {
+		runsetNamed(t, "transformResponse", getSpec(primary, "transformResponse", "basic"), func(entry map[string]any) (any, error) {
 			ctxmap, _ := entry["ctx"].(map[string]any)
 			ctx := makeCtxFromMap(ctxmap, client, utility)
 

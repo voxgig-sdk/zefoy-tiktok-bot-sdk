@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, safeVarName, exampleVarName, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -17,6 +17,17 @@ function pyLit(type: any, placeholder: string = 'example'): string {
   if ('ARRAY' === k) return '[]'
   if ('OBJECT' === k) return '{}'
   return `"${placeholder}"`
+}
+
+
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('py', ent, 'list', idF, idLiteral(ent, 'list', idF))
 }
 
 
@@ -168,7 +179,7 @@ Prepare a fetch definition without sending. Returns the \`fetchdef\` and raises 
       const idF = entityIdField(ent)
       // Sanitise the local variable name — an entity whose lowercased name is
       // a Python keyword (e.g. `class`) would otherwise emit uncompilable code.
-      const eVar = safeVarName(ent.name, 'py')
+      const eVar = exampleVarName(ent.name, 'py')
 
       Content(`
 ---
@@ -253,7 +264,7 @@ ${info.desc}
 
 `)
 
-          // Show example. Entity ops return the bare result and raise on
+          // Show example. Entity ops return the ENTITY and raise on
           // error; direct() is the only method that returns a result dict.
           if ('load' === opname || 'remove' === opname) {
             // The id key plus every REQUIRED match key (parent path params
@@ -276,7 +287,7 @@ result = client.${ent.Name}().${opname}(${arg})
           }
           else if ('list' === opname) {
             Content(`\`\`\`python
-results = client.${ent.Name}().list()
+results = client.${ent.Name}().list(${listMatchArg(ent)})
 for ${eVar} in results:
     print(${eVar})
 \`\`\`

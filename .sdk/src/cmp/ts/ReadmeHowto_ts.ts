@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, entityIdField, entityDataIdField, pickExampleEntity, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, entityIdField, entityDataIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName, jsKey } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -20,7 +20,7 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   const { entity: exampleEntity, primaryOp } = pickExampleEntity(entity)
   const eName = exampleEntity ? nom(exampleEntity, 'Name') : 'Entity'
   // Variable-safe lowercase name (a `Delete` entity must not bind `delete`).
-  const eVar = safeVarName(eName.toLowerCase(), 'ts')
+  const eVar = exampleVarName(eName.toLowerCase(), 'ts')
 
   const primaryOpDef = exampleEntity && primaryOp && exampleEntity.op && exampleEntity.op[primaryOp]
   const isMatchOp = 'load' === primaryOp || 'remove' === primaryOp
@@ -35,7 +35,17 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     if (!exampleEntity || !primaryOp) return ''
     if ('list' === primaryOp) return ''
     if (isMatchOp) {
-      return idF ? `{ ${idF}: ${exampleValue(exampleEntity, primaryOpDef, idF, idPlaceholder)} }` : ''
+      // Every REQUIRED match key (id first), not just idF — a composite-match
+      // entity (e.g. Umbrella's FlatPermission, database_id + id) needs them all
+      // to satisfy the typed <Name>LoadMatch. Mirrors ReadmeTopTest.
+      const items = opRequestShape(exampleEntity, primaryOp).items
+        .filter((it: any) => !it.optional || it.name === idF)
+        .sort((a: any, b: any) => (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+      if (0 === items.length) return ''
+      const pairs = items.map((it: any) =>
+        `${jsKey(it.name)}: ${exampleValue(exampleEntity, primaryOpDef, it.name,
+          it.name === idF ? idPlaceholder : 'example_' + it.name)}`)
+      return `{ ${pairs.join(', ')} }`
     }
     // create / update: a body of the required writable fields.
     const items = opRequestShape(exampleEntity, primaryOp).items
@@ -43,7 +53,7 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     const required = items.filter((it: any) => !it.optional)
     const chosen = required.length ? required : items.slice(0, 3)
     const pairs = chosen.map((it: any) =>
-      `${it.name}: ${exampleValue(exampleEntity, primaryOpDef, it.name, 'example_' + it.name)}`)
+      `${jsKey(it.name)}: ${exampleValue(exampleEntity, primaryOpDef, it.name, 'example_' + it.name)}`)
     return `{ ${pairs.join(', ')} }`
   }
   const testCallArg = primaryArg('test01')
@@ -57,7 +67,8 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // A direct()-only SDK (no ops anywhere) shows a direct() test call instead.
   const testModeExample = primaryOp
     ? `const ${eVar} = await client.${eName}().${primaryOp}(${testCallArg})
-// ${eVar} is a bare entity populated with mock response data
+// ${eVar} is the entity, populated with mock response data
+// — call ${eVar}.data() for the record itself
 console.log(${eVar})`
     : `const result = await client.direct({ path: '/api/resource', method: 'GET' })
 console.log(result)`

@@ -25,6 +25,8 @@ type Utility struct {
 	PrepareParams     func(ctx *Context) map[string]any
 	PreparePath       func(ctx *Context) string
 	PrepareQuery      func(ctx *Context) map[string]any
+	GraphqlBody       func(ctx *Context) any
+	GraphqlErrors     func(ctx *Context) bool
 	ResultBasic       func(ctx *Context) *Result
 	ResultBody        func(ctx *Context) *Result
 	ResultHeaders     func(ctx *Context) *Result

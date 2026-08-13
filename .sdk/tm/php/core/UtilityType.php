@@ -29,6 +29,8 @@ class ZefoyTiktokBotUtility
     public mixed $prepare_params = null;
     public mixed $prepare_path = null;
     public mixed $prepare_query = null;
+    public mixed $graphql_body = null;
+    public mixed $graphql_errors = null;
     public mixed $result_basic = null;
     public mixed $result_body = null;
     public mixed $result_headers = null;

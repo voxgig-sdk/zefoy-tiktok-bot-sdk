@@ -217,9 +217,9 @@ data **directly** — there is no wrapper:
 
 Check `err` first (it is non-`nil` on failure), then use `value`:
 
-    local engagement, err = client:Engagement():load()
+    local engagement, err = client:Engagement():list()
     if err then error(err) end
-    -- engagement is the loaded record
+    -- engagement is the record list
 
 Only `direct()` returns a response envelope — a `table` with `ok`,
 `status`, `headers`, and `data` keys.
@@ -231,7 +231,7 @@ Only `direct()` returns a response envelope — a `table` with `ok`,
 | Field | Description |
 | --- | --- |
 | `amount` |  |
-| `estimated_time` |  |
+| `estimatedTime` |  |
 | `message` |  |
 | `status` |  |
 | `success` |  |
@@ -262,7 +262,7 @@ Create an instance: `local engagement = client:Engagement(nil)`
 | Field | Type | Description |
 | --- | --- | --- |
 | `amount` | `number` |  |
-| `estimated_time` | `number` |  |
+| `estimatedTime` | `number` |  |
 | `message` | `string` |  |
 | `status` | `string` |  |
 | `success` | `boolean` |  |

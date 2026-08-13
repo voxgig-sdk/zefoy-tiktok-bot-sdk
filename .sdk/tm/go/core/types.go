@@ -28,6 +28,12 @@ type Entity interface {
 	Make() Entity
 	Data(data ...any) any
 	Match(match ...any) any
+
+	// Every operation resolves to the entity; Remove additionally marks it.
+	// The instance keeps the data it held — a caller can still read what was
+	// deleted — but it is no longer a live record.
+	MarkDeleted()
+	Deleted() bool
 }
 
 type ZefoyTiktokBotEntity interface {

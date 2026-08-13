@@ -5,7 +5,9 @@ import {
   cmp,
   collectDeps,
   pkgDescription,
-  repoInfo,
+  repoInfo, packageName,
+  packageVersion,
+  authorInfo,
 } from '@voxgig/sdkgen'
 
 
@@ -20,12 +22,18 @@ const Package = cmp(async function Package(props: any) {
 
   const model: Model = ctx$.model
 
+  // WHO WROTE THIS PACKAGE. Per target, falling back to the model-wide value
+  // and then to the publisher — so a manifest cannot go on naming Voxgig
+  // while the model names someone else, which is exactly what the hardcoded
+  // constant here did.
+  const author = authorInfo(model, target.name)
+
   // Gem name is namespaced to model.origin (e.g. "voxgig-sdk"). RubyGems
   // names can't contain "/", so the parts are hyphen-joined. The require
   // path (`${model.name}_sdk`) is unchanged.
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
-  const gemName = `${ns}-${pkgBase}`
+  const gemName = packageName(model, 'rb')
   const { repoUrl, issuesUrl, changelogUrl } = repoInfo(model)
 
   const versionOf = (d: { version: string; source: 'feature' | 'target' }) =>
@@ -39,7 +47,7 @@ gemspec
 
 `)
 
-    for (const d of collectDeps(model, target.name, target.deps)) {
+    for (const d of collectDeps(model, target.name, target.deps, ctx$.log)) {
       Content(`gem "${d.name}", "~> ${versionOf(d)}"
 `)
     }
@@ -51,13 +59,13 @@ gemspec
     // twice (Gem::InvalidSpecificationException at `gem build`), so the
     // unconstrained json fallback is only emitted when the model's own
     // dependency list doesn't already declare json.
-    const deps = collectDeps(model, target.name, target.deps)
+    const deps = collectDeps(model, target.name, target.deps, ctx$.log)
     const hasJson = deps.some((d: any) => 'json' === d.name)
 
     Content(`Gem::Specification.new do |spec|
   spec.name          = "${gemName}"
-  spec.version       = "0.0.1"
-  spec.authors       = ["Voxgig"]
+  spec.version       = "${packageVersion(model, target.name)}"
+  spec.authors       = ["${author.name}"]
   spec.summary       = "${pkgDescription(model, 'rb')}"
   spec.description   = "${pkgDescription(model, 'rb')}"
   spec.license       = "MIT"

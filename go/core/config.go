@@ -36,7 +36,7 @@ func MakeConfig() map[string]any {
 					},
 					map[string]any{
 						"active": true,
-						"name": "estimated_time",
+						"name": "estimatedTime",
 						"req": false,
 						"type": "`$INTEGER`",
 						"index$": 1,
@@ -92,6 +92,7 @@ func MakeConfig() map[string]any {
 							map[string]any{
 								"active": true,
 								"args": map[string]any{},
+								"kind": "http",
 								"method": "POST",
 								"orig": "/api/boost",
 								"parts": []any{
@@ -106,7 +107,6 @@ func MakeConfig() map[string]any {
 								"index$": 0,
 							},
 						},
-						"key$": "create",
 					},
 				},
 				"relations": map[string]any{

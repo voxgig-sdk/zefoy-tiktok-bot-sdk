@@ -1,11 +1,22 @@
 
-import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, envName, canonKey, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
   getModelPath,
   nom,
 } from '@voxgig/apidef'
+
+
+// A `list()` on a NESTED entity needs its parent path params. The
+// quickstart used to emit `client.Moon().list()` for an entity at
+// `/planet/{planet_id}/moon`, which 404s against a live server from a
+// half-built URL — indistinguishable from "no such record". The model
+// already marks those params `reqd: true`; matchArg renders exactly them.
+function listMatchArg(ent: any): string {
+  const idF = entityIdField(ent)
+  return matchArg('py', ent, 'list', idF, idLiteral(ent, 'list', idF))
+}
 
 
 const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
@@ -47,7 +58,7 @@ client = ${ctor}
     const article = /^[aeiou]/i.test(eName) ? 'an' : 'a'
     // Sanitise the local variable name — an entity whose lowercased name is a
     // Python keyword (e.g. `class`) would otherwise emit uncompilable code.
-    const eVar = safeVarName(eName.toLowerCase(), 'py')
+    const eVar = exampleVarName(eName.toLowerCase(), 'py')
     const opnames = entityOps(exampleEntity)
     // Model-driven id key: `idF` is the entity's id-like MATCH field name, or
     // null when it has none (a response-wrapped spec). `dataIdF` is the id on
@@ -78,7 +89,7 @@ error — iterate it directly.
 
 \`\`\`python
 try:
-    ${eVar}s = client.${eName}().list()
+    ${eVar}s = client.${eName}().list(${listMatchArg(exampleEntity)})
     for ${eVar} in ${eVar}s:
         print(${eVar})
 except Exception as err:
@@ -91,7 +102,7 @@ except Exception as err:
     if (nestedEntity) {
       const neName = nom(nestedEntity, 'Name')
       const neArticle = /^[aeiou]/i.test(neName) ? 'an' : 'a'
-      const neVar = safeVarName(neName.toLowerCase(), 'py')
+      const neVar = exampleVarName(neName.toLowerCase(), 'py')
 
       // Model-driven match: every REQUIRED load-match key — the same shape
       // the runtime resolves path params from, so the example always works.
@@ -111,7 +122,7 @@ except Exception as err:
       Content(`### 3. Load ${neArticle} ${neName.toLowerCase()}
 
 ${neName} is nested under ${parentName}, so provide the \`${parentParam}\`.
-\`load()\` returns the bare record (a \`dict\`) and raises on error.
+\`load()\` returns the ENTITY — call data_get() for the record — and raises on error.
 
 \`\`\`python
 try:
@@ -139,7 +150,7 @@ except Exception as err:
 
       Content(`### 3. Load ${article} ${eName.toLowerCase()}
 
-\`load()\` returns the bare record (a \`dict\`) and raises on error.
+\`load()\` returns the ENTITY — call data_get() for the record — and raises on error.
 
 \`\`\`python
 try:
@@ -180,7 +191,7 @@ except Exception as err:
       return it && it.type
     }
     const idValueFor = (opname: string): string => (null != dataIdF && opnames.includes('create'))
-      ? `created["${dataIdF}"]`
+      ? `created.data_get()["${dataIdF}"]`
       : pyLit(idParamType(opname), 'example_id')
 
     if (opnames.includes('create') || opnames.includes('update') || opnames.includes('remove')) {
@@ -189,7 +200,7 @@ except Exception as err:
 \`\`\`python
 `)
       if (opnames.includes('create')) {
-        Content(`# Create — returns the bare created record (a dict)
+        Content(`# Create — returns the ENTITY (call data_get() for the record)
 created = client.${eName}().create({${examplePairs('create').join(', ')}})
 
 `)

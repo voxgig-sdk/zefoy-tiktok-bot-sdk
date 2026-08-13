@@ -52,12 +52,41 @@ class TestFeature extends BaseFeature {
       const delprop = struct.delprop
       const getdef = struct.getdef
 
+      // Shape the mock payload the way the real API would, so the op's
+      // response transform recovers the entity from it. A point carrying
+      // `transform.res: \`body.item\`` describes an API that answers
+      // `{item: {...}}`; handing back the bare entity means the transform
+      // unwraps a property that is not there and the caller gets undefined.
+      // The mock has to agree with the model, or it only ever simulates APIs
+      // whose responses happen to be unwrapped.
+      function envelope(data: any) {
+        const restf = getprop(getprop(ctx.point, 'transform', {}), 'res')
+        if (null == data || 'string' !== typeof restf) {
+          return data
+        }
+        // Rebuild whatever nesting the op's response transform unwraps, so
+        // the mock agrees with the model. Multi-segment on purpose: GraphQL
+        // ops unwrap `body.data.<field>` (and `body.data.<field>.<entity>`
+        // for mutation payloads), not just a single envelope property.
+        const m = restf.match(/^`body\.(.+)`$/)
+        if (null == m) {
+          return data
+        }
+        let out: any = data
+        const segs = m[1].split('.')
+        for (let i = segs.length - 1; 0 <= i; i--) {
+          out = { [segs[i]]: out }
+        }
+        return out
+      }
+
       function respond(status: number, data?: any, res?: any) {
+        const payload = envelope(data)
         const out = merge([
           {
             status,
             statusText: 'OK',
-            json: async () => data,
+            json: async () => payload,
             body: 'not-used',
           },
           getdef(res, {})

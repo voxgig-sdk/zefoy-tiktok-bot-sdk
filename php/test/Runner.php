@@ -43,8 +43,8 @@ class ZefoyTiktokBotTestRunner
 
     public static function env_override(array $m): array
     {
-        $live = self::getenv('ZEFOYTIKTOKBOT_TEST_LIVE');
-        $override = self::getenv('ZEFOYTIKTOKBOT_TEST_OVERRIDE');
+        $live = self::getenv('ZEFOY_TIKTOK_BOT_TEST_LIVE');
+        $override = self::getenv('ZEFOY_TIKTOK_BOT_TEST_OVERRIDE');
 
         if ($live === 'TRUE' || $override === 'TRUE') {
             foreach (array_keys($m) as $key) {
@@ -63,9 +63,9 @@ class ZefoyTiktokBotTestRunner
             }
         }
 
-        $explain = self::getenv('ZEFOYTIKTOKBOT_TEST_EXPLAIN');
+        $explain = self::getenv('ZEFOY_TIKTOK_BOT_TEST_EXPLAIN');
         if ($explain !== null && $explain !== '') {
-            $m['ZEFOYTIKTOKBOT_TEST_EXPLAIN'] = $explain;
+            $m['ZEFOY_TIKTOK_BOT_TEST_EXPLAIN'] = $explain;
         }
 
         return $m;

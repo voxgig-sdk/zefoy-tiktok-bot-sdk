@@ -19,16 +19,13 @@ Homepage = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk"
 Repository = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk"
 Issues = "https://github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/issues"
 
-# Ship the top-level single-file modules (setuptools find only discovers
-# package dirs, never these) so the documented import actually installs.
-# zefoytiktokbot_types holds the generated @dataclass models.
-[tool.setuptools]
-py-modules = ["zefoytiktokbot_sdk", "zefoytiktokbot_types", "config", "features"]
-
-# Explicit package list — setuptools auto-discovery refuses to pick when
-# multiple top-level dirs (core/entity/feature/utility) are present.
+# ONE package. core/entity/feature/utility were previously top-level packages;
+# those names are real PyPI distributions and common scratch filenames, and
+# Python searches the working directory first, so any of them beside the
+# caller silently shadowed the SDK's own. They now live inside
+# zefoytiktokbot_sdk/ where nothing can reach them.
 [tool.setuptools.packages.find]
-include = ["core*", "entity*", "feature*", "utility*"]
+include = ["zefoytiktokbot_sdk*"]
 
 # Ship the PEP 561 py.typed marker(s) so the inline type hints reach consumers.
 [tool.setuptools.package-data]

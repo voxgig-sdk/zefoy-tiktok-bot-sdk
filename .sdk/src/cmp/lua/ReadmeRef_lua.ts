@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, safeVarName } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, canonKey, File, isAuthActive, entityIdField, opRequestShape, safeVarName, exampleVarName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -176,7 +176,7 @@ same parameters as \`direct()\`.
       const idF = entityIdField(ent)
       // Sanitise the local variable name — an entity whose lowercased name is
       // a Lua keyword (e.g. `end`) would otherwise emit uncompilable code.
-      const eVar = safeVarName(ent.name, 'lua')
+      const eVar = exampleVarName(ent.name, 'lua')
 
       Content(`
 ---

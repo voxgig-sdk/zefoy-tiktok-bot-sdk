@@ -1,5 +1,5 @@
 
-import { cmp, Content } from '@voxgig/sdkgen'
+import { cmp, Content, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -34,7 +34,7 @@ const ReadmeIntro = cmp(function ReadmeIntro(props: any) {
   const opList = (opnames.length > 0 ? opnames : ['list', 'load']).join('`/`')
 
   const semantic = eName
-    ? `The SDK exposes the API as capitalised, semantic **Entities** — for example \`$client->${eName}()\` — with named operations (\`${opList}\`) instead of raw URL paths and query strings. Working with resources and verbs keeps call sites self-describing and reduces cognitive load.
+    ? `The SDK exposes the API as capitalised, semantic **Entities** — for example \`$client->${phpEntityAccessor(eName)}()\` — with named operations (\`${opList}\`) instead of raw URL paths and query strings. Working with resources and verbs keeps call sites self-describing and reduces cognitive load.
 
 `
     : ''

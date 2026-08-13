@@ -2789,7 +2789,7 @@ class Struct
             if (0 < count($pkeys) && true !== self::_getprop($pval, '`$OPEN`')) {
                 $badkeys = [];
                 foreach ($ckeys as $ckey) {
-                    if (!self::haskey($pval, $ckey)) {
+                    if (!((is_array($pval) && array_key_exists((string) $ckey, $pval)) || (is_object($pval) && property_exists($pval, (string) $ckey)))) {
                         $badkeys[] = $ckey;
                     }
                 }

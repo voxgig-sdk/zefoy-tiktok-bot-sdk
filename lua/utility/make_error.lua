@@ -57,6 +57,10 @@ local function make_error_util(ctx, err)
   sdk_err.result = ctx.utility.clean(ctx, result)
   sdk_err.spec = ctx.utility.clean(ctx, spec)
 
+  -- Promote the HTTP status to the top level, so a consumer can branch on
+  -- `err.status` instead of reaching into `err.result`.
+  sdk_err.status = result.status or -1
+
   if type(err) == "table" and getmetatable(err) == ZefoyTiktokBotError then
     sdk_err.code = err.code
   end

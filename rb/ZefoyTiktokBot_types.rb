@@ -13,7 +13,7 @@
 # @!attribute [rw] amount
 #   @return [Integer, nil]
 #
-# @!attribute [rw] estimated_time
+# @!attribute [rw] estimatedTime
 #   @return [Integer, nil]
 #
 # @!attribute [rw] message
@@ -32,7 +32,7 @@
 #   @return [String]
 Engagement = Struct.new(
   :amount,
-  :estimated_time,
+  :estimatedTime,
   :message,
   :status,
   :success,
@@ -46,7 +46,7 @@ Engagement = Struct.new(
 # @!attribute [rw] amount
 #   @return [Integer, nil]
 #
-# @!attribute [rw] estimated_time
+# @!attribute [rw] estimatedTime
 #   @return [Integer, nil]
 #
 # @!attribute [rw] message
@@ -65,7 +65,7 @@ Engagement = Struct.new(
 #   @return [String]
 EngagementCreateData = Struct.new(
   :amount,
-  :estimated_time,
+  :estimatedTime,
   :message,
   :status,
   :success,

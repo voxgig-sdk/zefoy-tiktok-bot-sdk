@@ -3,7 +3,7 @@ import {
   Content,
   File,
   cmp,
-  collectDeps,
+  collectDeps, goModule, goVersion
 } from '@voxgig/sdkgen'
 
 
@@ -18,20 +18,23 @@ const Package = cmp(async function Package(props: any) {
 
   const model: Model = ctx$.model
 
-  // Module name: concatenated lowercase (e.g., voxgigsolardemosdk)
-  // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  // Module path and language version both come from the model — see
+  // goModule / goVersion. Neither is derivable from the slug alone: the repo
+  // may not be named `<slug>-sdk`, and the hardcoded `go 1.20` this used to
+  // emit could not compile sdkgen's own `log` feature (it imports log/slog,
+  // which needs 1.21).
+  const gomodule = goModule(model, 'go')
 
   File({ name: 'go.mod' }, () => {
     Content(`module ${gomodule}
 
-go 1.20
+go ${goVersion(model, target.name)}
 
 `)
 
     const deps: Record<string, string> = {}
     const replaceDirs: Record<string, string> = {}
-    for (const d of collectDeps(model, target.name, target.deps)) {
+    for (const d of collectDeps(model, target.name, target.deps, ctx$.log)) {
       // Target-level deps default to 'v0.0.0' when version is absent;
       // feature deps require an explicit version.
       deps[d.name] = d.source === 'target' ? (d.version || 'v0.0.0') : d.version

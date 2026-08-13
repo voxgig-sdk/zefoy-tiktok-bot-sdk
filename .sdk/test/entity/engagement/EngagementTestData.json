@@ -3,7 +3,7 @@
     "engagement": {
       "ENGAGEMENT00": {
         "amount": "s46",
-        "estimated_time": "s47",
+        "estimatedTime": "s47",
         "message": "s48",
         "status": "s49",
         "success": true,
@@ -13,7 +13,7 @@
       },
       "ENGAGEMENT01": {
         "amount": "s8c",
-        "estimated_time": "s8d",
+        "estimatedTime": "s8d",
         "message": "s8e",
         "status": "s8f",
         "success": true,
@@ -23,7 +23,7 @@
       },
       "ENGAGEMENT02": {
         "amount": "sd2",
-        "estimated_time": "sd3",
+        "estimatedTime": "sd3",
         "message": "sd4",
         "status": "sd5",
         "success": true,
@@ -37,7 +37,7 @@
     "engagement": {
       "engagement_ref01": {
         "amount": "s118",
-        "estimated_time": "s119",
+        "estimatedTime": "s119",
         "message": "s11a",
         "status": "s11b",
         "success": true,

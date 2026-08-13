@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, pickExampleEntity, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import { KIT, getModelPath, nom } from '@voxgig/apidef'
 
@@ -34,7 +34,12 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
     : `${model.const.Name}SDK::test()`
   let testCallArg = ''
   if (exampleEntity && isMatchOp) {
-    testCallArg = idF ? `["${idF}" => "test01"]` : ''
+    const items = opRequestShape(exampleEntity, primaryOp).items
+      .filter((it: any) => !it.optional || it.name === idF)
+      .sort((a: any, b: any) => (a.name === idF ? 0 : 1) - (b.name === idF ? 0 : 1))
+    testCallArg = 0 < items.length
+      ? `[${items.map((it: any) => `"${it.name}" => ${it.name === idF ? '"test01"' : phpLit(it.type)}`).join(', ')}]`
+      : ''
   } else if (exampleEntity && ('create' === primaryOp || 'update' === primaryOp)) {
     const items = opRequestShape(exampleEntity, primaryOp).items
       .filter((it: any) => it.name !== idF && it.name !== 'id')
@@ -46,8 +51,9 @@ const ReadmeHowto = cmp(function ReadmeHowto(props: any) {
   // The op-driven test-mode line, shown only when the SDK has an entity op.
   // A direct()-only SDK (no ops anywhere) shows a direct() call instead.
   const testModeExample = primaryOp
-    ? `// Entity ops return the bare mock record (throws on error).
-$${eName.toLowerCase()} = $client->${eName}()->${primaryOp}(${testCallArg});
+    ? `// Entity ops return the ENTITY (throws on error);
+// call data_get() for the mock record.
+$${eName.toLowerCase()} = $client->${phpEntityAccessor(eName)}()->${primaryOp}(${testCallArg});
 print_r($${eName.toLowerCase()});`
     : `$result = $client->direct(["path" => "/api/resource", "method" => "GET"]);
 print_r($result);`

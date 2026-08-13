@@ -35,7 +35,7 @@ client = ZefoyTiktokBotSDK.new({
 ### 4. Create, update, and remove
 
 ```ruby
-# create returns the bare created Engagement record.
+# create returns the ENTITY — call data_get for the created Engagement record.
 created = client.Engagement.create({ "url" => "example_url" })
 
 ```
@@ -115,7 +115,8 @@ Create a mock client for unit testing — no server required:
 ```ruby
 client = ZefoyTiktokBotSDK.test
 
-# Entity ops return the bare mock record (raises on error).
+# Entity ops return the ENTITY (raises on error);
+# call data_get for the mock record.
 engagement = client.Engagement.create({ "url" => "example" })
 puts engagement
 ```
@@ -235,7 +236,7 @@ returns a result `Hash` with these keys:
 | Field | Description |
 | --- | --- |
 | `amount` |  |
-| `estimated_time` |  |
+| `estimatedTime` |  |
 | `message` |  |
 | `status` |  |
 | `success` |  |
@@ -266,7 +267,7 @@ Create an instance: `engagement = client.Engagement`
 | Field | Type | Description |
 | --- | --- | --- |
 | `amount` | `Integer` |  |
-| `estimated_time` | `Integer` |  |
+| `estimatedTime` | `Integer` |  |
 | `message` | `String` |  |
 | `status` | `String` |  |
 | `success` | `Boolean` |  |

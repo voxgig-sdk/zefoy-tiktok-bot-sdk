@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
-  entityClassName,
+  entityClassName, entityCollection, goModule, goPackageIdent
 } from '@voxgig/sdkgen'
 
 
@@ -19,6 +19,7 @@ import {
 } from '@voxgig/apidef'
 
 
+import { goFeatureName } from './utility_go'
 import { Package } from './Package_go'
 import { Config } from './Config_go'
 import { Gitignore } from './Gitignore_go'
@@ -36,11 +37,10 @@ const Main = cmp(async function Main(props: any) {
 
   // Go module path == the repo path on GitHub (org from model.origin),
   // e.g. github.com/voxgig-sdk/<slug>-sdk. Used in go.mod and every import.
-  const gomodule = `github.com/${model.origin || 'voxgig-sdk'}/${model.name}-sdk/go`
+  const gomodule = goModule(model, 'go')
   // The root package name must be a plain Go identifier (can't be a path),
-  // so it stays as the concatenated-lowercase form (e.g. voxgigdogsdk).
-  const gopackage = (model.origin || 'voxgig-sdk').replace(/-sdk$/, '').replace(/[^a-z0-9]/gi, '') +
-    model.name.replace(/[^a-z0-9]/gi, '').toLowerCase() + 'sdk'
+  // so it stays a concatenated-lowercase form (e.g. voxgigdogsdk).
+  const gopackage = goPackageIdent(model, 'go')
 
   Package({ target })
 
@@ -82,7 +82,7 @@ const Main = cmp(async function Main(props: any) {
 
             '#BuildFeatures': ({ indent }: any) => {
               each(feature, (feat: any) => {
-                const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
+                const fname = goFeatureName(feat)
                 Content({ indent }, `u.FeatureAdd(s.rootctx, New${fname}FeatureFunc())
 `)
               })
@@ -119,7 +119,7 @@ var NewBaseFeatureFunc func() Feature
       // Feature constructor function vars (non-base)
       each(feature, (feat: any) => {
         if (feat.name !== 'base') {
-          const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
+          const fname = goFeatureName(feat)
           Content(`var New${fname}FeatureFunc func() Feature
 
 `)
@@ -177,7 +177,7 @@ func init() {
     // Register non-base feature constructors
     each(feature, (feat: any) => {
       if (feat.name !== 'base') {
-        const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
+        const fname = goFeatureName(feat)
         Content(`	core.New${fname}FeatureFunc = func() core.Feature {
 		return feature.New${fname}Feature()
 	}
@@ -188,7 +188,7 @@ func init() {
     // Register entity constructors
     each(entity, (ent: any) => {
       Content(`	core.New${ent.Name}EntityFunc = func(client *core.${model.const.Name}SDK, entopts map[string]any) core.${model.const.Name}Entity {
-		return entity.New${entityClassName(ent, entity)}(client, entopts)
+		return entity.New${entityClassName(ent, entityCollection(model))}(client, entopts)
 	}
 `)
     })
@@ -219,7 +219,7 @@ func Test() *${model.const.Name}SDK { return TestSDK(nil, nil) }
 
     each(feature, (feat: any) => {
       if (feat.name !== 'base') {
-        const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
+        const fname = goFeatureName(feat)
         Content(`var New${fname}Feature = feature.New${fname}Feature
 `)
       }

@@ -3932,8 +3932,10 @@ func makeValidation(exact bool) Modify {
 			// Empty spec object {} means object can be open (any keys).
 			if len(pkeys) > 0 && GetProp(pval, "`$OPEN`") != true {
 				badkeys := []string{}
+				pvalMap, pvalIsMap := pval.(map[string]any)
 				for _, ckey := range ckeys {
-					if !HasKey(val, ckey) {
+					_, present := pvalMap[ckey]
+					if !pvalIsMap || !present {
 						badkeys = append(badkeys, ckey)
 					}
 				}

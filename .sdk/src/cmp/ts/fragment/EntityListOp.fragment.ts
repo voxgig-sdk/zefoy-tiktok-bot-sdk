@@ -10,7 +10,7 @@ class EntityOperation {
 
   // EJECT-START
 
-  async list(this: any, reqmatch?: EntityNameListMatch, ctrl?: Control): Promise<EntityName[]> {
+  async list(this: any, reqmatch?: EntityNameListMatch, ctrl?: Control): Promise<EntyClass[]> {
 
     const utility = this._utility
 

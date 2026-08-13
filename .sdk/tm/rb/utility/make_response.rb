@@ -15,6 +15,12 @@ module ZefoyTiktokBotUtilities
     utility.result_basic.call(ctx)
     utility.result_headers.call(ctx)
     utility.result_body.call(ctx)
+
+    # GraphQL reports failures as a top-level `errors` array under HTTP
+    # 200, so result_basic's status check never sees them. Lift them here,
+    # before the response transform tries to unwrap data that is not there.
+    utility.graphql_errors.call(ctx)
+
     utility.transform_response.call(ctx)
 
     result.ok = true if result.err.nil?

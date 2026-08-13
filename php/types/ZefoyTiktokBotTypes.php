@@ -16,7 +16,7 @@ declare(strict_types=1);
 class Engagement
 {
     public ?int $amount = null;
-    public ?int $estimated_time = null;
+    public ?int $estimatedTime = null;
     public ?string $message = null;
     public ?string $status = null;
     public ?bool $success = null;
@@ -28,7 +28,7 @@ class Engagement
 class EngagementCreateData
 {
     public ?int $amount = null;
-    public ?int $estimated_time = null;
+    public ?int $estimatedTime = null;
     public ?string $message = null;
     public ?string $status = null;
     public ?bool $success = null;

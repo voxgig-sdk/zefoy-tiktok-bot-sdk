@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
-  entityClassName,
+  entityClassName, entityCollection,
 } from '@voxgig/sdkgen'
 
 
@@ -34,21 +34,47 @@ const Main = cmp(async function Main(props: any) {
   const entity: ModelEntity = getModelPath(model, `main.${KIT}.entity`)
   const feature = getModelPath(model, `main.${KIT}.feature`)
 
+  // The one package directory everything the SDK owns lives in.
+  const pkgdir = model.const.Name.toLowerCase() + '_sdk'
+
   Package({ target })
 
   Gitignore({})
 
-  // Copy tm/py files with replacements
+  // Root-level statics only (Makefile, LICENSE, test/). The runtime
+  // packages live under tm/py/pkg and are copied INSIDE the SDK package
+  // below.
   Copy({
     from: 'tm/' + target.name,
-    exclude: [/src\//],
+    exclude: [/src\//, /pkg\//],
+    replace: {
+      ...props.ctx$.stdrep,
+    }
+  })
+
+  // Everything the SDK owns lives inside ONE package directory.
+  //
+  // core/, entity/, feature/ and utility/ used to sit at the language root
+  // as top-level importable names. `core`, `entity` and `utility` are all
+  // real PyPI distributions AND common scratch filenames, and Python puts
+  // the working directory first on sys.path — so a single utility.py beside
+  // a notebook shadowed ours and the SDK died on
+  // `No module named 'utility.voxgig_struct'`. Nesting them behind the
+  // model-named package makes that impossible.
+  //
+  // The public import is unchanged: `from <name>_sdk import <Name>SDK`,
+  // because <name>_sdk.py becomes <name>_sdk/__init__.py.
+  Folder({ name: pkgdir }, () => {
+
+  Copy({
+    from: 'tm/' + target.name + '/pkg',
     replace: {
       ...props.ctx$.stdrep,
     }
   })
 
   // Generate main SDK file
-  File({ name: model.const.Name.toLowerCase() + '_sdk.' + target.ext }, () => {
+  File({ name: '__init__.' + target.ext }, () => {
 
     Fragment(
       {
@@ -94,7 +120,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 `)
       each(entity, (ent: any) => {
-        Content(`    from entity.${ent.name}_entity import ${entityClassName(ent, entity)}
+        Content(`    from ${model.const.Name.toLowerCase()}_sdk.entity.${ent.name}_entity import ${entityClassName(ent, entityCollection(model))}
 `)
       })
     }
@@ -119,13 +145,13 @@ if TYPE_CHECKING:
   File({ name: 'features.' + target.ext }, () => {
     Content(`# ${model.const.Name} SDK feature factory
 
-from feature.base_feature import ${model.const.Name}BaseFeature
+from ${model.const.Name.toLowerCase()}_sdk.feature.base_feature import ${model.const.Name}BaseFeature
 `)
 
     each(feature, (feat: any) => {
       if (feat.name !== 'base') {
         const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
-        Content(`from feature.${feat.name}_feature import ${model.const.Name}${fname}Feature
+        Content(`from ${model.const.Name.toLowerCase()}_sdk.feature.${feat.name}_feature import ${model.const.Name}${fname}Feature
 `)
       }
     })
@@ -185,6 +211,8 @@ def _make_feature(name):
     File({ name: '__init__.' + target.ext }, () => {
       Content(``)
     })
+  })
+
   })
 
 })

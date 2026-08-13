@@ -41,11 +41,39 @@ function TestFeature:init(ctx, options)
   local test_self = self
 
   local function test_fetcher(fctx, _fullurl, _fetchdef)
+    -- Shape the mock payload the way the real API would, so the op's
+    -- response transform recovers the entity from it. A point carrying
+    -- transform.res of `body.item` describes an API that answers
+    -- { item = {...} }; handing back the bare entity means the transform
+    -- unwraps a property that is not there and the caller gets nil.
+    -- The mock has to agree with the model, or it only ever simulates
+    -- APIs whose responses happen to be unwrapped. Mirrors the ts/py mocks.
+    local function envelope(data)
+      local point = fctx.point
+      if data == nil or type(point) ~= "table" then
+        return data
+      end
+      local transform = point.transform
+      if type(transform) ~= "table" then
+        return data
+      end
+      local restf = transform.res
+      if type(restf) ~= "string" then
+        return data
+      end
+      local key = string.match(restf, "^`body%.([^`%.]+)`$")
+      if key == nil then
+        return data
+      end
+      return { [key] = data }
+    end
+
     local function respond(status, data, extra)
+      local payload = envelope(data)
       local out = {
         status = status,
         statusText = "OK",
-        json = function() return data end,
+        json = function() return payload end,
         body = "not-used",
       }
       if type(extra) == "table" then

@@ -46,6 +46,10 @@ function makeError(ctx: Context, err?: any) {
   err.result = clean(ctx, result)
   err.spec = clean(ctx, spec)
 
+  // Promote the HTTP status to the top level, so a consumer can branch on
+  // `err.status` / `err.notFound` instead of reaching into `err.result`.
+  err.status = null == result.status ? -1 : result.status
+
   ctx.ctrl.err = err
 
   // Fire PreUnexpected so observability features (metrics, telemetry, audit,

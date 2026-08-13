@@ -11,6 +11,7 @@ import {
   each,
   isAuthActive,
   resolveAuthPrefix,
+  serverVariables,
 } from '@voxgig/sdkgen'
 
 
@@ -46,6 +47,14 @@ const Config = cmp(async function Config(props: any) {
   let baseUrl = ''
   try { baseUrl = getModelPath(model, `main.${KIT}.info.servers.0.url`) } catch (_e) { }
 
+  // Templated server URL: emit the spec's server-variable defaults so the
+  // runtime can substitute {name} placeholders in base (see make_options).
+  const svars = serverVariables(model)
+  const serverBlock = 0 === svars.length ? '' :
+    '      server = {\n' +
+    svars.map((v: any) => `        [${JSON.stringify(v.name)}] = ${JSON.stringify(v.dflt)},\n`).join('') +
+    '      },\n'
+
   const authBlock = authActive
     ? `      auth = {
         prefix = "${authPrefix}",
@@ -73,7 +82,7 @@ local function make_config()
     Content(`    },
     options = {
       base = "${baseUrl}",
-${authBlock}      headers = ${formatLuaTable(headers, 3)},
+${serverBlock}${authBlock}      headers = ${formatLuaTable(headers, 3)},
       entity = {
 `)
 

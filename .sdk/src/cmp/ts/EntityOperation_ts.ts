@@ -1,7 +1,8 @@
 
 import {
   cmp, camelify,
-  Content, Fragment
+  Content, Fragment,
+  entityClassName, entityCollection,
 } from '@voxgig/sdkgen'
 
 
@@ -32,6 +33,13 @@ const EntityOperation = cmp(function Operation(props: any) {
       SdkName: model.const.Name,
       EntityName: entity.Name,
       entityname: entity.name,
+
+      // The CLASS token. Operations resolve to the entity instance, so their
+      // declared return type must name the class — `Promise<PlanetEntity>`,
+      // not `Promise<Planet>` (the data interface). A signature that says
+      // the data type while the call resolves to an entity is a lie the
+      // compiler cannot catch; see AGENTS.md.
+      EntyClass: entityClassName(entity, entityCollection(model)),
       "['POINTS']": formatJson(entop.points, { margin: 6 }).trim(),
       '#Feature-Hook': ({ name, indent }: any) =>
         Content({ indent }, `

@@ -8,7 +8,7 @@
 
 ---@class Engagement
 ---@field amount? number
----@field estimated_time? number
+---@field estimatedTime? number
 ---@field message? string
 ---@field status? string
 ---@field success? boolean
@@ -17,7 +17,7 @@
 
 ---@class EngagementCreateData
 ---@field amount? number
----@field estimated_time? number
+---@field estimatedTime? number
 ---@field message? string
 ---@field status? string
 ---@field success? boolean

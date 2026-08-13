@@ -1,2 +1,13 @@
 
+# PENDING — this section is deliberately empty.
+#
+# Depends on a fully built ctx (spec + point + options) that the
+# shared runner cannot assemble from a literal; covered by makeSpec/makeUrl
+# upstream and by the per-language pipeline suites.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: test/parity.test.ts in @voxgig/sdkgen asserts that every empty
+# fixture carries this PENDING marker, so an accidentally-blanked fixture
+# fails the build while a knowingly-deferred one does not.
+
 basic: set: []

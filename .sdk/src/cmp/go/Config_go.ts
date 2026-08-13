@@ -11,6 +11,7 @@ import {
   each,
   isAuthActive,
   resolveAuthPrefix,
+  serverVariables,
 } from '@voxgig/sdkgen'
 
 
@@ -25,6 +26,7 @@ import {
 import {
   clean,
   formatGoMap,
+  goFeatureName,
 } from './utility_go'
 
 
@@ -45,6 +47,14 @@ const Config = cmp(async function Config(props: any) {
 
   let baseUrl = ''
   try { baseUrl = getModelPath(model, `main.${KIT}.info.servers.0.url`) } catch (_e) { }
+
+  // Templated server URL: emit the spec's server-variable defaults so the
+  // runtime can substitute {name} placeholders in base (see make_options).
+  const svars = serverVariables(model)
+  const serverBlock = 0 === svars.length ? '' :
+    '\t\t\t"server": map[string]any{\n' +
+    svars.map((v: any) => `\t\t\t\t${JSON.stringify(v.name)}: ${JSON.stringify(v.dflt)},\n`).join('') +
+    '\t\t\t},\n'
 
   const authBlock = authActive
     ? `			"auth": map[string]any{
@@ -76,7 +86,7 @@ const Config = cmp(async function Config(props: any) {
     Content(`		},
 		"options": map[string]any{
 			"base": "${baseUrl}",
-${authBlock}			"headers": ${formatGoMap(headers, 3)},
+${serverBlock}${authBlock}			"headers": ${formatGoMap(headers, 3)},
 			"entity": map[string]any{
 `)
 
@@ -102,7 +112,9 @@ func makeFeature(name string) Feature {
 `)
 
     each(feature, (f: any) => {
-      const fname = f.name.charAt(0).toUpperCase() + f.name.slice(1)
+      // MUST match Main_go.ts, which DECLARES these identifiers in registry.go
+      // and the root init(); see goFeatureName.
+      const fname = goFeatureName(f)
       if (f.name !== 'base') {
         Content(`	case "${f.name}":
 		if New${fname}FeatureFunc != nil {
