@@ -5,6 +5,8 @@ main: kit: feature: test: {
   title: "In-memory mock transport for testing without a live server"
   version: '0.0.1'
   active: true
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
 
   config: {
     # Test mode is not active by default, unlike most features

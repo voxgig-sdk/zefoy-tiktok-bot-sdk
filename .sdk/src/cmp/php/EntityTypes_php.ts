@@ -29,7 +29,7 @@ import {
   File, Content, Folder,
 } from '@voxgig/sdkgen'
 
-import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames, phpSafeTypeName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -114,9 +114,20 @@ declare(strict_types=1);
         const fields = (ent.fields ? each(ent.fields) : [])
           .filter((f: any) => f.active !== false && validName(f.name))
 
+        // PHP refuses a reserved word where a class name is expected, and the
+        // check is CASE-INSENSITIVE — an entity named `Namespace` emitted
+        // `class Namespace`, which does not parse, and took the whole types
+        // file with it (issue #64). phpSafeTypeName appends `Type` on a real
+        // collision and leaves every other name untouched.
+        //
+        // Only the bare data class needs it: the per-op names below already
+        // carry a suffix no reserved word matches, and the entity accessor is
+        // a method, which PHP resolves separately.
+        const TypeName = phpSafeTypeName(Name)
+
         // Entity data model: one typed property per field (`req:false` -> nullable).
         Content(`/** ${Name} entity data model. */
-class ${Name}
+class ${TypeName}
 {
 `)
         fields.forEach((f: any) => {

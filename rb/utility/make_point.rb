@@ -35,8 +35,8 @@ module ZefoyTiktokBotUtilities
       selector = op.input == "data" ? ctx.data : ctx.match
 
       point = nil
+      matched = false
       op.points.each do |p|
-        point = p
         select_def = ZefoyTiktokBotHelpers.to_map(VoxgigStruct.getprop(p, "select"))
         found = true
 
@@ -60,7 +60,47 @@ module ZefoyTiktokBotUtilities
           found = false if req_action != select_action
         end
 
-        break if found
+        if found
+          point = p
+          matched = true
+          break
+        end
+      end
+
+      # select.exist can list more than the params needed to pick a point, so
+      # nothing matches — fall back to the entity's own route rather than
+      # whichever point came last.
+      unless matched
+        # A request naming an action reaches here only because that action's
+        # own point failed its exist test, so it is unbuildable whatever we
+        # pick. Refuse it BEFORE choosing a fallback: the guard below
+        # compares the chosen point's $action and would wave the request
+        # through whenever the fallback lands on the action point itself.
+        req_action = reqselector ? VoxgigStruct.getprop(reqselector, "$action") : nil
+        if req_action
+          return nil, ctx.make_error("point_action_invalid",
+            "Operation \"#{op.name}\" action \"#{VoxgigStruct.stringify(req_action)}\" is not valid.")
+        end
+
+        # A terminal parameter marks a record route (/boards/{id}); a
+        # cross-reference ends in the relationship's name
+        # (/posts/{id}/author). Failing that, the shallower path wins.
+        parts_len = ->(p) {
+          parts = VoxgigStruct.getprop(p, "parts")
+          parts.is_a?(Array) ? parts.length : 0
+        }
+        terminal_param = ->(p) {
+          parts = VoxgigStruct.getprop(p, "parts")
+          parts.is_a?(Array) && parts.length > 0 && parts[-1].to_s.start_with?("{")
+        }
+        point = op.points[0]
+        op.points.each do |p|
+          if terminal_param.call(p) != terminal_param.call(point)
+            point = p if terminal_param.call(p)
+          elsif parts_len.call(p) < parts_len.call(point)
+            point = p
+          end
+        end
       end
 
       if reqselector

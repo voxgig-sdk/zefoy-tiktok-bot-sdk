@@ -23,7 +23,7 @@ const Package = cmp(async function Package(props: any) {
   // may not be named `<slug>-sdk`, and the hardcoded `go 1.20` this used to
   // emit could not compile sdkgen's own `log` feature (it imports log/slog,
   // which needs 1.21).
-  const gomodule = goModule(model, 'go')
+  const gomodule = goModule(model, target.name)
 
   File({ name: 'go.mod' }, () => {
     Content(`module ${gomodule}

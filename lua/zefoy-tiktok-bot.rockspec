@@ -23,6 +23,7 @@ build = {
   modules = {
     ["zefoy-tiktok-bot_sdk"] = "zefoy-tiktok-bot_sdk.lua",
     ["config"] = "config.lua",
+    ["config_shared"] = "config_shared.lua",
     ["features"] = "features.lua",
   }
 }

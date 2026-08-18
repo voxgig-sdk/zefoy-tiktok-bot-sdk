@@ -137,7 +137,7 @@ ${hasList ? `
         $this->assertCount(3, $seen);
 
         // Inbound: streaming active -> yields each item from the feature.
-        $cfg = ${model.const.Name}Config::make_config();
+        $cfg = ${model.const.Name}Config::shared_config();
         if (isset($cfg["feature"]) && is_array($cfg["feature"]) && isset($cfg["feature"]["streaming"])) {
             $sdk = ${model.const.Name}SDK::test($seed, ["feature" => ["streaming" => ["active" => true]]]);
             $got = [];

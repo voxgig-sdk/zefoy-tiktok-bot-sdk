@@ -15,7 +15,7 @@ const ReadmeTopQuick = cmp(function ReadmeTopQuick(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = goModule(model, 'go')
+  const gomodule = goModule(model, target.name)
 
   const exampleEntity = Object.values(entity).find((e: any) => e.active !== false) as any
 

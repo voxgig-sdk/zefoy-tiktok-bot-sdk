@@ -14,7 +14,7 @@ ${installCommand(model, target.name)}
 Or add to your \`Gemfile\`:
 
 \`\`\`ruby
-gem "${packageName(model, 'gem')}"
+gem "${packageName(model, target.name)}"
 \`\`\`
 
 Then run:

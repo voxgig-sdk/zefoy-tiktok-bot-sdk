@@ -40,7 +40,7 @@ class ProjectNameSDK
         $utility = new ProjectNameUtility();
         $this->_utility = $utility;
 
-        $config = ProjectNameConfig::make_config();
+        $config = ProjectNameConfig::shared_config();
 
         $this->_rootctx = ($utility->make_context)([
             "client" => $this,

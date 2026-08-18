@@ -167,7 +167,7 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
 
   // This file is GENERATED, not templated, so the GOMODULE placeholder is
   // never substituted for it — the module path has to be interpolated.
-  const gomodule = goModule(model, 'go')
+  const gomodule = goModule(model, target.name)
 
   // only_active:false — getModelPath DROPS active:false entries by default,
   // but the consumer scaffold (create-sdkgen Root.ts) iterates the RAW entity

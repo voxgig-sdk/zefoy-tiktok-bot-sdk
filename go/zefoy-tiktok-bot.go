@@ -46,6 +46,7 @@ var NewResult = core.NewResult
 var NewResponse = core.NewResponse
 var NewOperation = core.NewOperation
 var MakeConfig = core.MakeConfig
+var SharedConfig = core.SharedConfig
 
 // No-arg convenience constructors. Go has no default-argument syntax,
 // so these aliases let callers write `sdk.New()` / `sdk.Test()`

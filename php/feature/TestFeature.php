@@ -369,11 +369,40 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
         // any missing piece falls back to "no required params".
         $reqd_names = [];
         if (is_string($opname) && is_string($entityName) && isset($ctx->config)) {
+            // Pick the entity's own endpoint, not a cross-reference from
+            // another resource that also returns it — the same rule
+            // MakePoint falls back to, so the seed-data query is built from
+            // the endpoint the request will actually be sent to: a terminal
+            // `{id}` marks a record route, and failing that the shallower
+            // path wins.
             $points = \Voxgig\Struct\Struct::getpath(
                 ['entity', $entityName, 'op', $opname, 'points'],
                 $ctx->config
             );
-            $point = \Voxgig\Struct\Struct::getelem($points, -1);
+            $point = \Voxgig\Struct\Struct::getelem($points, 0);
+            if (is_array($points)) {
+                $point_parts_len = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    return is_array($parts) ? count($parts) : 0;
+                };
+                $point_terminal_param = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    if (!is_array($parts) || 0 === count($parts)) {
+                        return false;
+                    }
+                    $last = $parts[count($parts) - 1];
+                    return is_string($last) && 0 === strpos($last, '{');
+                };
+                foreach ($points as $cand) {
+                    if ($point_terminal_param($cand) !== $point_terminal_param($point)) {
+                        if ($point_terminal_param($cand)) {
+                            $point = $cand;
+                        }
+                    } elseif ($point_parts_len($cand) < $point_parts_len($point)) {
+                        $point = $cand;
+                    }
+                }
+            }
             $params = is_array($point) ? ($point['args']['params'] ?? null) : null;
             if (is_array($params)) {
                 foreach ($params as $p) {

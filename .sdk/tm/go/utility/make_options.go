@@ -127,7 +127,11 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 		sysFetch = sf
 	}
 
-	merged := vs.Merge([]any{map[string]any{}, cfgopts, opts})
+	// Clone the config side before merging: `config` is a process-wide
+	// singleton (see core.SharedConfig), and Merge would otherwise use its
+	// nested maps as merge TARGETS — one instance's options (server, headers,
+	// ...) would contaminate every instance constructed after it.
+	merged := vs.Merge([]any{map[string]any{}, vs.Clone(cfgopts), opts})
 	validated, _ := vs.Validate(merged, optspec)
 	opts = validated.(map[string]any)
 

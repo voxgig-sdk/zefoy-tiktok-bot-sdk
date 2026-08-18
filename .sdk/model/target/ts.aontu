@@ -6,6 +6,7 @@ main: kit: target: ts: {
   comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
   base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
 
   deps: &: {
     # TODO: fix aontu disjunctions!

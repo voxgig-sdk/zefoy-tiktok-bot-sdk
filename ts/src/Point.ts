@@ -30,7 +30,9 @@ class Point {
     this.parts = getprop(altmap, 'parts', [])
     this.params = getprop(altmap, 'params', [])
     this.select = getprop(altmap, 'select')
-    this.active = getprop(altmap, 'active', false)
+    // Absent in config means ACTIVE: emission drops `active: true` as a default
+    // (sdkgen L0), so only an explicit `active: false` turns a point off.
+    this.active = getprop(altmap, 'active', true)
     this.relations = getprop(altmap, 'relations', [])
     this.alias = getprop(altmap, 'alias', {})
     this.transform = getprop(altmap, 'transform', { req: undefined, res: undefined })

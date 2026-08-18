@@ -40,7 +40,7 @@ class ZefoyTiktokBotSDK
         $utility = new ZefoyTiktokBotUtility();
         $this->_utility = $utility;
 
-        $config = ZefoyTiktokBotConfig::make_config();
+        $config = ZefoyTiktokBotConfig::shared_config();
 
         $this->_rootctx = ($utility->make_context)([
             "client" => $this,

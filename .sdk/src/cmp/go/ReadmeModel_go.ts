@@ -44,7 +44,7 @@ const ReadmeModel = cmp(function ReadmeModel(props: any) {
   const resultShapeRows = resultRows.join('\n')
 
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = goModule(model, 'go')
+  const gomodule = goModule(model, target.name)
 
   const apikeyOptionRow = isAuthActive(model)
     ? '| `"apikey"` | `string` | API key for authentication. |\n'

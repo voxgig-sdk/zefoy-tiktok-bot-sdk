@@ -61,7 +61,11 @@ module ZefoyTiktokBotUtilities
 
     sys_fetch = VoxgigStruct.getpath(opts, "system.fetch")
 
-    merged = VoxgigStruct.merge([{}, cfgopts, opts])
+    # Clone the config side before merging: `config` is a process-wide
+    # singleton (see Config.shared_config), and merge would otherwise use its
+    # nested hashes as merge TARGETS — one instance's options (server,
+    # headers, ...) would contaminate every instance constructed after it.
+    merged = VoxgigStruct.merge([{}, VoxgigStruct.clone(cfgopts), opts])
     validated = VoxgigStruct.validate(merged, optspec)
     opts = validated.is_a?(Hash) ? validated : {}
 

@@ -5,6 +5,8 @@ main: kit: target: php: {
   ext: php
   comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
   srcfeature: false
 
   deps: &: {

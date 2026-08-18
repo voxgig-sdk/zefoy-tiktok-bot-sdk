@@ -42,8 +42,8 @@ class ZefoyTiktokBotMakePoint
             $selector = $op->input === 'data' ? $ctx->data : $ctx->match;
 
             $point = null;
+            $matched = false;
             foreach ($op->points as $p) {
-                $point = $p;
                 $select_def = ZefoyTiktokBotHelpers::to_map(\Voxgig\Struct\Struct::getprop($p, 'select'));
                 $found = true;
 
@@ -70,7 +70,55 @@ class ZefoyTiktokBotMakePoint
                 }
 
                 if ($found) {
+                    $point = $p;
+                    $matched = true;
                     break;
+                }
+            }
+
+            // select.exist can list more than the params needed to pick a
+            // point, so nothing matches — fall back to the entity's own
+            // route rather than the last point.
+            if (!$matched) {
+                // A request naming an action reaches here only because that
+                // action's own point failed its exist test, so it is
+                // unbuildable whatever we pick. Refuse it BEFORE choosing a
+                // fallback: the guard below compares the chosen point's
+                // $action and would wave the request through whenever the
+                // fallback lands on the action point itself.
+                $unmatched_action = $reqselector
+                    ? \Voxgig\Struct\Struct::getprop($reqselector, '$action') : null;
+                if (null !== $unmatched_action) {
+                    return [null, $ctx->make_error('point_action_invalid',
+                        "Operation \"{$op->name}\" action \"" .
+                        \Voxgig\Struct\Struct::stringify($unmatched_action) .
+                        "\" is not valid.")];
+                }
+
+                // A terminal parameter marks a record route (/boards/{id});
+                // a cross-reference ends in the relationship's name
+                // (/posts/{id}/author). Failing that, the shallower wins.
+                $parts_len = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    return is_array($parts) ? count($parts) : 0;
+                };
+                $terminal_param = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    if (!is_array($parts) || 0 === count($parts)) {
+                        return false;
+                    }
+                    $last = $parts[count($parts) - 1];
+                    return is_string($last) && 0 === strpos($last, '{');
+                };
+                $point = $op->points[0];
+                foreach ($op->points as $p) {
+                    if ($terminal_param($p) !== $terminal_param($point)) {
+                        if ($terminal_param($p)) {
+                            $point = $p;
+                        }
+                    } elseif ($parts_len($p) < $parts_len($point)) {
+                        $point = $p;
+                    }
                 }
             }
 

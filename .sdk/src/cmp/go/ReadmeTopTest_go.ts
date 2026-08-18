@@ -28,7 +28,7 @@ const ReadmeTopTest = cmp(function ReadmeTopTest(props: any) {
 
   const entity = getModelPath(model, `main.${KIT}.entity`)
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = goModule(model, 'go')
+  const gomodule = goModule(model, target.name)
 
   // Pick an entity with a real op (prefer a read op) — never fabricate a
   // `load` on an op-less entity like Cloudsmith's `Abort`.

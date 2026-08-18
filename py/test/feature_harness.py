@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from urllib.parse import quote
 
-from zefoytiktokbot_sdk.config import make_config
+from zefoytiktokbot_sdk.config import shared_config
 from zefoytiktokbot_sdk.features import _make_feature
 from zefoytiktokbot_sdk.core.control import ZefoyTiktokBotControl
 from zefoytiktokbot_sdk.core.error import ZefoyTiktokBotError
@@ -24,7 +24,7 @@ from zefoytiktokbot_sdk.core.spec import ZefoyTiktokBotSpec
 
 # True when this SDK was generated with the named feature.
 def has_feature(name):
-    feature = make_config().get("feature")
+    feature = shared_config().get("feature")
     return isinstance(feature, dict) and feature.get(name) is not None
 
 

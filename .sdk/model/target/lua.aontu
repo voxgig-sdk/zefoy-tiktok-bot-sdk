@@ -5,6 +5,8 @@ main: kit: target: lua: {
   ext: lua
   comment: line: "--"
   module: name: 'zefoy-tiktok-bot'
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
   srcfeature: false
 
   deps: &: {

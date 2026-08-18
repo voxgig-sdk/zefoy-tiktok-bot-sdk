@@ -8,8 +8,11 @@ import {
   Fragment,
   Line,
   cmp,
+  configDefinition,
+  configReprSetting,
   each,
   isAuthActive,
+  isConfigData,
   resolveAuthPrefix,
   serverVariables,
 } from '@voxgig/sdkgen'
@@ -61,12 +64,78 @@ const Config = cmp(async function Config(props: any) {
             },\n`
     : ''
 
+  // The same config as an OBJECT, built by the shared helper so this target's
+  // literal and the data that replaces it above the threshold are the same
+  // config by construction. The JSON is what the threshold is measured on -
+  // emitted source size varies by language, the model does not.
+  const { json: configJson } = configDefinition(model)
+  const asData = isConfigData(configJson, configReprSetting(model))
+
   File({ name: 'config.' + target.ext }, () => {
 
     Content(`# ${model.const.Name} SDK configuration
+${asData ? '\nimport json\n' : ''}
+
+_shared_config = None
+
+
+def shared_config():
+    """Return the process-wide config, built once on first use.
+
+    The SDK reads the config on every request and never writes to it, so one
+    instance is shared by every client rather than rebuilt per client.
+
+    The returned dict is shared: treat it as read-only. Callers that need to
+    mutate should use make_config, which always returns a fresh copy.
+    """
+    global _shared_config
+    if _shared_config is None:
+        _shared_config = make_config()
+    return _shared_config
+
+
+`)
+
+    // ABOVE THE THRESHOLD: emit the model as DATA.
+    //
+    // A dict literal makes CPython build the whole structure opcode by opcode
+    // at import, and the compiler hold the entire literal in memory to produce
+    // that bytecode. A string constant is one object, and `json.loads` (the C
+    // scanner) builds the dict far faster than the equivalent literal.
+    //
+    // `json.loads` yields exactly what the literal did - str keys, int for
+    // whole numbers, True/False/None - so make_config's result is unchanged.
+    //
+    // JSON.stringify output is a valid Python string literal: every escape it
+    // emits (\\", \\\\, \\n, \\uXXXX) means the same thing in Python, it never emits
+    // \\/ (which Python would not treat as an escape), and Python 3 source is
+    // UTF-8 so non-ASCII needs no escaping.
+    if (asData) {
+      Content(`# THE API MODEL, EMBEDDED AS DATA (sdkgen rung L1).
+#
+# Emitted only above a size threshold, or when \`main.kit.config.repr\` pins it:
+# for a small model the dict literal is smaller and far easier to read when
+# debugging.
+_CONFIG_DATA = ${JSON.stringify(configJson)}
 
 
 def make_config():
+    """Parse a fresh, fully materialised config dict.
+
+    Every call re-parses, so prefer shared_config unless you need a private
+    copy you intend to mutate.
+    """
+    return json.loads(_CONFIG_DATA)
+`)
+      return
+    }
+
+    Content(`def make_config():
+    """Build a fresh, fully materialised config dict.
+
+    Every call rebuilds the whole structure, so prefer shared_config unless
+    you need a private copy you intend to mutate.
+    """
     return {
         "main": {
             "name": "${model.const.Name}",
@@ -100,7 +169,7 @@ ${serverBlock}${authBlock}            "headers": ${formatPyDict(headers, 3)},
         name: n.name,
         op: n.op,
         relations: n.relations,
-      }), a), {}), 2)},
+      }, true), a), {}), 2)},
     }
 `)
   })

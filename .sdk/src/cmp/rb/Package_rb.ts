@@ -33,7 +33,7 @@ const Package = cmp(async function Package(props: any) {
   // path (`${model.name}_sdk`) is unchanged.
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
-  const gemName = packageName(model, 'rb')
+  const gemName = packageName(model, target.name)
   const { repoUrl, issuesUrl, changelogUrl } = repoInfo(model)
 
   const versionOf = (d: { version: string; source: 'feature' | 'target' }) =>
@@ -66,8 +66,8 @@ gemspec
   spec.name          = "${gemName}"
   spec.version       = "${packageVersion(model, target.name)}"
   spec.authors       = ["${author.name}"]
-  spec.summary       = "${pkgDescription(model, 'rb')}"
-  spec.description   = "${pkgDescription(model, 'rb')}"
+  spec.summary       = "${pkgDescription(model, target.name)}"
+  spec.description   = "${pkgDescription(model, target.name)}"
   spec.license       = "MIT"
   spec.homepage      = "${repoUrl}"
   spec.metadata      = {

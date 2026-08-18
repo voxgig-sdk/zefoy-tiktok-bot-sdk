@@ -21,6 +21,12 @@ const Gitignore = cmp(async function Gitignore(_props: any) {
 *.test
 *.out
 
+# Readme-snippet check work dirs (TestReadmeGoSnippets). Normally removed on
+# exit; a killed run leaves one behind, and committing it is how a 1132-file
+# snippet package once shipped in a release.
+_readmecheck-*/
+readmecheck-*/
+
 # Coverage
 coverage.txt
 coverage.html

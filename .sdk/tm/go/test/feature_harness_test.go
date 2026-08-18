@@ -25,7 +25,7 @@ import (
 
 // fhHasFeature is true when this SDK was generated with the named feature.
 func fhHasFeature(name string) bool {
-	config := sdk.MakeConfig()
+	config := sdk.SharedConfig()
 	fm, _ := config["feature"].(map[string]any)
 	return fm != nil && fm[name] != nil
 }

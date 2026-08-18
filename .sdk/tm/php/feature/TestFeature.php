@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-// ProjectName SDK test feature
+// ZefoyTiktokBot SDK test feature
 
 require_once __DIR__ . '/BaseFeature.php';
 require_once __DIR__ . '/../utility/Param.php';
 
-class ProjectNameTestFeature extends ProjectNameBaseFeature
+class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
 {
     private mixed $client;
     private ?array $options;
@@ -23,7 +23,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
         $this->_netcalls = 0;
     }
 
-    public function init(ProjectNameContext $ctx, array $options): void
+    public function init(ZefoyTiktokBotContext $ctx, array $options): void
     {
         $this->client = $ctx->client;
         $this->options = $options;
@@ -47,7 +47,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
         $entity = new \stdClass();
         $entity->data = $entity_data;
 
-        $test_fetcher = function (ProjectNameContext $fctx, string $_fullurl, array $_fetchdef) use ($entity): array {
+        $test_fetcher = function (ZefoyTiktokBotContext $fctx, string $_fullurl, array $_fetchdef) use ($entity): array {
             // Shape the mock payload the way the real API would, so the op's
             // response transform recovers the entity from it. A point carrying
             // transform.res of `body.item` describes an API that answers
@@ -239,7 +239,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
                 return $respond(200, null);
 
             } elseif ($op->name === 'create') {
-                $id = ProjectNameParam::call($fctx, 'id');
+                $id = ZefoyTiktokBotParam::call($fctx, 'id');
                 if ($id === null || $id === '__UNDEFINED__') {
                     $id = sprintf('%04x%04x%04x%04x',
                         random_int(0, 0xFFFF), random_int(0, 0xFFFF),
@@ -309,7 +309,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
             usleep((int)($ms * 1000));
         };
 
-        return function (ProjectNameContext $fctx, string $url, array $fetchdef) use ($net, $inner, $pick_latency, $sleep): array {
+        return function (ZefoyTiktokBotContext $fctx, string $url, array $fetchdef) use ($net, $inner, $pick_latency, $sleep): array {
             $this->_netcalls++;
             $call = $this->_netcalls;
 
@@ -347,7 +347,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
      * current operation point, emit a `$OR` clause matching the key (and
      * its alias, if any) against the supplied value.
      */
-    public function buildArgs(ProjectNameContext $ctx, $op, $args): array
+    public function buildArgs(ZefoyTiktokBotContext $ctx, $op, $args): array
     {
         // If args is empty/missing, return an empty $AND so select() matches
         // every entry — the TS test feature relies on this for empty-match
@@ -369,11 +369,40 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
         // any missing piece falls back to "no required params".
         $reqd_names = [];
         if (is_string($opname) && is_string($entityName) && isset($ctx->config)) {
+            // Pick the entity's own endpoint, not a cross-reference from
+            // another resource that also returns it — the same rule
+            // MakePoint falls back to, so the seed-data query is built from
+            // the endpoint the request will actually be sent to: a terminal
+            // `{id}` marks a record route, and failing that the shallower
+            // path wins.
             $points = \Voxgig\Struct\Struct::getpath(
                 ['entity', $entityName, 'op', $opname, 'points'],
                 $ctx->config
             );
-            $point = \Voxgig\Struct\Struct::getelem($points, -1);
+            $point = \Voxgig\Struct\Struct::getelem($points, 0);
+            if (is_array($points)) {
+                $point_parts_len = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    return is_array($parts) ? count($parts) : 0;
+                };
+                $point_terminal_param = function ($p) {
+                    $parts = \Voxgig\Struct\Struct::getprop($p, 'parts');
+                    if (!is_array($parts) || 0 === count($parts)) {
+                        return false;
+                    }
+                    $last = $parts[count($parts) - 1];
+                    return is_string($last) && 0 === strpos($last, '{');
+                };
+                foreach ($points as $cand) {
+                    if ($point_terminal_param($cand) !== $point_terminal_param($point)) {
+                        if ($point_terminal_param($cand)) {
+                            $point = $cand;
+                        }
+                    } elseif ($point_parts_len($cand) < $point_parts_len($point)) {
+                        $point = $cand;
+                    }
+                }
+            }
             $params = is_array($point) ? ($point['args']['params'] ?? null) : null;
             if (is_array($params)) {
                 foreach ($params as $p) {
@@ -394,7 +423,7 @@ class ProjectNameTestFeature extends ProjectNameBaseFeature
             $is_id = ($k === 'id');
             $in_reqd = in_array($k, $reqd_names, true);
             if ($is_id || $in_reqd) {
-                $v = ProjectNameParam::call($ctx, $k);
+                $v = ZefoyTiktokBotParam::call($ctx, $k);
                 $ka = \Voxgig\Struct\Struct::getprop($alias, $k);
 
                 $qor = [[$k => $v]];

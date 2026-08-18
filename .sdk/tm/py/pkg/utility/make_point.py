@@ -5,6 +5,38 @@ from projectname_sdk.utility.voxgig_struct import voxgig_struct as vs
 from projectname_sdk.core.helpers import to_map
 
 
+def _parts_len(point):
+    parts = vs.getprop(point, "parts")
+    return len(parts) if isinstance(parts, list) else 0
+
+
+def _terminal_param(point):
+    # A record route ends in the record's identifier (/boards/{id}); a
+    # cross-reference that also returns the entity ends in the
+    # relationship's name (/posts/{id}/author).
+    parts = vs.getprop(point, "parts")
+    if not isinstance(parts, list) or 0 == len(parts):
+        return False
+    return str(parts[-1]).startswith("{")
+
+
+def _own_point(points):
+    # The entity's OWN route: a terminal parameter first, then the fewest
+    # path segments. Ties keep the earlier point, so the model's sorted-key
+    # order decides. The same rule runs at generation time, in
+    # helpers/opShape.ts — both sides must move together.
+    best = points[0]
+    for cand in points:
+        cand_term = _terminal_param(cand)
+        best_term = _terminal_param(best)
+        if cand_term != best_term:
+            if cand_term:
+                best = cand
+        elif _parts_len(cand) < _parts_len(best):
+            best = cand
+    return best
+
+
 def make_point_util(ctx):
     pre = ctx.out.get("point")
     if pre is not None:
@@ -40,9 +72,10 @@ def make_point_util(ctx):
             selector = ctx.match
 
         point = None
+        matched = False
         for i in range(len(op.points)):
-            point = op.points[i]
-            select_def = to_map(vs.getprop(point, "select"))
+            cand = op.points[i]
+            select_def = to_map(vs.getprop(cand, "select"))
             found = True
 
             if selector is not None and select_def is not None:
@@ -63,7 +96,28 @@ def make_point_util(ctx):
                     found = False
 
             if found:
+                point = cand
+                matched = True
                 break
+
+        # select.exist can list more than the params needed to pick a point,
+        # so nothing matches — fall back to the entity's own route rather
+        # than whichever point came last.
+        if not matched:
+            # A request naming an action reaches here only because that
+            # action's own point failed its exist test, so it is unbuildable
+            # whatever we pick. Refuse it BEFORE choosing a fallback: the
+            # guard below compares the chosen point's $action and would wave
+            # the request through whenever the fallback lands on the action
+            # point itself.
+            req_action = vs.getprop(reqselector, "$action") \
+                if reqselector is not None else None
+            if req_action is not None:
+                return None, ctx.make_error("point_action_invalid",
+                    'Operation "' + op.name + '" action "' +
+                    vs.stringify(req_action) + '" is not valid.')
+
+            point = _own_point(op.points)
 
         if reqselector is not None:
             req_action = vs.getprop(reqselector, "$action")

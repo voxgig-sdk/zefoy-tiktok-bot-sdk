@@ -7,7 +7,7 @@ const ReadmeInstall = cmp(function ReadmeInstall(props: any) {
   const { model } = ctx$
 
   // Go module path == repo path on GitHub (org from model.origin).
-  const gomodule = packageName(model, 'go')
+  const gomodule = packageName(model, target.name)
   // `repo` is the directory a `git clone` of this project creates — not
   // `<slug>-sdk`, which is only the DEFAULT repo name.
   const { releasesUrl, repo } = repoInfo(model)

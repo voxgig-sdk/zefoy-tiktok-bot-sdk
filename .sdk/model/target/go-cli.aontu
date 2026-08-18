@@ -11,6 +11,8 @@ main: kit: target: 'go-cli': {
   ext: go
   comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
 
   # Per-generation-phase activation. Mirrors the feature pattern
   # (`main.kit.feature.<name>: { active: true }`). Root.ts inspects

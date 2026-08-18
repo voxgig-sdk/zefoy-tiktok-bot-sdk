@@ -50,8 +50,12 @@ const Main = cmp(function Main(props: any) {
   const { model } = props.ctx$
 
   const org = model.origin || 'voxgig-sdk'
+  // The two names on the next lines are DIFFERENT KINDS of name, and the
+  // adjacency is the trap. `sdkModule` is the Go SDK this CLI imports — a
+  // different target, so it keeps its own name and must NOT follow this
+  // target's alias. `cliModule` is this target itself, so it must.
   const sdkModule = goModule(model, 'go')
-  const cliModule = goModule(model, 'go-cli')
+  const cliModule = goModule(model, target.name)
 
   const entityMap: any = getModelPath(model, `main.${KIT}.entity`)
   // Derive each entity's PascalCase `Name` here rather than relying on another
@@ -369,7 +373,7 @@ this repo, or upstream at
   // (go 1.24.7) — keep in step with BORU_ENG_VERSION.
   File({ name: 'go.mod' }, () => Content(`module ${cliModule}
 
-go ${goVersion(model, 'go-cli', '1.24.7')}
+go ${goVersion(model, target.name, '1.24.7')}
 
 require ${sdkModule} v0.0.0
 require github.com/boru-lang/boru/eng/go ${BORU_ENG_VERSION}

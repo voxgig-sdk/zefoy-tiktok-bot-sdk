@@ -117,7 +117,7 @@ ${hasList ? `
     assert_equal 3, seen.length
 
     # Inbound: streaming active -> yields each item from the feature.
-    cfg = ${model.const.Name}Config.make_config
+    cfg = ${model.const.Name}Config.shared_config
     if cfg["feature"].is_a?(Hash) && cfg["feature"].key?("streaming")
       sdk = ${model.const.Name}SDK.test(seed, { "feature" => { "streaming" => { "active" => true } } })
       got = []

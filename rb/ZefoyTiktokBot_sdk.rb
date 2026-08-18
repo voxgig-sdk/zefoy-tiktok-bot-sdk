@@ -28,7 +28,7 @@ class ZefoyTiktokBotSDK
     utility = ZefoyTiktokBotUtility.new
     @_utility = utility
 
-    config = ZefoyTiktokBotConfig.make_config
+    config = ZefoyTiktokBotConfig.shared_config
 
     @_rootctx = utility.make_context.call({
       "client" => self,

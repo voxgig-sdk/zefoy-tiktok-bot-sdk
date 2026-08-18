@@ -96,7 +96,11 @@ def make_options_util(ctx):
     # Preserve system.fetch before merge/validate.
     sys_fetch = vs.getpath(opts, "system.fetch")
 
-    merged = vs.merge([{}, cfgopts, opts])
+    # Clone the config side before merging: `config` is a process-wide
+    # singleton (see config.shared_config), and merge would otherwise use its
+    # nested dicts as merge TARGETS — one instance's options (server, headers,
+    # ...) would contaminate every instance constructed after it.
+    merged = vs.merge([{}, vs.clone(cfgopts), opts])
     validated = vs.validate(merged, optspec)
     if not isinstance(validated, dict):
         validated = {}

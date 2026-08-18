@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"regexp"
+	"strings"
 
 	vs "github.com/voxgig-sdk/zefoy-tiktok-bot-sdk/go/utility/struct"
 
@@ -310,9 +311,40 @@ func (f *TestFeature) makeNetsim(net map[string]any, inner core.FetcherFunc) cor
 func (f *TestFeature) buildArgs(ctx *core.Context, op *core.Operation, args map[string]any) any {
 	opname := op.Name
 
-	// Get last point from config.
+	// Pick the entity's own endpoint from config, not a cross-reference from
+	// another resource that also returns it — the same rule makePoint falls
+	// back to, so the seed-data query is built from the endpoint the request
+	// will actually be sent to: a terminal `{id}` marks a record route, and
+	// failing that the shallower path wins.
 	points := vs.GetPath([]any{"entity", ctx.Entity.GetName(), "op", opname, "points"}, ctx.Config)
-	point := vs.GetElem(points, -1)
+	point := vs.GetElem(points, 0)
+	if plist, ok := points.([]any); ok {
+		partsLen := func(p any) int {
+			if parts, ok := vs.GetProp(p, "parts").([]any); ok {
+				return len(parts)
+			}
+			return 0
+		}
+		terminalParam := func(p any) bool {
+			parts, ok := vs.GetProp(p, "parts").([]any)
+			if !ok || 0 == len(parts) {
+				return false
+			}
+			last, _ := parts[len(parts)-1].(string)
+			return strings.HasPrefix(last, "{")
+		}
+		for _, cand := range plist {
+			candTerm := terminalParam(cand)
+			bestTerm := terminalParam(point)
+			if candTerm != bestTerm {
+				if candTerm {
+					point = cand
+				}
+			} else if partsLen(cand) < partsLen(point) {
+				point = cand
+			}
+		}
+	}
 
 	// Get required params.
 	paramsPath := vs.GetPath([]any{"args", "params"}, point)

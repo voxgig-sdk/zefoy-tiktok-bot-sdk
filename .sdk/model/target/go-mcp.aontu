@@ -11,6 +11,8 @@ main: kit: target: 'go-mcp': {
   ext: go
   comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
+  base: 'node_modules/@voxgig/sdkgen/project/.sdk'
+  package: '@voxgig/sdkgen'
 
   # Per-generation-phase activation. Mirrors go-cli — only Main runs.
   phase: {

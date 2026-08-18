@@ -104,7 +104,11 @@ local function make_options_util(ctx)
   -- Preserve system.fetch before merge/validate.
   local sys_fetch = vs.getpath(opts, "system.fetch")
 
-  local merged = vs.merge({ {}, cfgopts, opts })
+  -- Clone the config side before merging: `config` is a per-Lua-state
+  -- singleton (see config_shared), and merge would otherwise use its nested
+  -- tables as merge TARGETS — one instance's options (server, headers, ...)
+  -- would contaminate every instance constructed after it.
+  local merged = vs.merge({ {}, vs.clone(cfgopts), opts })
   local validated = vs.validate(merged, optspec)
   if type(validated) ~= "table" then
     validated = {}

@@ -28,7 +28,7 @@ class ProjectNameSDK
     utility = ProjectNameUtility.new
     @_utility = utility
 
-    config = ProjectNameConfig.make_config
+    config = ProjectNameConfig.shared_config
 
     @_rootctx = utility.make_context.call({
       "client" => self,

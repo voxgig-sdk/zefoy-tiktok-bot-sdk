@@ -61,7 +61,7 @@ const Package = cmp(async function Package(props: any) {
   const { repoUrl, issuesUrl } = repoInfo(model)
 
   const pkg = {
-    name: packageName(model, 'npm'),
+    name: packageName(model, target.name),
     version: packageVersion(model, target.name),
     description: pkgDescription(model, target.name),
     keywords: keywords(model),

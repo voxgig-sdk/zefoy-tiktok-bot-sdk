@@ -8,8 +8,12 @@ import {
   Fragment,
   Line,
   cmp,
+  configDefinition,
+  configReprSetting,
   each,
   isAuthActive,
+  isConfigData,
+  rawStringLiteral,
   resolveAuthPrefix,
   serverVariables,
 } from '@voxgig/sdkgen'
@@ -63,6 +67,13 @@ const Config = cmp(async function Config(props: any) {
                 ],\n`
     : ''
 
+  // The same config as an OBJECT, built by the shared helper so this target's
+  // literal and the data that replaces it above the threshold are the same
+  // config by construction. The JSON is what the threshold is measured on -
+  // emitted source size varies by language, the model does not.
+  const { json: configJson } = configDefinition(model)
+  const asData = isConfigData(configJson, configReprSetting(model))
+
   File({ name: 'config.' + target.ext }, () => {
 
     Content(`<?php
@@ -72,6 +83,101 @@ declare(strict_types=1);
 
 class ${model.const.Name}Config
 {
+    /** @var array<string,mixed>|null */
+    private static ?array $shared_config = null;
+
+    /**
+     * Return the process-wide config, built once on first use. The SDK reads
+     * the config on every request and never writes to it, so one instance is
+     * shared by every client rather than rebuilt per client.
+     *
+     * PHP arrays are copy-on-write, so callers that do mutate the result get
+     * their own copy and cannot disturb the shared one.
+     */
+    public static function shared_config(): array
+    {
+        if (self::$shared_config === null) {
+            self::$shared_config = self::make_config();
+        }
+        return self::$shared_config;
+    }
+
+`)
+
+    // ABOVE THE THRESHOLD: emit the model as DATA.
+    //
+    // An array literal is compiled opcode by opcode and held in the opcache
+    // entry for this file; a string constant is one token, and `json_decode`
+    // (C) builds the array far faster than the equivalent literal.
+    //
+    // PHP cannot tell an empty list from an empty map, so `{}` and `[]` decode
+    // to the same value and the two representations have to AGREE about which
+    // one the literal would have produced. `formatPhpArray` emits `[]` for
+    // every empty map, and the literal branch hand-writes `(object)[]` in
+    // exactly two places - `entity` and `options.entity`, and only when the
+    // model declares no entities at all, because the SDK runtime validator
+    // wants a map there. This reproduces that rule rather than improving on
+    // it: an emission wart is not something the data path gets to fix
+    // unilaterally, or the two branches stop being interchangeable.
+    //
+    // A SINGLE-quoted literal, so the JSON survives verbatim: a double-quoted
+    // PHP string would interpolate any `$name` the model contains - and the
+    // model is full of them (`$STRING`, `$action`).
+    if (asData) {
+      Content(`    /**
+     * THE API MODEL, EMBEDDED AS DATA (sdkgen rung L1).
+     *
+     * Emitted only above a size threshold, or when \`main.kit.config.repr\`
+     * pins it: for a small model the array literal is smaller and far easier
+     * to read when debugging.
+     */
+    private const CONFIG_DATA = ${rawStringLiteral(configJson)};
+
+    /**
+     * Decoded JSON in the shape the literal branch produces: every map
+     * becomes an array, including an empty one.
+     */
+    private static function config_decode(mixed $v): mixed
+    {
+        if ($v instanceof \\stdClass) {
+            $out = [];
+            foreach (get_object_vars($v) as $k => $c) {
+                $out[$k] = self::config_decode($c);
+            }
+            return $out;
+        }
+        if (is_array($v)) {
+            return array_map([self::class, 'config_decode'], $v);
+        }
+        return $v;
+    }
+
+    /**
+     * Parse a fresh, fully materialised config array. Every call re-parses,
+     * so prefer shared_config unless you need a private copy.
+     */
+    public static function make_config(): array
+    {
+        /** @var array<string,mixed> $out */
+        $out = self::config_decode(json_decode(self::CONFIG_DATA));
+
+        // The two map-shape exceptions the literal branch makes by hand.
+        if (count($out["entity"]) === 0) {
+            $out["entity"] = (object)[];
+        }
+        if (count($out["options"]["entity"]) === 0) {
+            $out["options"]["entity"] = (object)[];
+        }
+        return $out;
+    }
+`)
+    }
+    else {
+
+    Content(`    /**
+     * Build a fresh, fully materialised config array. Every call rebuilds the
+     * whole structure, so prefer shared_config unless you need a private copy.
+     */
     public static function make_config(): array
     {
         return [
@@ -122,13 +228,16 @@ ${serverBlock}${authBlock}                "headers" => ${formatPhpArray(headers,
         name: n.name,
         op: n.op,
         relations: n.relations,
-      }), a), {}), 3)},
+      }, true), a), {}), 3)},
         ];
 `)
     }
 
     Content(`    }
+`)
+    }
 
+    Content(`
 
     public static function make_feature(string $name)
     {

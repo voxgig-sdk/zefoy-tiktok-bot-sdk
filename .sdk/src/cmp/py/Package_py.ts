@@ -27,7 +27,7 @@ const Package = cmp(async function Package(props: any) {
   // package (the `${model.name}_sdk/` dir) is unchanged.
   const ns = model.origin || 'voxgig-sdk'
   const pkgBase = ns.endsWith('-sdk') ? model.name : `${model.name}-sdk`
-  const distName = packageName(model, 'py')
+  const distName = packageName(model, target.name)
   const { repoUrl, issuesUrl } = repoInfo(model)
   const kw = keywords(model).map((k) => `"${k}"`).join(', ')
 
@@ -39,7 +39,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "${distName}"
 version = "${packageVersion(model, target.name)}"
-description = "${pkgDescription(model, 'py')}"
+description = "${pkgDescription(model, target.name)}"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.8"

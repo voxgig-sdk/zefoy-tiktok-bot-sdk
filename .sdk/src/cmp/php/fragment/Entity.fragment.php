@@ -17,6 +17,7 @@ class EntyClass
     private array $_data;
     private array $_match;
     private $_entctx;
+    private bool $_deleted = false;
 
     public function __construct($client, ?array $entopts = null)
     {
@@ -47,6 +48,27 @@ class EntyClass
     public function get_name(): string
     {
         return $this->_name;
+    }
+
+    /**
+     * A `remove` marks the entity deleted. The instance KEEPS the data it
+     * held — a caller can still read what was removed — but it is no longer a
+     * live record. See AGENTS.md "Entity operations return ENTITIES".
+     *
+     * The remove path below already called markDeleted(); php was the one
+     * target that never declared it (cpp and swift both do), so any SDK whose
+     * entities have a `remove` op raised "Call to undefined method
+     * <Entity>::markDeleted()" the first time a remove succeeded. Nothing
+     * caught it because the fatal only fires when that path actually runs.
+     */
+    public function markDeleted(): void
+    {
+        $this->_deleted = true;
+    }
+
+    public function deleted(): bool
+    {
+        return $this->_deleted;
     }
 
     public function make(): self
