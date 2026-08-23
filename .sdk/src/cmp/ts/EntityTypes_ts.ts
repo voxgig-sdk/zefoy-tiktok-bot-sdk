@@ -21,7 +21,7 @@ import {
   File, Content,
 } from '@voxgig/sdkgen'
 
-import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames, opActions } from '@voxgig/sdkgen'
+import { canonToType, opTypeName, opRequestShape, warnEntityTypeCollisions , deriveEntityNames, opActions, tsSafeTypeName } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -74,11 +74,14 @@ const EntityTypes = cmp(function EntityTypes(props: any) {
 
     entityList.forEach((ent: any) => {
       const Name = ent.Name
+      // A TS/JS global (Record, Array, Promise, ...) would shadow itself
+      // for the rest of the file — see tsSafeTypeName.
+      const TypeName = tsSafeTypeName(Name)
       const fields = (ent.fields ? each(ent.fields) : [])
         .filter((f: any) => f.active !== false)
 
       // Entity data model: one property per field, `req:false` -> optional.
-      Content(`export interface ${Name} {
+      Content(`export interface ${TypeName} {
 `)
       fields.forEach((f: any) => {
         const opt = false === f.req ? '?' : ''

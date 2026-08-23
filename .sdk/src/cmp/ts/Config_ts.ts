@@ -81,7 +81,7 @@ const Config = cmp(async function Config(props: any) {
   // literal and the data that replaces it above the threshold are the same
   // config by construction. The JSON is what the threshold is measured on -
   // emitted source size varies by language, the model does not.
-  const { json: configJson } = configDefinition(model)
+  const { def: configDef, json: configJson } = configDefinition(model, target.name)
   const asData = isConfigData(configJson, configReprSetting(model))
 
   File({ name: 'Config.' + target.ext }, () => {
@@ -127,6 +127,14 @@ const Config = cmp(async function Config(props: any) {
           Line(`import { ${nom(f, 'Name')}Feature } from ` +
             `'./feature/${f.name}/${nom(f, 'Name')}Feature'`)
         }),
+
+        // Values from configDefinition's def, not re-derived here, so the
+        // literal rep and the data rep cannot disagree on identity.
+        '// #MainMeta': () => {
+          Line(`    slug: ${JSON.stringify(configDef.main.slug)},`)
+          Line(`    version: ${JSON.stringify(configDef.main.version)},`)
+          Line(`    target: ${JSON.stringify(configDef.main.target)},`)
+        },
 
         '// #FeatureClasses': () => each(feature, (f: any) => {
           // Trailing comma: the map has one entry per feature, so entries

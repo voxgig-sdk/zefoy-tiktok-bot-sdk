@@ -516,7 +516,7 @@ class TestStructUtility(unittest.TestCase):
 
     # -------------------------------------------------
     # transform tests
-    # Inputs and expected outputs: build/test/transform.aontu
+    # Inputs and expected outputs: build/test/transform.aon
     # -------------------------------------------------
 
     def test_transform_basic(self):

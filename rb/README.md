@@ -235,13 +235,13 @@ returns a result `Hash` with these keys:
 
 | Field | Description |
 | --- | --- |
-| `amount` |  |
-| `estimatedTime` |  |
-| `message` |  |
-| `status` |  |
-| `success` |  |
-| `type` |  |
-| `url` |  |
+| `amount` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | Estimated time to complete in seconds |
+| `message` | Response message |
+| `status` | Current status of the boost request |
+| `success` | Indicates if the request was successful |
+| `type` | The type of engagement boosted |
+| `url` | The TikTok video or profile URL to boost |
 
 Operations: Create.
 
@@ -266,13 +266,13 @@ Create an instance: `engagement = client.Engagement`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `Integer` |  |
-| `estimatedTime` | `Integer` |  |
-| `message` | `String` |  |
-| `status` | `String` |  |
-| `success` | `Boolean` |  |
-| `type` | `String` |  |
-| `url` | `String` |  |
+| `amount` | `Integer` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `Integer` | Estimated time to complete in seconds |
+| `message` | `String` | Response message |
+| `status` | `String` | Current status of the boost request |
+| `success` | `Boolean` | Indicates if the request was successful |
+| `type` | `String` | The type of engagement boosted |
+| `url` | `String` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

@@ -242,13 +242,13 @@ On error, `ok` is `False` and `err` contains the error value.
 
 | Field | Description |
 | --- | --- |
-| `amount` |  |
-| `estimatedTime` |  |
-| `message` |  |
-| `status` |  |
-| `success` |  |
-| `type` |  |
-| `url` |  |
+| `amount` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | Estimated time to complete in seconds |
+| `message` | Response message |
+| `status` | Current status of the boost request |
+| `success` | Indicates if the request was successful |
+| `type` | The type of engagement boosted |
+| `url` | The TikTok video or profile URL to boost |
 
 Operations: Create.
 
@@ -273,13 +273,13 @@ Create an instance: `engagement = client.Engagement()`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `int` |  |
-| `estimatedTime` | `int` |  |
-| `message` | `str` |  |
-| `status` | `str` |  |
-| `success` | `bool` |  |
-| `type` | `str` |  |
-| `url` | `str` |  |
+| `amount` | `int` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `int` | Estimated time to complete in seconds |
+| `message` | `str` | Response message |
+| `status` | `str` | Current status of the boost request |
+| `success` | `bool` | Indicates if the request was successful |
+| `type` | `str` | The type of engagement boosted |
+| `url` | `str` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

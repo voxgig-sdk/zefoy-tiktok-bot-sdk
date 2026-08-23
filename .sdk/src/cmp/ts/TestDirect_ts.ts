@@ -153,11 +153,102 @@ function unwrapListData(data: any): any[] | null {
 })
 
 
+// GraphQL-backed op: a REST-shaped direct() call (GET, params in the URL)
+// cannot reach it — every op, including list, synthesizes POST with the
+// query/variables as a JSON body, not URL params (see
+// MakeFetchDefUtility: spec.body only ever comes from an explicit `body`
+// field, never derived from `params`). apidef already built a real, valid
+// query or mutation document per point (point.graphql.doc, with variables
+// declared to match), so reuse that verbatim through the SDK's own
+// graphql() escape hatch instead of re-deriving a REST-shaped call that
+// cannot represent one.
+function generateDirectGraphql(
+  opname: 'load' | 'list',
+  entity: ModelEntity,
+  point: any,
+  strict: boolean,
+) {
+  const doc: string = point.graphql.doc
+  const vars: any[] = point.graphql.vars || []
+
+  const varLine = (target: string, key: string, v: any) =>
+    `      ${target}[${JSON.stringify(v.name)}] = ${key}`
+
+  const mockVarLines = vars.map((v: any, i: number) =>
+    varLine('variables', `'direct0${i + 1}'`, v)).join('\n')
+
+  const liveVarLines = vars.map((v: any) => {
+    const from = v.from || v.name
+    const key = ('id' === from ? entity.name : from.replace(/_id$/, '')) + '01'
+    return varLine('variables', `setup.idmap['${key}']`, v)
+  }).join('\n')
+
+  const liveIdKeys = vars.map((v: any) => {
+    const from = v.from || v.name
+    return ('id' === from ? entity.name : from.replace(/_id$/, '')) + '01'
+  })
+
+  const skipMissingLine = 0 < liveIdKeys.length
+    ? `    if (skipIfMissingIds(t, setup, ${JSON.stringify(liveIdKeys)})) return\n`
+    : ''
+
+  // Asserted against the OUTGOING request body (what we sent), not the
+  // mocked response — response-shape correctness is the entity-level
+  // load/list tests' job; direct/graphql only has to prove the raw path
+  // reaches the endpoint with the right method and payload.
+  const varAsserts = vars.map((_v: any, i: number) =>
+    '      assert(calls[0].init.body.includes(\'direct0' + (i + 1) + '\'))\n').join('')
+
+  const offlineChecks = `      assert(result.ok === true)
+      assert(result.status === 200)
+      assert(null != result.data)
+      assert(calls.length === 1)
+      assert(calls[0].init.method === 'POST')
+${varAsserts}`
+
+  const checks = strict ?
+    offlineChecks.replace(/^ {6}/gm, '    ').replace(/^ {4}$/gm, '') :
+    `    if (setup.live) {
+      // Live mode is lenient: synthetic ids frequently fail server-side
+      // validation. Skip rather than fail when the call doesn't come back
+      // clean.
+      if (!result.ok || result.status < 200 || result.status >= 300) {
+        return
+      }
+    } else {
+${offlineChecks}    }`
+
+  Content(`
+  test('direct-${opname}-${entity.name}', async (t: any) => {
+    const setup = directSetup()
+    if (maybeSkipControl(t, 'direct', 'direct-${opname}-${entity.name}', setup.live)) return
+${skipMissingLine}    const { client, calls } = setup
+
+    const variables: any = {}
+    if (setup.live) {
+${liveVarLines || '      // no variables'}
+    } else {
+${mockVarLines || '      // no variables'}
+    }
+
+    const result: any = await client.graphql(${JSON.stringify(doc)}, variables)
+
+${checks}
+  })
+`)
+}
+
+
 function generateDirectLoad(model: Model, entity: ModelEntity, strict: boolean) {
   const loadOp = entity.op?.load
   const loadPoint: ModelPoint | undefined = loadOp?.points?.[0]
 
   if (null == loadPoint) {
+    return
+  }
+
+  if ('graphql' === (loadPoint as any).kind) {
+    generateDirectGraphql('load', entity, loadPoint, strict)
     return
   }
 
@@ -374,6 +465,11 @@ function generateDirectList(model: Model, entity: ModelEntity, strict: boolean) 
   const listPoint: ModelPoint | undefined = listOp?.points?.[0]
 
   if (null == listPoint) {
+    return
+  }
+
+  if ('graphql' === (listPoint as any).kind) {
+    generateDirectGraphql('list', entity, listPoint, strict)
     return
   }
 

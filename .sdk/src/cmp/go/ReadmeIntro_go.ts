@@ -37,6 +37,24 @@ const ReadmeIntro = cmp(function ReadmeIntro(props: any) {
   const opList = (opNames.length ? opNames : ['list', 'load'])
     .map((o) => '`' + cap(o) + '`').join(', ')
 
+  // Sibling surfaces, MODEL-DRIVEN. This line used to hardcode "the CLI, and
+  // MCP server" — those are the `go-cli` and `go-mcp` targets, and this project
+  // has neither. So both per-language READMEs advertised surfaces nothing here
+  // generates, while the top-level Surfaces table (which does gate on active
+  // targets) listed only ts/ and go/. Name what is actually active, and drop
+  // the sentence entirely when this is the only surface, so it cannot outrun
+  // the model again.
+  const targets = getModelPath(model, `main.${KIT}.target`) || {}
+  const siblings = Object.entries(targets)
+    .filter(([name, t]: any) => name !== target.name && false !== t.active)
+    .map(([name]: any) => name)
+    .sort()
+
+  const siblingNote = 0 === siblings.length ? '' : `
+> Also generated from this model: ${siblings.map((s: string) => '`' + s + '`').join(', ')} — see
+> the [top-level README](../README.md).
+`
+
   Content(`# ${model.Name} ${target.title} SDK
 
 ${tagline}
@@ -44,10 +62,7 @@ ${tagline}
 The ${target.title} SDK for the ${model.Name} API — an entity-oriented client using standard Go conventions. No generics required; data flows as \`map[string]any\`.
 
 It exposes the API as capitalised, semantic **Entities** — e.g. \`client.${eName}(nil)\` — each with the same small set of operations (${opList}) instead of raw URL paths and query strings. You call meaning, not endpoints, which keeps the cognitive load low.
-
-> Other languages, the CLI, and MCP server live alongside this one — see
-> the [top-level README](../README.md).
-
+${siblingNote}
 `)
 })
 

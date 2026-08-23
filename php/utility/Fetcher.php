@@ -35,7 +35,8 @@ class ZefoyTiktokBotFetcher
         // Prefer cURL when available — its header capture is reliable across
         // PHP versions, while file_get_contents + custom stream wrappers
         // don't propagate $http_response_header for user-defined wrappers
-        // in PHP 8.3+.
+        // in PHP 8.3+. (cURL is configured with FOLLOWLOCATION off, so the
+        // manual-redirect annotation below holds there by construction.)
         if (function_exists('curl_init')) {
             return self::curlFetch($fullurl, $method_str, $body_str, $header_lines);
         }
@@ -46,6 +47,16 @@ class ZefoyTiktokBotFetcher
                 'ignore_errors' => true,
             ],
         ];
+
+        // Honour a redirect annotation on the fetch definition (set by the
+        // station feature's middleware under a hosts policy): "manual"
+        // surfaces a 3xx as an ordinary response instead of auto-following
+        // it — the http stream wrapper otherwise replays the request,
+        // headers included, against whatever host Location names, carrying
+        // injected credentials to a host no policy approved.
+        if (($fetchdef['redirect'] ?? null) === 'manual') {
+            $opts['http']['follow_location'] = 0;
+        }
 
         if (is_string($body_str)) {
             $opts['http']['content'] = $body_str;

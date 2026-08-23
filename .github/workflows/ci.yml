@@ -46,9 +46,9 @@ jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('go/go.mod') != ''
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.24'
       - if: hashFiles('go/go.mod') != ''
@@ -64,9 +64,9 @@ jobs:
     env:
       GOSUMDB: 'off'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('go-cli/go.mod') != ''
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.24'
       - if: hashFiles('go-cli/go.mod') != ''
@@ -80,9 +80,9 @@ jobs:
   go-mcp:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('go-mcp/go.mod') != ''
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: '1.24'
       - if: hashFiles('go-mcp/go.mod') != ''
@@ -96,9 +96,9 @@ jobs:
   ts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('ts/package.json') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '24'
       - if: hashFiles('ts/package.json') != ''
@@ -114,9 +114,9 @@ jobs:
   py:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('py/Makefile') != ''
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.13'
       - if: hashFiles('py/Makefile') != ''
@@ -127,9 +127,9 @@ jobs:
   rb:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('rb/Makefile') != ''
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1
         with:
           ruby-version: '3.3'
       - if: hashFiles('rb/Makefile') != ''
@@ -138,9 +138,9 @@ jobs:
   php:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('php/composer.json') != ''
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: '8.3'
       - if: hashFiles('php/composer.json') != ''
@@ -151,13 +151,13 @@ jobs:
   lua:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('lua/Makefile') != ''
-        uses: leafo/gh-actions-lua@v10
+        uses: leafo/gh-actions-lua@6919171ccf181b826f44b9bca76307b577217377 # v13
         with:
           luaVersion: '5.4'
       - if: hashFiles('lua/Makefile') != ''
-        uses: leafo/gh-actions-luarocks@v4
+        uses: leafo/gh-actions-luarocks@35d062def313a7699a0d513e996bcf4352f05389 # v6
       - if: hashFiles('lua/Makefile') != ''
         run: luarocks install busted
       - if: hashFiles('lua/Makefile') != ''
@@ -169,9 +169,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('js/Makefile') != ''
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: '24'
       - if: hashFiles('js/package.json') != ''
@@ -183,9 +183,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('csharp/Makefile') != ''
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           dotnet-version: '8.0.x'
       - if: hashFiles('csharp/Makefile') != ''
@@ -195,9 +195,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('java/Makefile') != ''
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
@@ -208,9 +208,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('kotlin/Makefile') != ''
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
@@ -221,9 +221,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('scala/Makefile') != ''
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
@@ -235,7 +235,7 @@ jobs:
       # what executes in every consumer's CI with no change or review in their
       # repo. Matches how the other third-party setup actions here are pinned.
       - if: hashFiles('scala/Makefile') != ''
-        uses: VirtusLab/scala-cli-setup@v1.5.1
+        uses: VirtusLab/scala-cli-setup@8db5313925605c20e292348c1749e80dac7eed0f # v1.16.0
       - if: hashFiles('scala/Makefile') != ''
         run: make -C scala test
 
@@ -243,9 +243,13 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # NODE24 EXCEPTION: every other action here runs on the node24 runtime.
+      # setup-swift has no node24 release — v2 and v3 are both node20 — so it
+      # stays on v2 and will emit a deprecation warning. Revisit when upstream
+      # ships one.
       - if: hashFiles('swift/Makefile') != ''
-        uses: swift-actions/setup-swift@v2
+        uses: swift-actions/setup-swift@7ca6abe6b3b0e8b5421b88be48feee39cbf52c6a # v2
         with:
           swift-version: '6.0'
       - if: hashFiles('swift/Makefile') != ''
@@ -255,9 +259,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('dart/Makefile') != ''
-        uses: dart-lang/setup-dart@v1
+        uses: dart-lang/setup-dart@65eb853c7ba17dde3be364c3d2858773e7144260 # v1
         with:
           sdk: stable
       - if: hashFiles('dart/pubspec.yaml') != ''
@@ -269,9 +273,14 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('rust/Makefile') != ''
-        uses: dtolnay/rust-toolchain@stable
+        # The SHA is the head of this action's `stable` BRANCH, whose action.yml
+        # carries `toolchain: default: stable`. State it explicitly anyway, so
+        # the intended toolchain survives a future re-pin to another branch.
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+        with:
+          toolchain: stable
       - if: hashFiles('rust/Makefile') != ''
         run: make -C rust test
 
@@ -279,7 +288,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # gcc/make are preinstalled on ubuntu-latest — no setup step needed.
       - if: hashFiles('c/Makefile') != ''
         run: make -C c test
@@ -288,7 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('cpp/Makefile') != ''
         run: make -C cpp test
 
@@ -296,13 +305,16 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # 0.13, NOT 0.14+: the generated build.zig.zon declares `.name` as a
       # plain string, which 0.14 rejects ("expected enum literal"). Package_zig
       # says the string form matches the target's toolchain pin — keep the two
       # in step, or move both to the enum-literal + fingerprint form together.
+      # NODE24 EXCEPTION: setup-zig has no node24 release — v1 and v2 are both
+      # node20 — so it stays on v1 and will emit a deprecation warning.
+      # Revisit when upstream ships one.
       - if: hashFiles('zig/build.zig') != ''
-        uses: mlugg/setup-zig@v1
+        uses: mlugg/setup-zig@53fc45b17fe98b52f92ee5ea08ff48a85a3e7eb7 # v1
         with:
           version: '0.13.0'
       - if: hashFiles('zig/build.zig') != ''
@@ -312,7 +324,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       # perl is preinstalled on ubuntu-latest.
       - if: hashFiles('perl/Makefile') != ''
         run: make -C perl test
@@ -321,14 +333,14 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('clojure/Makefile') != ''
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: '21'
       - if: hashFiles('clojure/Makefile') != ''
-        uses: DeLaGuardo/setup-clojure@13
+        uses: DeLaGuardo/setup-clojure@4c7a6f613e5089821bb3bb2a33a3ee115578580d # 13
         with:
           cli: latest
       - if: hashFiles('clojure/Makefile') != ''
@@ -338,9 +350,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('elixir/Makefile') != ''
-        uses: erlef/setup-beam@v1
+        uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124 # v1
         with:
           otp-version: '27'
           elixir-version: '1.17'
@@ -351,9 +363,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('ocaml/Makefile') != ''
-        uses: ocaml/setup-ocaml@v3
+        uses: ocaml/setup-ocaml@605a7e998e76e035b82c14d618a6e1010732c4ce # v3
         with:
           ocaml-compiler: '5.2'
       - if: hashFiles('ocaml/Makefile') != ''
@@ -363,9 +375,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - if: hashFiles('haskell/Makefile') != ''
-        uses: haskell-actions/setup@v2
+        uses: haskell-actions/setup@6037f33647c3f17758a2356c80fc4a53d7e0685d # v2
         with:
           ghc-version: '9.6'
       - if: hashFiles('haskell/Makefile') != ''

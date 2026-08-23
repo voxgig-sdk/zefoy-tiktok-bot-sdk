@@ -8,6 +8,35 @@ import { BaseFeature } from '../base/BaseFeature'
 const S_NOT_FOUND = 'Not found'
 
 
+// Which param is entity X's own identifier, as opposed to a parent key —
+// the load op's canonical point's LAST path segment, by construction (a
+// route addresses parents first, the record last). Mirrors recordKey in
+// sdkgen's Main_seneca-provider.ts; written again here because a template
+// ships standalone, outside that package. A renamed id (e.g. Airtable's
+// record_id) needs its own seeded field: matching only ever happens
+// against the API's real param names, never a bare 'id' the API itself
+// does not use.
+function ownIdField(config: any, getpath: any, entityName: string): string {
+  for (const opname of ['load', 'remove', 'update']) {
+    const points = getpath(config, ['entity', entityName, 'op', opname, 'points']) || []
+    const canonical = points.filter((pt: any) =>
+      null == (pt && pt.select && pt.select['$action']))
+    const use = 0 < canonical.length ? canonical : points
+    let best = use[0]
+    for (const pt of use) {
+      if (null == pt || null == pt.parts || null == best || null == best.parts) continue
+      const ptterm = 0 < pt.parts.length && String(pt.parts[pt.parts.length - 1]).startsWith('{')
+      const bestterm = 0 < best.parts.length && String(best.parts[best.parts.length - 1]).startsWith('{')
+      if (ptterm !== bestterm ? ptterm : pt.parts.length < best.parts.length) best = pt
+    }
+    const parts: string[] = (best && best.parts) || []
+    const last = [...parts].reverse().find((p: string) => p.startsWith('{'))
+    if (null != last) return last.slice(1, -1)
+  }
+  return 'id'
+}
+
+
 class TestFeature extends BaseFeature {
   version = '0.0.1'
   name = 'test'
@@ -30,10 +59,16 @@ class TestFeature extends BaseFeature {
 
     this._client._mode = 'test'
 
+    const getpath = struct.getpath
+
     // Ensure entity ids are correct.
     walk(entity, (k: any, v: any, _parent: any, path: any) => {
       if (2 === size(path)) {
         setprop(v, 'id', k)
+        const idField = ownIdField(ctx.config, getpath, String(path[0]))
+        if ('id' !== idField) {
+          setprop(v, idField, k)
+        }
       }
       return v
     })
@@ -172,6 +207,16 @@ class TestFeature extends BaseFeature {
 
         const ent = clone(ctx.reqdata)
         setprop(ent, 'id', id)
+
+        // A record created during the run needs the same real-key seeding
+        // the initial walk gives seed data (see ownIdField above) — without
+        // it, only `id` is set, and a load by the entity's own key right
+        // after create (recordKey !== 'id') finds nothing.
+        const idField = ownIdField(ctx.config, struct.getpath, getprop(op, 'entity'))
+        if ('id' !== idField && null == getprop(ent, idField)) {
+          setprop(ent, idField, id)
+        }
+
         setprop(entmap, id, ent)
         delprop(ent, '$KEY')
         const out = clone(ent)
@@ -310,7 +355,8 @@ class TestFeature extends BaseFeature {
 
 
 export {
-  TestFeature
+  TestFeature,
+  ownIdField,
 }
 
 

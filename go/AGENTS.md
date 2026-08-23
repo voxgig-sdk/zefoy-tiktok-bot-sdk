@@ -26,7 +26,7 @@ make test
 
 | Source | Path | Edit when… |
 | --- | --- | --- |
-| Target definition | `.sdk/model/target/go.aontu` | deps, module, extension, phases change |
+| Target definition | `.sdk/model/target/go.aon` | deps, module, extension, phases change |
 | Templates | `.sdk/tm/go/` | the file is the **same for every API** (runtime, transport, base classes) — copied verbatim with placeholder substitution |
 | Components | `.sdk/src/cmp/go/` | the file's shape **depends on the API** (entities, constructor, README, tests) — TypeScript that walks the model |
 
@@ -37,7 +37,7 @@ component.* After editing a component run `npm run build` before
 ## Features in this target
 
 Each feature is a flat file in the `feature/` package. Its hooks and
-default activation come from `.sdk/model/feature/<name>.aontu`; customise
+default activation come from `.sdk/model/feature/<name>.aon`; customise
 the runtime under `.sdk/tm/go/feature/` and regenerate.
 
 | Feature | Runtime file | Active hooks |

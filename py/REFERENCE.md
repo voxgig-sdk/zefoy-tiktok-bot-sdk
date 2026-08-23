@@ -88,13 +88,13 @@ engagement = client.Engagement()
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | `int` | No |  |
-| `estimatedTime` | `int` | No |  |
-| `message` | `str` | No |  |
-| `status` | `str` | No |  |
-| `success` | `bool` | No |  |
-| `type` | `str` | No |  |
-| `url` | `str` | Yes |  |
+| `amount` | `int` | No | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `int` | No | Estimated time to complete in seconds |
+| `message` | `str` | No | Response message |
+| `status` | `str` | No | Current status of the boost request |
+| `success` | `bool` | No | Indicates if the request was successful |
+| `type` | `str` | No | The type of engagement boosted |
+| `url` | `str` | Yes | The TikTok video or profile URL to boost |
 
 ### Field Usage by Operation
 

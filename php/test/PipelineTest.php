@@ -154,6 +154,26 @@ class PipelineTest extends TestCase
         ]));
     }
 
+    // Station special case, mirroring test's: its transport wrap must sit
+    // immediately outside the base transport, so map-form activation hoists
+    // it to just after test - or first, when no test entry exists.
+    public function test_feature_order_map_hoists_station_after_test(): void
+    {
+        $this->assertSame('test,station,metrics', self::resolve_order([
+            'metrics' => ['active' => true],
+            'station' => ['active' => true],
+            'test' => ['active' => true],
+        ]));
+    }
+
+    public function test_feature_order_map_hoists_station_first_without_test(): void
+    {
+        $this->assertSame('station,metrics', self::resolve_order([
+            'metrics' => ['active' => true],
+            'station' => ['active' => true],
+        ]));
+    }
+
     public function test_feature_order_no_test_deterministic(): void
     {
         $this->assertSame('cache,retry', self::resolve_order([

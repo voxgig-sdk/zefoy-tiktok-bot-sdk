@@ -58,6 +58,12 @@ class ProjectNameSDK
 
         $this->_rootctx->options = $this->options;
 
+        // Feature INSTANCES supplied at construction (the station adopt
+        // path) are read from the RAW construction options - extend is
+        // consumed exactly once, here; make_options strips it from the
+        // processed map so options_map() stays clean data.
+        $extend_val = is_array($options["extend"] ?? null) ? $options["extend"] : [];
+
         // Add features in the resolved order (make_options puts an explicit
         // list order first, else defaults to test-first). Ordering matters: the
         // `test` feature installs the base mock transport and the transport
@@ -70,6 +76,20 @@ class ProjectNameSDK
                 foreach ($featureorder as $fname) {
                     $fopts = ProjectNameHelpers::to_map($feature_opts[$fname] ?? null);
                     if ($fopts && isset($fopts["active"]) && $fopts["active"] === true) {
+                        // An active name with no generated feature class is
+                        // legal when an extend-supplied instance carries that
+                        // name (station's adopt path): the instance is added
+                        // below, positioned by its own __after__ entry, so
+                        // skip it here rather than add a BaseFeature stray
+                        // that would silently shift feature positions.
+                        if (!ProjectNameFeatures::has_feature($fname)) {
+                            foreach ($extend_val as $ef) {
+                                if (is_object($ef) && method_exists($ef, 'get_name')
+                                    && $fname === $ef->get_name()) {
+                                    continue 2;
+                                }
+                            }
+                        }
                         ($utility->feature_add)($this->_rootctx, ProjectNameFeatures::make_feature($fname));
                     }
                 }
@@ -77,12 +97,9 @@ class ProjectNameSDK
         }
 
         // Add extension features.
-        $extend_val = Struct::getprop($this->options, "extend");
-        if (is_array($extend_val)) {
-            foreach ($extend_val as $f) {
-                if (is_object($f) && method_exists($f, 'get_name')) {
-                    ($utility->feature_add)($this->_rootctx, $f);
-                }
+        foreach ($extend_val as $f) {
+            if (is_object($f) && method_exists($f, 'get_name')) {
+                ($utility->feature_add)($this->_rootctx, $f);
             }
         }
 

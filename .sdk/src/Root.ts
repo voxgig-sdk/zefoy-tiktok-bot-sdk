@@ -105,7 +105,7 @@ const Root = cmp(function Root(props: any) {
           false !== (phase[name] && phase[name].active)
 
         if (phaseActive('entity')) {
-          each(entity, (entity: any) => {
+          each(entity).filter((entity: any) => entity.active).map((entity: any) => {
             names(entity, entity.name)
             Entity({ target, entity })
           })

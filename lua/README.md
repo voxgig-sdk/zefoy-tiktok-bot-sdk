@@ -230,13 +230,13 @@ Only `direct()` returns a response envelope — a `table` with `ok`,
 
 | Field | Description |
 | --- | --- |
-| `amount` |  |
-| `estimatedTime` |  |
-| `message` |  |
-| `status` |  |
-| `success` |  |
-| `type` |  |
-| `url` |  |
+| `amount` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | Estimated time to complete in seconds |
+| `message` | Response message |
+| `status` | Current status of the boost request |
+| `success` | Indicates if the request was successful |
+| `type` | The type of engagement boosted |
+| `url` | The TikTok video or profile URL to boost |
 
 Operations: Create.
 
@@ -261,13 +261,13 @@ Create an instance: `local engagement = client:Engagement(nil)`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `number` |  |
-| `estimatedTime` | `number` |  |
-| `message` | `string` |  |
-| `status` | `string` |  |
-| `success` | `boolean` |  |
-| `type` | `string` |  |
-| `url` | `string` |  |
+| `amount` | `number` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `number` | Estimated time to complete in seconds |
+| `message` | `string` | Response message |
+| `status` | `string` | Current status of the boost request |
+| `success` | `boolean` | Indicates if the request was successful |
+| `type` | `string` | The type of engagement boosted |
+| `url` | `string` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

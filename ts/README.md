@@ -9,7 +9,7 @@ The API is exposed as capitalised, semantic **Entities** — e.g.
 instead of raw URL paths and query parameters. This keeps the surface
 predictable and low-friction for both humans and AI agents.
 
-> Other languages, the CLI, and MCP server live alongside this one — see
+> Also generated from this model: `go`, `go-cli`, `go-mcp`, `lua`, `php`, `py`, `rb` — see
 > the [top-level README](../README.md).
 
 
@@ -288,13 +288,13 @@ The `prepare()` method returns:
 
 | Field | Description |
 | --- | --- |
-| `amount` |  |
-| `estimatedTime` |  |
-| `message` |  |
-| `status` |  |
-| `success` |  |
-| `type` |  |
-| `url` |  |
+| `amount` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | Estimated time to complete in seconds |
+| `message` | Response message |
+| `status` | Current status of the boost request |
+| `success` | Indicates if the request was successful |
+| `type` | The type of engagement boosted |
+| `url` | The TikTok video or profile URL to boost |
 
 Operations: create.
 
@@ -319,13 +319,13 @@ Create an instance: `const engagement = client.Engagement()`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `number` |  |
-| `estimatedTime` | `number` |  |
-| `message` | `string` |  |
-| `status` | `string` |  |
-| `success` | `boolean` |  |
-| `type` | `string` |  |
-| `url` | `string` |  |
+| `amount` | `number` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `number` | Estimated time to complete in seconds |
+| `message` | `string` | Response message |
+| `status` | `string` | Current status of the boost request |
+| `success` | `boolean` | Indicates if the request was successful |
+| `type` | `string` | The type of engagement boosted |
+| `url` | `string` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

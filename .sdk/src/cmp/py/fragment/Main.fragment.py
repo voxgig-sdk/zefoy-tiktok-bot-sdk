@@ -10,7 +10,7 @@ from projectname_sdk.utility import register
 
 # Load features
 from projectname_sdk.feature.base_feature import ProjectNameBaseFeature
-from projectname_sdk.features import _make_feature
+from projectname_sdk.features import _has_feature, _make_feature
 
 
 class ProjectNameSDK:
@@ -46,21 +46,38 @@ class ProjectNameSDK:
         # `test` feature installs the base mock transport and the transport
         # features (retry/cache/netsim/proxy/ratelimit) wrap whatever is
         # current, so `test` must be added before them to sit at the base.
+        # Extension feature INSTANCES come from the RAW construction
+        # options - extend is consumed exactly once, here. make_options
+        # strips the key before cloning (vs.clone flattens arbitrary
+        # objects), so self.options never carries the instances.
         feature_opts = helpers.to_map(vs.getprop(self.options, "feature"))
+        extend = options.get("extend") if isinstance(options, dict) else None
+        if not isinstance(extend, list):
+            extend = []
         if feature_opts is not None:
             featureorder = vs.getpath(self.options, "__derived__.featureorder")
             if isinstance(featureorder, list):
                 for fname in featureorder:
                     fopts = helpers.to_map(feature_opts.get(fname))
                     if fopts is not None and fopts.get("active") is True:
+                        # An active name with no generated feature class is
+                        # legal when an extend-supplied instance carries that
+                        # name (station's adopt path): the instance is added
+                        # below, positioned by its own __after__ entry, so
+                        # skip it here rather than add a BaseFeature stray
+                        # that would silently shift feature positions.
+                        if not _has_feature(fname) and any(
+                            fname == (f.get("name") if isinstance(f, dict)
+                                      else getattr(f, "name", None))
+                            for f in extend
+                        ):
+                            continue
                         utility.feature_add(self._rootctx, _make_feature(fname))
 
         # Add extension features.
-        extend = vs.getprop(self.options, "extend")
-        if isinstance(extend, list):
-            for f in extend:
-                if isinstance(f, dict) or (hasattr(f, "get_name") and callable(f.get_name)):
-                    utility.feature_add(self._rootctx, f)
+        for f in extend:
+            if isinstance(f, dict) or (hasattr(f, "get_name") and callable(f.get_name)):
+                utility.feature_add(self._rootctx, f)
 
         # Initialize features.
         for f in self.features:

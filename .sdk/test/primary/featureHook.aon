@@ -1,0 +1,14 @@
+
+# PENDING — this section is deliberately empty.
+#
+# featureHook(ctx, name) calls f[name] on each registered feature. Asserting
+# it needs features whose hooks are FUNCTIONS; a fixture compiles to JSON and
+# cannot carry one. Covered per-language by the feature suites.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'featureHook calls f[name] on each registered feature; a fixture compiles to JSON and cannot carry a function.'
+basic: set: []

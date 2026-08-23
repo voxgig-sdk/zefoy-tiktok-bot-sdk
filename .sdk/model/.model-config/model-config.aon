@@ -1,6 +1,6 @@
 
 
-@'@voxgig/model/model/.model-config/model-config.aontu'
+@'@voxgig/model/model/.model-config/model-config.aon'
 
 sys: model: action: {
   apidef: load: 'build/apidef.js'

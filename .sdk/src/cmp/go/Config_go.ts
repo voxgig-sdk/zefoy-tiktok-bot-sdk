@@ -69,7 +69,7 @@ const Config = cmp(async function Config(props: any) {
   // literal and the data that replaces it above the threshold are the same
   // config by construction. The JSON is what the threshold is measured on -
   // emitted source size varies by language, the model does not.
-  const { json: configJson } = configDefinition(model)
+  const { def: configDef, json: configJson } = configDefinition(model, target.name)
   const asData = isConfigData(configJson, configReprSetting(model))
 
   File({ name: 'config.' + target.ext }, () => {
@@ -154,6 +154,10 @@ import (
 
 `)
 
+    // main slug/version/target come from configDefinition's def, not
+    // re-derived here, so the literal rep and the data rep cannot disagree
+    // on identity (mirrors Config_ts's #MainMeta block; station's
+    // descriptor reads all three).
     Content(`// MakeConfig builds a fresh, fully materialised config map. Every call
 // rebuilds the whole structure, so prefer SharedConfig unless you need a
 // private copy you intend to mutate.
@@ -161,6 +165,9 @@ func MakeConfig() map[string]any {
 	return map[string]any{
 		"main": map[string]any{
 			"name": "${model.const.Name}",
+			"slug": ${JSON.stringify(configDef.main.slug)},
+			"version": ${JSON.stringify(configDef.main.version)},
+			"target": ${JSON.stringify(configDef.main.target)},
 		},
 		"feature": map[string]any{
 `)

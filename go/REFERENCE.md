@@ -99,13 +99,13 @@ fmt.Println(engagement.GetName()) // "engagement"
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `amount` | `int` | No |  |
-| `estimatedTime` | `int` | No |  |
-| `message` | `string` | No |  |
-| `status` | `string` | No |  |
-| `success` | `bool` | No |  |
-| `type` | `string` | No |  |
-| `url` | `string` | Yes |  |
+| `amount` | `int` | No | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `int` | No | Estimated time to complete in seconds |
+| `message` | `string` | No | Response message |
+| `status` | `string` | No | Current status of the boost request |
+| `success` | `bool` | No | Indicates if the request was successful |
+| `type` | `string` | No | The type of engagement boosted |
+| `url` | `string` | Yes | The TikTok video or profile URL to boost |
 
 ### Field Usage by Operation
 

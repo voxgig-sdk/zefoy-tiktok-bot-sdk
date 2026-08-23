@@ -1,0 +1,126 @@
+
+# makePoint chooses which endpoint definition ("point") an operation call
+# should use, and records it on ctx.point.
+#
+# The whole selection is driven by DATA: `op` is rebuilt by Context from
+# `opname` + `entity.name` + `config.entity.<name>.op.<opname>.points`, and
+# `options.allow.op` gates the call. So every branch below is expressible as
+# a literal ctx, contrary to the deferral note this fixture used to carry,
+# which claimed it needed a real client.
+#
+# Errors are RETURNED, not thrown, and their JSON embeds a random ctx id, so
+# the error cases assert `match: out: code` rather than a whole-value `out`.
+# Go returns the error as a second result instead, and its runner normalises
+# it to the same `{code}` shape.
+#
+# `allow.op` is a COMMA-SEPARATED STRING, not a list — that is what the client
+# actually carries. Go reads it with strings.Contains and type-asserts to
+# string, so a list here silently denies every operation; TS's .includes()
+# accepts either and would have hidden the mismatch.
+
+basic: set: [
+
+  # One point: no selection to do, it is simply the point.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'GET', path: ['api', 'planet'], select: {} }
+      ] } } } } }
+    }
+    out: { method: 'GET', path: ['api', 'planet'], select: {} }
+  }
+
+  # allow.op is the gate: an operation missing from it is refused before any
+  # point is considered.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'load' } }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'GET', path: ['api', 'planet'], select: {} }
+      ] } } } } }
+    }
+    match: { out: { code: 'point_op_allow' } }
+  }
+
+  # An operation declared with no points at all is a model error, reported
+  # rather than returning an undefined point.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      config: { entity: { planet: { op: { list: { points: [] } } } } }
+    }
+    match: { out: { code: 'point_no_points' } }
+  }
+
+  # Two points: `select.exist` picks the one whose required keys are present
+  # in the match. `id` is supplied, so the by-id point wins.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      match: { id: 'p01' }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'GET', path: ['byid'], select: { exist: ['id'] } }
+        { method: 'GET', path: ['all'], select: {} }
+      ] } } } } }
+    }
+    out: { method: 'GET', path: ['byid'], select: { exist: ['id'] } }
+  }
+
+  # Same two points, but `id` is absent — the exist check fails and selection
+  # falls through to the unconstrained point.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      match: { name: 'earth' }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'GET', path: ['byid'], select: { exist: ['id'] } }
+        { method: 'GET', path: ['all'], select: {} }
+      ] } } } } }
+    }
+    out: { method: 'GET', path: ['all'], select: {} }
+  }
+
+  # $action selects among points. It is read from reqmatch (the operation
+  # argument) only, never from the entity data.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      reqmatch: { '$action': 'stop' }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'POST', path: ['start'], select: { '$action': 'start' } }
+        { method: 'POST', path: ['stop'], select: { '$action': 'stop' } }
+      ] } } } } }
+    }
+    out: { method: 'POST', path: ['stop'], select: { '$action': 'stop' } }
+  }
+
+  # An $action naming no point is refused rather than silently falling back
+  # to the last one considered.
+  {
+    ctx: {
+      opname: 'list'
+      entity: { name: 'planet' }
+      options: { allow: { op: 'list' } }
+      reqmatch: { '$action': 'nope' }
+      config: { entity: { planet: { op: { list: { points: [
+        { method: 'POST', path: ['start'], select: { '$action': 'start' } }
+        { method: 'POST', path: ['stop'], select: { '$action': 'stop' } }
+      ] } } } } }
+    }
+    match: { out: { code: 'point_action_invalid' } }
+  }
+
+]

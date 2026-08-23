@@ -1,9 +1,9 @@
 
-main: kit: target: lua: {
+main: kit: target: php: {
 
-  title: Lua
-  ext: lua
-  comment: line: "--"
+  title: PHP
+  ext: php
+  comment: line: "//"
   module: name: 'zefoy-tiktok-bot'
   base: 'node_modules/@voxgig/sdkgen/project/.sdk'
   package: '@voxgig/sdkgen'
@@ -13,38 +13,37 @@ main: kit: target: lua: {
     kind: *'prod' | string
   }
 
-  # struct utility is vendored under tm/lua/utility/struct - no manifest dep needed
-  deps: {
-    'dkjson': { active: true, version: '2.5' }
-  }
+  # struct utility is vendored under tm/php/utility/struct - no manifest dep needed
+  deps: {}
 }
 
 
-main: kit: feature: &: target: lua: deps: &: {
+main: kit: feature: &: target: php: deps: &: {
   kind: *'prod' | string
 }
 
 
-# Publication: luarocks registry (declared, publish pending — git-tag only).
+# Publication: packagist registry (declared, publish pending — git-tag only).
 #
 # `target add <t>` OVERWRITES this file, so a project must never set its
 # publication values here — voxgig-solardemo-sdk lost its pinned npm package
-# name exactly that way. Set them in the project's own model
-# (`model/sdk.aontu`), where they survive a resync.
+# name exactly that way. Set them in the project's own overlay
+# (`model/project.aon`), which create-sdkgen creates once and never
+# overwrites — NOT `model/sdk.aon`, which it rewrites on every scaffold.
 #
 # For that to work this file must LEAVE THOSE KEYS UNSET: in aontu a concrete
 # value does not yield to another concrete value, it CONFLICTS, and two
-# defaults conflict too. The schema (@voxgig/sdkgen/model/sdkgen.aontu)
+# defaults conflict too. The schema (@voxgig/sdkgen/model/sdkgen.aon)
 # already defaults `tag.active`, `registry.state`, `registry.active` and
 # `registry.package`, so a project's concrete value wins over the default and
 # repeating them here would only take that away.
 #
 # What remains below is per-target registry IDENTITY, which is not a project
 # choice and stays concrete.
-main: kit: target: lua: publish: {
+main: kit: target: php: publish: {
   registry: {
-    name: 'luarocks'
-    url: 'https://luarocks.org'
-    vault: { alias: 'luarocks', env: 'LUAROCKS_API_KEY' }
+    name: 'packagist'
+    url: 'https://packagist.org'
+    vault: { alias: 'packagist', env: 'PACKAGIST_API_TOKEN' }
   }
 }

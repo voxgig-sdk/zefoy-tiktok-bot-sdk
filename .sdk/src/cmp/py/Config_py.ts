@@ -67,8 +67,10 @@ const Config = cmp(async function Config(props: any) {
   // The same config as an OBJECT, built by the shared helper so this target's
   // literal and the data that replaces it above the threshold are the same
   // config by construction. The JSON is what the threshold is measured on -
-  // emitted source size varies by language, the model does not.
-  const { json: configJson } = configDefinition(model)
+  // emitted source size varies by language, the model does not. Passing the
+  // target name opts in to the main.slug/version/target identity fields -
+  // the literal path below emits them too, keeping the two reps in step.
+  const { def: configDef, json: configJson } = configDefinition(model, target.name)
   const asData = isConfigData(configJson, configReprSetting(model))
 
   File({ name: 'config.' + target.ext }, () => {
@@ -130,6 +132,10 @@ def make_config():
       return
     }
 
+    // Identity values from configDefinition's def, not re-derived here, so
+    // the literal rep and the data rep cannot disagree on identity (the
+    // slug is CARRIED, never derived from the camel name - station's
+    // descriptor reads all three; see cmp/ts/Config_ts.ts #MainMeta).
     Content(`def make_config():
     """Build a fresh, fully materialised config dict.
 
@@ -139,6 +145,9 @@ def make_config():
     return {
         "main": {
             "name": "${model.const.Name}",
+            "slug": ${JSON.stringify(configDef.main.slug)},
+            "version": ${JSON.stringify(configDef.main.version)},
+            "target": ${JSON.stringify(configDef.main.target)},
         },
         "feature": {
 `)

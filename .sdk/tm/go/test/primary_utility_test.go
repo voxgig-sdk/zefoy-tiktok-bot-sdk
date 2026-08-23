@@ -1,6 +1,7 @@
 package sdktest
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -556,27 +557,48 @@ func TestPrimaryUtility(t *testing.T) {
 		})
 	})
 
+	// Was one hand-written case (the single-point path) covering one of this
+	// utility's seven branches, which is how the corpus fixture came to be
+	// marked deferred as "needs a real client". It does not: NewContext
+	// rebuilds Op from opname + entity + config, and Options can be supplied
+	// literally. Driven from the corpus now, so TS and Go assert the same
+	// branches.
+	//
+	// TS returns the error AS the value; Go returns it as a second result. The
+	// corpus says `match: out: code` for both, so the error is normalised to a
+	// map carrying its code here rather than forking the fixture per language.
 	t.Run("makePoint-basic", func(t *testing.T) {
-		ctx := makeTestCtx(client, utility, nil)
-		point := map[string]any{
-			"parts":     []any{"items", "{id}"},
-			"args":      map[string]any{"params": []any{}},
-			"params":    []any{},
-			"alias":     map[string]any{},
-			"select":    map[string]any{},
-			"active":    true,
-			"transform": map[string]any{},
-		}
-		ctx.Op.Points = []map[string]any{point}
+		runsetNamed(t, "makePoint", getSpec(primary, "makePoint", "basic"), func(entry map[string]any) (any, error) {
+			ctxmap, _ := entry["ctx"].(map[string]any)
 
-		_, err := utility.MakePoint(ctx)
-		if err != nil {
-			t.Errorf("expected no error, got: %v", err)
-			return
-		}
-		if ctx.Point == nil {
-			t.Error("expected point to be set")
-		}
+			// NewContext resolves Op from the ENTITY NAME, and reaches it
+			// through the Entity interface — a literal {name:...} map from the
+			// fixture is not one, so entname would be "" and every lookup would
+			// miss, reporting point_no_points for all seven cases. TS reads the
+			// same field with getprop and accepts the plain map. Swap in the
+			// package's minimal Entity so both ports resolve the same op.
+			if em, ok := ctxmap["entity"].(map[string]any); ok {
+				name, _ := em["name"].(string)
+				made := []any{}
+				swapped := map[string]any{}
+				for k, v := range ctxmap {
+					swapped[k] = v
+				}
+				swapped["entity"] = &plEntity{name: name, made: &made}
+				ctxmap = swapped
+			}
+
+			ctx := makeCtxFromMap(ctxmap, client, utility)
+			point, err := utility.MakePoint(ctx)
+			if err != nil {
+				var sdkErr *sdk.ZefoyTiktokBotError
+				if errors.As(err, &sdkErr) {
+					return map[string]any{"code": sdkErr.Code}, nil
+				}
+				return nil, err
+			}
+			return point, nil
+		})
 	})
 
 	t.Run("makeUrl-basic", func(t *testing.T) {

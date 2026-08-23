@@ -11,6 +11,9 @@ func MakeConfig() map[string]any {
 	return map[string]any{
 		"main": map[string]any{
 			"name": "ZefoyTiktokBot",
+			"slug": "zefoy-tiktok-bot",
+			"version": "0.0.1",
+			"target": "go",
 		},
 		"feature": map[string]any{
 			"test": map[string]any{
@@ -36,22 +39,27 @@ func MakeConfig() map[string]any {
 				"fields": []any{
 					map[string]any{
 						"name": "amount",
+						"short": "The amount of engagement to acquire (if applicable)",
 						"type": "`$INTEGER`",
 					},
 					map[string]any{
 						"name": "estimatedTime",
+						"short": "Estimated time to complete in seconds",
 						"type": "`$INTEGER`",
 					},
 					map[string]any{
 						"name": "message",
+						"short": "Response message",
 						"type": "`$STRING`",
 					},
 					map[string]any{
 						"name": "status",
+						"short": "Current status of the boost request",
 						"type": "`$STRING`",
 					},
 					map[string]any{
 						"name": "success",
+						"short": "Indicates if the request was successful",
 						"type": "`$BOOLEAN`",
 					},
 					map[string]any{
@@ -62,11 +70,13 @@ func MakeConfig() map[string]any {
 								"type": "`$STRING`",
 							},
 						},
+						"short": "The type of engagement boosted",
 						"type": "`$STRING`",
 					},
 					map[string]any{
 						"name": "url",
 						"req": true,
+						"short": "The TikTok video or profile URL to boost",
 						"type": "`$STRING`",
 					},
 				},

@@ -217,17 +217,44 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 				hasTest = true
 			}
 		}
+		ordered := make([]string, 0, len(names))
 		if hasTest {
-			featureorder = append(featureorder, "test")
+			ordered = append(ordered, "test")
 			for _, n := range names {
 				if n != "test" {
-					featureorder = append(featureorder, n)
+					ordered = append(ordered, n)
 				}
 			}
 		} else {
-			for _, n := range names {
-				featureorder = append(featureorder, n)
+			ordered = append(ordered, names...)
+		}
+		// Station special case, mirroring test's: its transport wrap must
+		// sit immediately outside the base transport (inside retry/cache/
+		// netsim), so map-form activation hoists it to just after test -
+		// or first, when no test entry exists. Without this the sorted
+		// default would init station last and wrap OUTSIDE the recording
+		// features, turning its wire-truth events into fiction.
+		si := -1
+		for i, n := range ordered {
+			if n == "station" {
+				si = i
+				break
 			}
+		}
+		if si >= 0 {
+			ordered = append(ordered[:si], ordered[si+1:]...)
+			ti := 0
+			for i, n := range ordered {
+				if n == "test" {
+					ti = i + 1
+					break
+				}
+			}
+			ordered = append(ordered[:ti],
+				append([]string{"station"}, ordered[ti:]...)...)
+		}
+		for _, n := range ordered {
+			featureorder = append(featureorder, n)
 		}
 	}
 

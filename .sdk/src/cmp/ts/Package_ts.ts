@@ -124,7 +124,9 @@ const Package = cmp(async function Package(props: any) {
   }
 
   File({ name: 'package.json' }, () => {
-    Content(JSON.stringify(pkg, null, 2))
+    // Trailing newline: POSIX wants one, and without it every diff of a
+    // regenerated package.json reports "\ No newline at end of file".
+    Content(JSON.stringify(pkg, null, 2) + '\n')
   })
 })
 

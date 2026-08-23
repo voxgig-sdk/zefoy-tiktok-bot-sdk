@@ -27,7 +27,7 @@ make test
 
 | Source | Path | Edit when… |
 | --- | --- | --- |
-| Target definition | `.sdk/model/target/ts.aontu` | deps, module, extension, phases change |
+| Target definition | `.sdk/model/target/ts.aon` | deps, module, extension, phases change |
 | Templates | `.sdk/tm/ts/` | the file is the **same for every API** (runtime, transport, base classes) — copied verbatim with placeholder substitution |
 | Components | `.sdk/src/cmp/ts/` | the file's shape **depends on the API** (entities, constructor, README, tests) — TypeScript that walks the model |
 

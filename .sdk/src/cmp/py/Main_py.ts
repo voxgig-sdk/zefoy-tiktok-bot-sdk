@@ -158,24 +158,34 @@ from ${model.const.Name.toLowerCase()}_sdk.feature.base_feature import ${model.c
 
     Content(`
 
-def _make_feature(name):
-    features = {
-        "base": lambda: ${model.const.Name}BaseFeature(),
+_FEATURES = {
+    "base": lambda: ${model.const.Name}BaseFeature(),
 `)
 
     each(feature, (feat: any) => {
       if (feat.name !== 'base') {
         const fname = feat.name.charAt(0).toUpperCase() + feat.name.slice(1)
-        Content(`        "${feat.name}": lambda: ${model.const.Name}${fname}Feature(),
+        Content(`    "${feat.name}": lambda: ${model.const.Name}${fname}Feature(),
 `)
       }
     })
 
-    Content(`    }
-    factory = features.get(name)
+    Content(`}
+
+
+def _make_feature(name):
+    factory = _FEATURES.get(name)
     if factory is not None:
         return factory()
-    return features["base"]()
+    return _FEATURES["base"]()
+
+
+# True when this SDK was generated with the named feature class - the
+# constructor's tolerance for extend-carried features reads this (an
+# active name with no generated class must not become a BaseFeature
+# stray when an extend instance carries it).
+def _has_feature(name):
+    return name in _FEATURES
 `)
   })
 

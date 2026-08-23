@@ -18,7 +18,7 @@ import type {
 
 
 // TODO: needs Entity superclass
-class EntyClass extends ProjectNameEntityBase<EntityName> {
+class EntyClass extends ProjectNameEntityBase<EntityDataType> {
 
   constructor(client: ProjectNameSDK, entopts: any) {
     super(client, entopts)

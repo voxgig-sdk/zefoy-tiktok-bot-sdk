@@ -5,8 +5,28 @@ module VoxgigStruct
   # --- Debug Logging Configuration ---
   DEBUG = false
   
-  def self.log(msg)
-    puts "[DEBUG] #{msg}" if DEBUG
+  # LAZY. The argument to a Ruby method is evaluated BEFORE the call, so
+  # `log("... #{val.inspect} ...")` built its message on every call and then
+  # threw it away, because DEBUG is false. `val` here is a node of the API
+  # model, and `inspect` serialises the whole subtree — so each property access
+  # cost O(size of the tree it was reading from), turning a walk over the model
+  # into O(n^2).
+  #
+  # Measured on gitlab-sdk (276 entities in config.options), which constructs
+  # one client per generated test:
+  #
+  #   validate(options)      4.620s -> 0.039s   (118x)
+  #   client construction    5.790s -> 0.041s   (141x)
+  #   per-entity validate    0.0182s -> 0.0001s, and flat instead of climbing
+  #
+  # The whole rb suite took 7,894s against 431s for ts and 255s for php on the
+  # SAME model. Ruby was not slow; this was.
+  #
+  # A block is not evaluated unless yielded, so with DEBUG false the message
+  # now costs nothing. Call sites pass `log { "..." }`, never `log("...")`.
+  def self.log(msg = nil)
+    return unless DEBUG
+    puts "[DEBUG] #{block_given? ? yield : msg}"
   end
 
   # --- Helper to convert internal undefined marker to Ruby nil ---
@@ -137,33 +157,33 @@ module VoxgigStruct
   # --- Internal getprop ---
   # Returns the value if found; otherwise returns alt (default is UNDEF)
   def self._getprop(val, key, alt = UNDEF)
-    log("(_getprop) called with val=#{val.inspect} and key=#{key.inspect}")
+    log { "(_getprop) called with val=#{val.inspect} and key=#{key.inspect}" }
     return alt if val.nil? || key.nil?
     if islist(val)
       key = (key.to_s =~ /\A\d+\z/) ? key.to_i : key
       unless key.is_a?(Numeric) && key >= 0 && key < val.size
-        log("(_getprop) index #{key.inspect} out of bounds; returning alt")
+        log { "(_getprop) index #{key.inspect} out of bounds; returning alt" }
         return alt
       end
       result = val[key]
-      log("(_getprop) returning #{result.inspect} from array for key #{key}")
+      log { "(_getprop) returning #{result.inspect} from array for key #{key}" }
       return result
     elsif ismap(val)
       key_str = key.to_s
       if val.key?(key_str)
         result = val[key_str]
-        log("(_getprop) found key #{key_str.inspect} in hash, returning #{result.inspect}")
+        log { "(_getprop) found key #{key_str.inspect} in hash, returning #{result.inspect}" }
         return result
       elsif key.is_a?(String) && val.key?(key.to_sym)
         result = val[key.to_sym]
-        log("(_getprop) found symbol key #{key.to_sym.inspect} in hash, returning #{result.inspect}")
+        log { "(_getprop) found symbol key #{key.to_sym.inspect} in hash, returning #{result.inspect}" }
         return result
       else
-        log("(_getprop) key #{key.inspect} not found; returning alt")
+        log { "(_getprop) key #{key.inspect} not found; returning alt" }
         return alt
       end
     else
-      log("(_getprop) value is not a node; returning alt")
+      log { "(_getprop) value is not a node; returning alt" }
       alt
     end
   end
@@ -210,7 +230,7 @@ module VoxgigStruct
   end
 
   def self.setprop(parent, key, val = :no_val_provided)
-    log(">>> setprop called with parent=#{parent.inspect}, key=#{key.inspect}, val=#{val.inspect}")
+    log { ">>> setprop called with parent=#{parent.inspect}, key=#{key.inspect}, val=#{val.inspect}" }
     return parent unless iskey(key)
     if ismap(parent)
       key_str = key.to_s
@@ -236,7 +256,7 @@ module VoxgigStruct
         end
       end
     end
-    log("<<< setprop result: #{parent.inspect}")
+    log { "<<< setprop result: #{parent.inspect}" }
     parent
   end
 

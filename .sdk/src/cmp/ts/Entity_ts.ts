@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, camelify, names,
   File, Content, Folder, Fragment, Line, FeatureHook, Slot,
-  opTypeName, entityClassName, entityCollection,
+  opTypeName, entityClassName, entityCollection, tsSafeTypeName,
 } from '@voxgig/sdkgen'
 
 import {
@@ -33,9 +33,14 @@ const Entity = cmp(function Entity(props: any) {
 
   names(entrep, entity.Name, 'EntityName')
 
+  // A TS/JS global (Record, Array, Promise, ...) would shadow itself for
+  // the rest of the file — see tsSafeTypeName. The runtime `this.Name`
+  // string stays entity.Name; only the TYPE reference is ever renamed.
+  const dataType = tsSafeTypeName(entity.Name)
+
   // Import exactly the typed models this entity references: its data type plus
   // one request type per ACTIVE op (matches what EntityTypes_ts.ts emits).
-  const typeNames = [entity.Name]
+  const typeNames = [dataType]
   const opnamesAll = Object.keys(entity.op || {})
   ;['load', 'list', 'create', 'update', 'remove'].forEach((opname: string) => {
     if (opnamesAll.includes(opname)) {
@@ -69,6 +74,7 @@ const Entity = cmp(function Entity(props: any) {
           entityname: entity.name,
           SdkName: model.const.Name,
           EntityName: entity.Name,
+          EntityDataType: dataType,
 
           // Class token decoupled from the EntityName data-type token in
           // Entity.fragment.ts so the class can be renamed independently.

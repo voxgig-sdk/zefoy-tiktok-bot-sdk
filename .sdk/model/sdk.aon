@@ -1,0 +1,41 @@
+
+# Model definitions.
+@"@voxgig/apidef/model/apidef.aon"
+@"@voxgig/sdkgen/model/sdkgen.aon"
+
+
+# SDK Details.
+name: 'zefoy-tiktok-bot'
+origin: 'voxgig-sdk'
+def: 'zefoy-tiktok-bot_0.1.0.json'
+
+
+# API Information
+@"api/api-info.aon"
+
+
+# SDK Configuration.
+@"config.aon"
+
+
+# SDK Entities
+@"entity/entity-index.aon"
+
+
+# SDK Features.
+@"feature/feature-index.aon"
+ 
+
+# SDK Targets.
+@"target/target-index.aon"
+
+
+# Operation workflows.
+@"flow/flow-index.aon"
+
+
+# Project overlay — user-owned, created once and never overwritten.
+#
+# LAST, deliberately: it may refine main.kit.target.<t>, and a target can only
+# be refined after target-index.aon has defined it.
+@"project.aon"

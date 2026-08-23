@@ -68,8 +68,11 @@ const Config = cmp(async function Config(props: any) {
   // The same config as an OBJECT, built by the shared helper so this target's
   // literal and the data that replaces it above the threshold are the same
   // config by construction. The JSON is what the threshold is measured on -
-  // emitted source size varies by language, the model does not.
-  const { json: configJson } = configDefinition(model)
+  // emitted source size varies by language, the model does not. Passing the
+  // target name opts this target into the main slug/version/target identity
+  // fields (station descriptor v1 reads all three) - the literal branch
+  // below emits them too, so the two representations cannot diverge.
+  const { def: configDef, json: configJson } = configDefinition(model, target.name)
   const asData = isConfigData(configJson, configReprSetting(model))
 
   File({ name: 'config.' + target.ext }, () => {
@@ -112,6 +115,9 @@ end
     }
     else {
 
+    // Identity values from configDefinition's def, not re-derived here, so
+    // the literal rep and the data rep cannot disagree (the ts #MainMeta
+    // discipline).
     Content(`-- Build a fresh, fully materialised config table. Every call rebuilds the
 -- whole structure, so prefer require("config_shared") unless you need a
 -- private copy you intend to mutate.
@@ -119,6 +125,9 @@ local function make_config()
   return {
     main = {
       name = "${model.const.Name}",
+      slug = ${JSON.stringify(configDef.main.slug)},
+      version = ${JSON.stringify(configDef.main.version)},
+      target = ${JSON.stringify(configDef.main.target)},
     },
     feature = {
 `)

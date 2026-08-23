@@ -245,13 +245,13 @@ On error, `ok` is `false` and `$err` contains the error value.
 
 | Field | Description |
 | --- | --- |
-| `amount` |  |
-| `estimatedTime` |  |
-| `message` |  |
-| `status` |  |
-| `success` |  |
-| `type` |  |
-| `url` |  |
+| `amount` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | Estimated time to complete in seconds |
+| `message` | Response message |
+| `status` | Current status of the boost request |
+| `success` | Indicates if the request was successful |
+| `type` | The type of engagement boosted |
+| `url` | The TikTok video or profile URL to boost |
 
 Operations: Create.
 
@@ -276,13 +276,13 @@ Create an instance: `$engagement = $client->Engagement();`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `int` |  |
-| `estimatedTime` | `int` |  |
-| `message` | `string` |  |
-| `status` | `string` |  |
-| `success` | `bool` |  |
-| `type` | `string` |  |
-| `url` | `string` |  |
+| `amount` | `int` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `int` | Estimated time to complete in seconds |
+| `message` | `string` | Response message |
+| `status` | `string` | Current status of the boost request |
+| `success` | `bool` | Indicates if the request was successful |
+| `type` | `string` | The type of engagement boosted |
+| `url` | `string` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

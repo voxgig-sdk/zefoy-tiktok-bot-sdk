@@ -123,21 +123,25 @@
     },
     "featureAdd": {
       "basic": {
+        "pending": "featureAdd mutates client._features; the runner builds one client per spec, not per entry, so a case cannot isolate or undo itself.",
         "set": []
       }
     },
     "featureHook": {
       "basic": {
+        "pending": "featureHook calls f[name] on each registered feature; a fixture compiles to JSON and cannot carry a function.",
         "set": []
       }
     },
     "featureInit": {
       "basic": {
+        "pending": "featureInit calls f.init(ctx, fopts); init is a function, and a fixture compiles to JSON, so the subject cannot be expressed here.",
         "set": []
       }
     },
     "fetcher": {
       "basic": {
+        "pending": "Needs a live or mocked transport and a client instance; the shared runner has no transport-injection hook.",
         "set": []
       }
     },
@@ -238,6 +242,7 @@
     },
     "makeFetchDef": {
       "basic": {
+        "pending": "Depends on a fully built ctx (spec + point + options) that the runner cannot assemble from a literal map.",
         "set": []
       }
     },
@@ -315,7 +320,332 @@
     },
     "makePoint": {
       "basic": {
-        "set": []
+        "set": [
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "GET",
+                            "path": [
+                              "api",
+                              "planet"
+                            ],
+                            "select": {}
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              }
+            },
+            "out": {
+              "method": "GET",
+              "path": [
+                "api",
+                "planet"
+              ],
+              "select": {}
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "GET",
+                            "path": [
+                              "api",
+                              "planet"
+                            ],
+                            "select": {}
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "load"
+                }
+              }
+            },
+            "match": {
+              "out": {
+                "code": "point_op_allow"
+              }
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": []
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              }
+            },
+            "match": {
+              "out": {
+                "code": "point_no_points"
+              }
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "GET",
+                            "path": [
+                              "byid"
+                            ],
+                            "select": {
+                              "exist": [
+                                "id"
+                              ]
+                            }
+                          },
+                          {
+                            "method": "GET",
+                            "path": [
+                              "all"
+                            ],
+                            "select": {}
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "match": {
+                "id": "p01"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              }
+            },
+            "out": {
+              "method": "GET",
+              "path": [
+                "byid"
+              ],
+              "select": {
+                "exist": [
+                  "id"
+                ]
+              }
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "GET",
+                            "path": [
+                              "byid"
+                            ],
+                            "select": {
+                              "exist": [
+                                "id"
+                              ]
+                            }
+                          },
+                          {
+                            "method": "GET",
+                            "path": [
+                              "all"
+                            ],
+                            "select": {}
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "match": {
+                "name": "earth"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              }
+            },
+            "out": {
+              "method": "GET",
+              "path": [
+                "all"
+              ],
+              "select": {}
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "POST",
+                            "path": [
+                              "start"
+                            ],
+                            "select": {
+                              "$action": "start"
+                            }
+                          },
+                          {
+                            "method": "POST",
+                            "path": [
+                              "stop"
+                            ],
+                            "select": {
+                              "$action": "stop"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              },
+              "reqmatch": {
+                "$action": "stop"
+              }
+            },
+            "out": {
+              "method": "POST",
+              "path": [
+                "stop"
+              ],
+              "select": {
+                "$action": "stop"
+              }
+            }
+          },
+          {
+            "ctx": {
+              "config": {
+                "entity": {
+                  "planet": {
+                    "op": {
+                      "list": {
+                        "points": [
+                          {
+                            "method": "POST",
+                            "path": [
+                              "start"
+                            ],
+                            "select": {
+                              "$action": "start"
+                            }
+                          },
+                          {
+                            "method": "POST",
+                            "path": [
+                              "stop"
+                            ],
+                            "select": {
+                              "$action": "stop"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "entity": {
+                "name": "planet"
+              },
+              "opname": "list",
+              "options": {
+                "allow": {
+                  "op": "list"
+                }
+              },
+              "reqmatch": {
+                "$action": "nope"
+              }
+            },
+            "match": {
+              "out": {
+                "code": "point_action_invalid"
+              }
+            }
+          }
+        ]
       }
     },
     "makeRequest": {
@@ -391,6 +721,7 @@
     },
     "makeResult": {
       "basic": {
+        "pending": "Needs a ctx carrying a Spec AND Result built via the SDK constructors; the runner builds ctx from a literal map and has no constructor hook.",
         "set": []
       }
     },

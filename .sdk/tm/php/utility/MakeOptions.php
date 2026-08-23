@@ -37,6 +37,34 @@ class ZefoyTiktokBotMakeOptions
         // Preserve system.fetch before merge/validate.
         $sys_fetch = \Voxgig\Struct\Struct::getpath($options, 'system.fetch');
 
+        // Feature INSTANCES supplied at construction (the station adopt path)
+        // are consumed by the constructor's feature-add loop straight from the
+        // RAW construction options - extend is consumed exactly once, at
+        // construction. Strip it here so it never enters the cloned option
+        // map: Struct::clone flattens arbitrary objects, and options_map()
+        // re-clones $this->options on every request.
+        if (isset($options['extend'])) {
+            unset($options['extend']);
+        }
+
+        // The station feature's binding handle and caller opts are live
+        // values (connect/adopt/st->options() plant them): hold them aside so
+        // the clone below cannot flatten them, and reattach after validate.
+        $station_handle = null;
+        $station_caller = null;
+        $station_has_caller = false;
+        if (is_array($options['feature']['station'] ?? null)) {
+            if (is_object($options['feature']['station']['station'] ?? null)) {
+                $station_handle = $options['feature']['station']['station'];
+                unset($options['feature']['station']['station']);
+            }
+            if (array_key_exists('calleropts', $options['feature']['station'])) {
+                $station_caller = $options['feature']['station']['calleropts'];
+                $station_has_caller = true;
+                unset($options['feature']['station']['calleropts']);
+            }
+        }
+
         $opts = \Voxgig\Struct\Struct::clone($options);
         $opts = self::to_array_deep($opts);
         if (!is_array($opts)) {
@@ -104,6 +132,24 @@ class ZefoyTiktokBotMakeOptions
         $opts = self::to_array_deep($validated);
         if (!is_array($opts)) {
             $opts = [];
+        }
+
+        // Reattach the station binding handle held aside above (the feature
+        // optspec is `$OPEN`, so the extra keys are legal; they were only
+        // kept out of the clone/validate round-trip).
+        if (null !== $station_handle || $station_has_caller) {
+            if (!is_array($opts['feature'] ?? null)) {
+                $opts['feature'] = [];
+            }
+            if (!is_array($opts['feature']['station'] ?? null)) {
+                $opts['feature']['station'] = [];
+            }
+            if (null !== $station_handle) {
+                $opts['feature']['station']['station'] = $station_handle;
+            }
+            if ($station_has_caller) {
+                $opts['feature']['station']['calleropts'] = $station_caller;
+            }
         }
 
         // Resolve a templated base URL (e.g. https://{tenant_id}.hanko.io).
@@ -180,6 +226,18 @@ class ZefoyTiktokBotMakeOptions
                 $featureorder = array_merge(['test'], $rest);
             } else {
                 $featureorder = $names;
+            }
+            // Station special case, mirroring test's: its transport wrap must
+            // sit immediately outside the base transport (inside retry/cache/
+            // netsim), so map-form activation hoists it to just after test -
+            // or first, when no test entry exists. Without this the sorted
+            // default would init station last and wrap OUTSIDE the recording
+            // features, turning its wire-truth events into fiction.
+            $si = array_search('station', $featureorder, true);
+            if (false !== $si) {
+                array_splice($featureorder, $si, 1);
+                $ti = array_search('test', $featureorder, true);
+                array_splice($featureorder, false === $ti ? 0 : $ti + 1, 0, ['station']);
             }
         }
 

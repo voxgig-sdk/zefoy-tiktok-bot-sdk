@@ -35,8 +35,20 @@ def _default_http_fetch(fullurl, fetchdef):
     if not has_ua:
         req.add_header("User-Agent", _DEFAULT_USER_AGENT)
 
+    # Manual redirects: fetchdef["redirect"] == "manual" surfaces a 3xx as
+    # an ordinary response instead of auto-following it — urllib would
+    # otherwise replay the request, headers included, against whatever host
+    # Location names. Set by the station feature's transport middleware
+    # under an egress hosts policy (mirrors the ts fetch option).
+    opener = None
+    if fetchdef.get("redirect") == "manual":
+        class _NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, req, fp, code, msg, headers, newurl):
+                return None
+        opener = urllib.request.build_opener(_NoRedirect)
+
     try:
-        resp = urllib.request.urlopen(req)
+        resp = opener.open(req) if opener is not None else urllib.request.urlopen(req)
         body = resp.read().decode("utf-8")
         resp_headers = {}
         for k, v in resp.getheaders():

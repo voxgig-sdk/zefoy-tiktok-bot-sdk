@@ -1,0 +1,14 @@
+
+# PENDING — this section is deliberately empty.
+#
+# featureInit(ctx, f) calls f.init(ctx, fopts). `init` is a function, and a
+# fixture compiles to JSON, so the subject of the test cannot be expressed
+# here at all. Covered per-language by the feature suites.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'featureInit calls f.init(ctx, fopts); init is a function, and a fixture compiles to JSON, so the subject cannot be expressed here.'
+basic: set: []

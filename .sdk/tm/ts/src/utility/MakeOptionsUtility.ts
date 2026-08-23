@@ -71,6 +71,12 @@ function makeOptions(ctx: Context) {
       }
     },
     utility: {},
+    // Feature INSTANCES supplied at construction (the station adopt
+    // path): consumed by the constructor's featureAdd loop, so they are
+    // class instances, not data - `$ANY` accepts them verbatim. Without
+    // this entry the seam is dead: the constructor reads
+    // options.extend, but validate rejected the key.
+    extend: '`$ANY`' as any,
     system: {
       fetch: undefined as any
     },
@@ -134,10 +140,22 @@ function makeOptions(ctx: Context) {
   // otherwise order the map test-first, then the remaining names sorted, so
   // the outcome is deterministic and `test` is always the base transport.
   if (0 === featureorder.length) {
-    const names = Object.keys(opts.feature || {}).sort()
-    featureorder = names.indexOf('test') < 0
+    let names = Object.keys(opts.feature || {}).sort()
+    names = names.indexOf('test') < 0
       ? names
       : ['test'].concat(names.filter((n: string) => 'test' !== n))
+    // Station special case, mirroring test's: its transport wrap must
+    // sit immediately outside the base transport (inside retry/cache/
+    // netsim), so map-form activation hoists it to just after test -
+    // or first, when no test entry exists. Without this the sorted
+    // default would init station last and wrap OUTSIDE the recording
+    // features, turning its wire-truth events into fiction.
+    const si = names.indexOf('station')
+    if (0 <= si) {
+      names.splice(si, 1)
+      names.splice(names.indexOf('test') + 1, 0, 'station')
+    }
+    featureorder = names
   }
 
   opts.__derived__ = {

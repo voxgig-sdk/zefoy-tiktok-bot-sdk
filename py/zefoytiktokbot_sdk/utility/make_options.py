@@ -15,6 +15,15 @@ def make_options_util(ctx):
             for key, val in custom_utils.items():
                 utility.custom[key] = val
 
+    # Feature INSTANCES supplied at construction (the station adopt path)
+    # are consumed by the constructor's feature-add loop straight from the
+    # RAW construction options - extend is consumed exactly once, at
+    # construction. They are stripped here so they never enter the cloned
+    # option map: vs.clone flattens arbitrary objects, and options_map()
+    # re-clones self.options on every request.
+    if isinstance(options, dict) and options.get("extend") is not None:
+        options = {k: v for k, v in options.items() if k != "extend"}
+
     opts = vs.clone(options)
     if not isinstance(opts, dict):
         opts = {}
@@ -74,6 +83,10 @@ def make_options_util(ctx):
             },
         },
         "utility": {},
+        # Extension feature instances (see above) - stripped before the
+        # clone, but the key stays legal so a passed-through map cannot
+        # fail validation.
+        "extend": "`$ANY`",
         "system": {},
         "test": {
             "active": False,
@@ -171,6 +184,16 @@ def make_options_util(ctx):
             featureorder = ["test"] + [n for n in names if n != "test"]
         else:
             featureorder = names
+        # Station special case, mirroring test's: its transport wrap must
+        # sit immediately outside the base transport (inside retry/cache/
+        # netsim), so map-form activation hoists it to just after test -
+        # or first, when no test entry exists. Without this the sorted
+        # default would init station last and wrap OUTSIDE the recording
+        # features, turning its wire-truth events into fiction.
+        if "station" in featureorder:
+            featureorder = [n for n in featureorder if n != "station"]
+            at = featureorder.index("test") + 1 if "test" in featureorder else 0
+            featureorder.insert(at, "station")
 
     derived = {"clean": {}}
     if keyre != "":

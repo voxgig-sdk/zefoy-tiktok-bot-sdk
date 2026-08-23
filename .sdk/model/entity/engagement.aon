@@ -8,26 +8,31 @@ main: kit: entity: engagement: {
     {
       name: "amount"
       req: false
+      short: "The amount of engagement to acquire (if applicable)"
       type: "`$INTEGER`"
     }
     {
       name: "estimatedTime"
       req: false
+      short: "Estimated time to complete in seconds"
       type: "`$INTEGER`"
     }
     {
       name: "message"
       req: false
+      short: "Response message"
       type: "`$STRING`"
     }
     {
       name: "status"
       req: false
+      short: "Current status of the boost request"
       type: "`$STRING`"
     }
     {
       name: "success"
       req: false
+      short: "Indicates if the request was successful"
       type: "`$BOOLEAN`"
     }
     {
@@ -39,11 +44,13 @@ main: kit: entity: engagement: {
         }
       }
       req: false
+      short: "The type of engagement boosted"
       type: "`$STRING`"
     }
     {
       name: "url"
       req: true
+      short: "The TikTok video or profile URL to boost"
       type: "`$STRING`"
     }
   ]

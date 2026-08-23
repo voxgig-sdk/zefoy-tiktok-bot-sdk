@@ -1,0 +1,18 @@
+
+# PENDING — this section is deliberately empty.
+#
+# makeResult needs a ctx carrying a constructed Spec AND Result, built via the
+# SDK's own NewSpec/NewResult constructors, plus the absent-error path for
+# each. The runner builds ctx from a literal map and has no constructor hook,
+# so these cannot be expressed here yet — covered per-language today (e.g.
+# go's makeResult-basic / -no-spec / -no-result), which is exactly the drift
+# this corpus exists to remove. Promoting it needs a runner change, not just
+# fixture data.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'Needs a ctx carrying a Spec AND Result built via the SDK constructors; the runner builds ctx from a literal map and has no constructor hook.'
+basic: set: []

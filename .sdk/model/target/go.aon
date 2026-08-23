@@ -26,7 +26,7 @@ main: kit: feature: &: target: go: deps: &: {
 # Publication: a go/vX.Y.Z GitHub tag only — the Go proxy resolves from tags,
 # so there is no package registry to upload to. Nothing is set here: every
 # value is defaulted by the schema, and a project that needs to change one
-# sets it in its own model (`model/sdk.aontu`), which `target add <t>` does
+# sets it in its own model (`model/sdk.aon`), which `target add <t>` does
 # not overwrite.
 
 

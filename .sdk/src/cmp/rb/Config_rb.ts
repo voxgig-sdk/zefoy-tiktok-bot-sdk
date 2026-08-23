@@ -71,7 +71,10 @@ const Config = cmp(async function Config(props: any) {
   // literal and the data that replaces it above the threshold are the same
   // config by construction. The JSON is what the threshold is measured on -
   // emitted source size varies by language, the model does not.
-  const { json: configJson } = configDefinition(model)
+  // Passing the target name opts in to the main slug/version/target identity
+  // fields (station descriptor inputs) - the literal path below emits them
+  // too, keeping data and literal reps in step.
+  const { def: configDef, json: configJson } = configDefinition(model, target.name)
   const asData = isConfigData(configJson, configReprSetting(model))
 
   File({ name: 'config.' + target.ext }, () => {
@@ -127,6 +130,9 @@ module ${model.const.Name}Config
     {
       "main" => {
         "name" => "${model.const.Name}",
+        "slug" => ${rbs(String(configDef.main.slug))},
+        "version" => ${rbs(String(configDef.main.version))},
+        "target" => ${rbs(String(configDef.main.target))},
       },
       "feature" => {
 `)

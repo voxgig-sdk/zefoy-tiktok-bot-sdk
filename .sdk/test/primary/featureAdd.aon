@@ -1,0 +1,15 @@
+
+# PENDING — this section is deliberately empty.
+#
+# featureAdd(ctx, f) mutates client._features, so a case would have to assert
+# on the shared client every other section also uses, and undo itself
+# afterwards. The runner constructs one client per spec (DEF.client) rather
+# than one per entry, so there is no isolation to build that on yet.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'featureAdd mutates client._features; the runner builds one client per spec, not per entry, so a case cannot isolate or undo itself.'
+basic: set: []

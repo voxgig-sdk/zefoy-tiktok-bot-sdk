@@ -1,0 +1,14 @@
+
+# PENDING — this section is deliberately empty.
+#
+# Depends on a fully built ctx (spec + point + options) that the shared
+# runner cannot assemble from a literal map. Covered indirectly by
+# makeSpec/makeUrl, and by the per-language pipeline suites.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'Depends on a fully built ctx (spec + point + options) that the runner cannot assemble from a literal map.'
+basic: set: []

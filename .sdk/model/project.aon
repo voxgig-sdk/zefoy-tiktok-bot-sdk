@@ -1,0 +1,24 @@
+# Project overlay — YOURS. The scaffold creates this file once and never
+# overwrites it, unlike every other file it writes.
+#
+# Everything else under model/ is toolchain-derived and is deliberately
+# regenerated so that toolchain fixes propagate. Put anything here that is a
+# decision about THIS project rather than a fact about the API.
+#
+# Included LAST by sdk.aon, after target/target-index.aon, because a key
+# under main.kit.target.<t> can only refine a target that has already been
+# defined. Declared earlier, the model build fails with "Cannot unify value:
+# nil with value: string / key ext value was: nil", which names nothing that
+# would lead you here.
+#
+# The release version each generated manifest declares (package.json,
+# pyproject.toml, the gemspec, the rockspec) and that the port Makefiles tag:
+#
+#   main: kit: target: ts: publish: version: '1.2.3'
+#
+# Per target, because ports publish to different registries on different
+# clocks. Set every target to the same value for a lockstep repo.
+#
+# A published package name that does not follow the derivation:
+#
+#   main: kit: target: ts: publish: registry: package: '@scope/name'

@@ -1,0 +1,14 @@
+
+# PENDING — this section is deliberately empty.
+#
+# Needs a live or mocked transport and a client instance; the shared runner
+# has no transport-injection hook. Covered per-language by the netsim and
+# feature suites until this fixture can express a transport.
+#
+# An empty `set` runs ZERO cases. Runners must not treat that as a pass by
+# accident: `basic: pending` below is the MACHINE-READABLE form of this note,
+# so the guard travels into test.json with the fixture instead of living only
+# in a comment the consumer never sees.
+
+basic: pending: 'Needs a live or mocked transport and a client instance; the shared runner has no transport-injection hook.'
+basic: set: []

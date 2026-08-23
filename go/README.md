@@ -6,7 +6,7 @@ The Golang SDK for the ZefoyTiktokBot API — an entity-oriented client using st
 
 It exposes the API as capitalised, semantic **Entities** — e.g. `client.Engagement(nil)` — each with the same small set of operations (`Create`) instead of raw URL paths and query strings. You call meaning, not endpoints, which keeps the cognitive load low.
 
-> Other languages, the CLI, and MCP server live alongside this one — see
+> Also generated from this model: `go-cli`, `go-mcp`, `lua`, `php`, `py`, `rb`, `ts` — see
 > the [top-level README](../README.md).
 
 
@@ -263,13 +263,13 @@ Only `Direct()` returns a response envelope — a `map[string]any` with
 
 | Field | Description |
 | --- | --- |
-| `"amount"` |  |
-| `"estimatedTime"` |  |
-| `"message"` |  |
-| `"status"` |  |
-| `"success"` |  |
-| `"type"` |  |
-| `"url"` |  |
+| `"amount"` | The amount of engagement to acquire (if applicable) |
+| `"estimatedTime"` | Estimated time to complete in seconds |
+| `"message"` | Response message |
+| `"status"` | Current status of the boost request |
+| `"success"` | Indicates if the request was successful |
+| `"type"` | The type of engagement boosted |
+| `"url"` | The TikTok video or profile URL to boost |
 
 Operations: Create.
 
@@ -294,13 +294,13 @@ Create an instance: `engagement := client.Engagement(nil)`
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `amount` | `int` |  |
-| `estimatedTime` | `int` |  |
-| `message` | `string` |  |
-| `status` | `string` |  |
-| `success` | `bool` |  |
-| `type` | `string` |  |
-| `url` | `string` |  |
+| `amount` | `int` | The amount of engagement to acquire (if applicable) |
+| `estimatedTime` | `int` | Estimated time to complete in seconds |
+| `message` | `string` | Response message |
+| `status` | `string` | Current status of the boost request |
+| `success` | `bool` | Indicates if the request was successful |
+| `type` | `string` | The type of engagement boosted |
+| `url` | `string` | The TikTok video or profile URL to boost |
 
 #### Example: Create
 

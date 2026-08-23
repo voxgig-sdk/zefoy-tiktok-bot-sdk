@@ -33,6 +33,9 @@ class ZefoyTiktokBotConfig
         return [
             "main" => [
                 "name" => "ZefoyTiktokBot",
+                "slug" => "zefoy-tiktok-bot",
+                "version" => "0.0.1",
+                "target" => "php",
             ],
             "feature" => [
                 "test" => [
@@ -58,22 +61,27 @@ class ZefoyTiktokBotConfig
           'fields' => [
             [
               'name' => 'amount',
+              'short' => 'The amount of engagement to acquire (if applicable)',
               'type' => '`$INTEGER`',
             ],
             [
               'name' => 'estimatedTime',
+              'short' => 'Estimated time to complete in seconds',
               'type' => '`$INTEGER`',
             ],
             [
               'name' => 'message',
+              'short' => 'Response message',
               'type' => '`$STRING`',
             ],
             [
               'name' => 'status',
+              'short' => 'Current status of the boost request',
               'type' => '`$STRING`',
             ],
             [
               'name' => 'success',
+              'short' => 'Indicates if the request was successful',
               'type' => '`$BOOLEAN`',
             ],
             [
@@ -84,11 +92,13 @@ class ZefoyTiktokBotConfig
                   'type' => '`$STRING`',
                 ],
               ],
+              'short' => 'The type of engagement boosted',
               'type' => '`$STRING`',
             ],
             [
               'name' => 'url',
               'req' => true,
+              'short' => 'The TikTok video or profile URL to boost',
               'type' => '`$STRING`',
             ],
           ],
