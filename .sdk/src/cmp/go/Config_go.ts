@@ -173,7 +173,10 @@ func MakeConfig() map[string]any {
 `)
 
     each(feature, (f: any) => {
-      const fconfig = f.config || {}
+      // From configDefinition's def, not f.config, so the literal carries
+      // the feature's `transport` role (station design §8.4) beside its
+      // options and cannot drift from the data rep.
+      const fconfig = configDef.feature[f.name] || {}
       Content(`			"${f.name}": ${formatGoMap(fconfig, 3)},
 `)
     })

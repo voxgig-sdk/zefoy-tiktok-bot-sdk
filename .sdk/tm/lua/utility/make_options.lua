@@ -5,13 +5,33 @@ local vs = require("utility.struct.struct")
 local function make_options_util(ctx)
   local options = ctx.options or {}
 
-  -- Merge custom utility overrides.
+  -- Merge utility overrides from options onto the utility object.
+  --
+  -- A key naming a real utility member REPLACES it; anything else is attached
+  -- as a custom extra. Shelving everything in `custom` - a table nothing reads
+  -- - made `utility = { fetcher = ... }`, the documented transport seam, a
+  -- silent no-op here while ts honoured it.
+  --
+  -- Option keys are camelCase, as ts spells them; members here are
+  -- snake_case. Only a PUBLIC name may replace: public utility names carry no
+  -- underscore, so an underscore means the caller named something of their
+  -- own - possibly the internal spelling of a real member. `make_error` must
+  -- stay an extension, or a non-callable would break the error path on the
+  -- next request.
   local custom_utils = vs.getprop(options, "utility")
   if type(custom_utils) == "table" then
     local utility = ctx.utility
     if utility ~= nil then
       for key, val in pairs(custom_utils) do
-        utility.custom[key] = val
+        local member = nil
+        if type(key) == "string" and not key:find("_") then
+          member = key:gsub("(%u)", function(c) return "_" .. c:lower() end)
+        end
+        if member ~= nil and member ~= "custom" and utility[member] ~= nil then
+          utility[member] = val
+        else
+          utility.custom[key] = val
+        end
       end
     end
   end

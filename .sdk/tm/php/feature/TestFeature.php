@@ -179,7 +179,37 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
                 return $respond(200, $out);
 
             } elseif ($op->name === 'list') {
-                $found = $find_all($entmap, $fctx->reqmatch, $alias);
+                // FILTER THE MATCH THE WAY THE TS MOCK DOES.
+                //
+                // This branch used the whole of reqmatch, while load goes
+                // through resolve_match and the TS mock runs every op through
+                // buildArgs — which keeps `id` and the point's REQUIRED params
+                // and drops the rest. buildArgs is right here in this file and
+                // its docblock says it mirrors the TS one; list simply did not
+                // call it.
+                //
+                // So a match key that is neither `id` nor a required route
+                // param matched NOTHING in php and was IGNORED in ts. trello's
+                // board_star lists on `board_id`, which is not a field of that
+                // entity (id, pos, member_id, id_board) and not a route param:
+                // php returned an empty list and BoardStarEntityTest failed on
+                // an assertion that ts, js and every other port passed.
+                //
+                // buildArgs returns a struct query; find_all takes a flat map,
+                // so take the primary key of each $OR clause. find_all already
+                // does its own alias fallback, which is what the second $OR
+                // element carries.
+                $listargs = $this->buildArgs($fctx, $op, $fctx->reqmatch);
+                $listmatch = [];
+                foreach (($listargs['$AND'] ?? []) as $clause) {
+                    $ors = $clause['$OR'] ?? [];
+                    if (is_array($ors) && count($ors) > 0 && is_array($ors[0])) {
+                        foreach ($ors[0] as $lk => $lv) {
+                            $listmatch[$lk] = $lv;
+                        }
+                    }
+                }
+                $found = $find_all($entmap, $listmatch, $alias);
                 $cleaned = [];
                 foreach ($found as $e) {
                     if (is_array($e)) unset($e['$KEY']);

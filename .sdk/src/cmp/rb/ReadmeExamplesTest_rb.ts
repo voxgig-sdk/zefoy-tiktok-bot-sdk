@@ -82,6 +82,7 @@ const ReadmeExamplesTest = cmp(function ReadmeExamplesTest(props: any) {
 require "minitest/autorun"
 require "tempfile"
 require "open3"
+require "tmpdir"
 
 class ReadmeExamplesTest < Minitest::Test
   # The three documentation sources this gate covers.
@@ -227,22 +228,94 @@ ${entityLines}
   # domain errors (e.g. "404: Not found") never match FATAL, so caught not-found
   # cases stay tolerated.
   def test_ruby_examples_run_offline
-    ran = 0
     failures = []
-    ruby_blocks.each do |blk|
-      next unless runnable?(blk[:code])
-      ran += 1
-      Tempfile.create(["readme_run_", ".rb"]) do |f|
-        f.write(to_runner(blk[:code]))
-        f.flush
-        out, status = Open3.capture2e("ruby", f.path)
-        if out =~ FATAL
-          failures << "#{blk[:doc]} ##{blk[:n]} (exit #{status.exitstatus}):\\n#{out}\\n#{blk[:code]}"
+    runnable = ruby_blocks.select { |blk| runnable?(blk[:code]) }
+    ran = runnable.length
+
+    # BATCHED. One ruby process for every runnable block, not one each. A
+    # spawn per snippet dominated this suite on the large SDKs.
+    #
+    # Each snippet is loaded inside its own anonymous Module, so constants and
+    # methods do not collide, and is bracketed by markers so output is
+    # attributed back. The interpreter is SHARED, which is the cost of
+    # batching: a snippet that mutates global state or calls exit! affects
+    # what follows it.
+    #
+    # So the batch is not trusted blindly. Any snippet whose END marker never
+    # arrives is re-run on its own, in a fresh process, and that isolated
+    # result is the one that counts.
+    if ran > 0
+      Dir.mktmpdir("readme_batch_") do |dir|
+        paths = {}
+        runnable.each_with_index do |blk, i|
+          path = File.join(dir, "snip_#{i}.rb")
+          File.write(path, to_runner(blk[:code]))
+          paths[i] = path
+        end
+
+        driver = File.join(dir, "_driver.rb")
+        File.write(driver, batch_driver(paths))
+        out, status = Open3.capture2e("ruby", driver)
+
+        runnable.each_with_index do |blk, i|
+          seg = batch_segment(out, i)
+          code = status.exitstatus
+          if seg.nil?
+            solo, sstatus = Open3.capture2e("ruby", paths[i])
+            seg = solo
+            code = sstatus.exitstatus
+          end
+          if seg =~ FATAL
+            failures << "#{blk[:doc]} ##{blk[:n]} (exit #{code}):\\n#{seg}\\n#{blk[:code]}"
+          end
         end
       end
     end
     assert_operator ran, :>, 0, "expected at least one runnable example to execute"
     assert_equal [], failures, "docs ruby examples raised a real error when run offline:\\n#{failures.join("\\n\\n")}"
+  end
+
+  # The batch driver: load each snippet into its own anonymous Module so its
+  # constants and methods cannot collide with another's. The at_exit hook is
+  # what makes a hard death recoverable — it emits the END marker for whichever
+  # snippet was in flight, so the harness can tell "this one died" from "the
+  # batch never reached it", and re-run only what it must.
+  def batch_driver(paths)
+    list = paths.keys.sort.map { |i| [i, paths[i]] }
+    <<~DRIVER
+      files = #{list.inspect}
+      current = nil
+      at_exit do
+        if current
+          puts
+          puts "@@VOXEND \\#{current}"
+        end
+      end
+      files.each do |(i, path)|
+        current = i
+        puts
+        puts "@@VOXBEGIN \\#{i}"
+        begin
+          Module.new.module_eval(File.read(path), path)
+        rescue Exception => e
+          puts "FATAL: \\#{e.class}: \\#{e.message}"
+        end
+        puts
+        puts "@@VOXEND \\#{i}"
+        current = nil
+      end
+    DRIVER
+  end
+
+  # Output between this snippet's markers, or nil when the END marker is
+  # absent — the batch never got past it, so only an isolated re-run can say.
+  def batch_segment(text, i)
+    b = text.index("@@VOXBEGIN #{i}")
+    return nil if b.nil?
+    b += "@@VOXBEGIN #{i}".length
+    e = text.index("@@VOXEND #{i}", b)
+    return nil if e.nil?
+    text[b...e].strip
   end
 
   # COMPLETENESS GATE: every fenced ruby block is partitioned into exactly one of

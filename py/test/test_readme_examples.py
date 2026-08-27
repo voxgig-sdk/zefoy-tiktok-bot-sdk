@@ -426,6 +426,90 @@ def _is_not_found_error(last):
     return ("404" in last) or ("not found" in low) or ("notfound" in low)
 
 
+def _run_batch(items, label):
+    # BATCHED. One interpreter for every runnable block in this document,
+    # instead of one process each. A 269-entity SDK documents hundreds of
+    # examples and the spawn cost dominated the suite.
+    #
+    # Each block is exec'd in a FRESH globals dict, so names do not leak
+    # between snippets, and is bracketed by markers so output is attributed
+    # back. The interpreter is shared, which is the cost: a snippet that
+    # mutates process-wide state or dies hard affects what follows.
+    #
+    # So the batch is not trusted blindly. Any snippet whose END marker is
+    # missing is re-run on its own by the caller, and that isolated verdict is
+    # the one that counts.
+    driver = (
+        "import sys, traceback" + _NL
+        + "_S = __VOX_SOURCES__" + _NL
+        + "for _i, _src in _S:" + _NL
+        + "    print('@@VOXBEGIN ' + str(_i), flush=True)" + _NL
+        + "    try:" + _NL
+        + "        _g = {'__name__': '__main__'}" + _NL
+        + "        exec(compile(_src, '<snippet>', 'exec'), _g)" + _NL
+        + "    except BaseException:" + _NL
+        + "        traceback.print_exc(file=sys.stdout)" + _NL
+        + "    print('@@VOXEND ' + str(_i), flush=True)" + _NL
+    )
+    driver = driver.replace("__VOX_SOURCES__", repr(items))
+
+    env = dict(os.environ)
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env["PYTHONPATH"] = _PY_ROOT + os.pathsep + env.get("PYTHONPATH", "")
+
+    # A FILE, not "python -c". The driver embeds every runnable snippet's
+    # source, and a large SDK documents hundreds of them: passing that on the
+    # command line exceeded ARG_MAX and the whole gate died with
+    # "OSError: [Errno 7] Argument list too long" — on gitlab and github, while
+    # every small repo passed. The batch has no size limit through a file.
+    with tempfile.TemporaryDirectory() as td:
+        driver_path = os.path.join(td, "readme_batch_driver.py")
+        with open(driver_path, "w", encoding="utf-8") as fh:
+            fh.write(driver)
+        proc = subprocess.run(
+            [sys.executable, driver_path],
+            cwd=_PY_ROOT, env=env, capture_output=True, text=True,
+        )
+        return (proc.stdout or "") + (proc.stderr or "")
+
+
+def _batch_segment(text, index):
+    # The output between this snippet's markers, or None when the END marker
+    # never arrived — the batch died in or before it, so only an isolated
+    # re-run can say what happened.
+    begin = "@@VOXBEGIN " + str(index)
+    end = "@@VOXEND " + str(index)
+    b = text.find(begin)
+    if b < 0:
+        return None
+    b += len(begin)
+    e = text.find(end, b)
+    if e < 0:
+        return None
+    return text[b:e].strip()
+
+
+def _classify_batch_error(seg, source, label, index):
+    # Same verdict as _run_source, read off a traceback in the batch output.
+    if not seg:
+        return None
+    errlines = [ln for ln in seg.split(_NL) if ln.strip()]
+    if not errlines or "Traceback (most recent call last)" not in seg:
+        return None
+    last = errlines[-1]
+    exc_type = last.split(":", 1)[0].strip().split(".")[-1]
+    detail = (
+        label + " python block #" + str(index) + ": " + last + _NL + _NL
+        + "--- executed source ---" + _NL + source
+        + _NL + _NL + "--- batch output ---" + _NL + seg
+    )
+    if exc_type in _PROGRAMMING_ERROR_NAMES:
+        return "PROGRAMMING ERROR in " + detail
+    if _is_not_found_error(last):
+        return None
+    return "RUNTIME ERROR in " + detail
+
+
 def _run_source(source, label, index):
     # Run one rewritten block in a subprocess. Returns None when it exits 0 or
     # fails with the single tolerated not-found/404 domain error; otherwise
@@ -478,6 +562,7 @@ def _completeness_gate(label, blocks):
     illustration = 0
     compiled = 0
     failures = []
+    _pending = []
 
     for i, block in enumerate(blocks):
         kind = _classify(block)
@@ -495,13 +580,23 @@ def _completeness_gate(label, blocks):
                 )
                 continue
             executed += 1
-            msg = _run_source(source, label, i)
-            if msg is not None:
-                failures.append(msg)
+            _pending.append((i, source))
         elif kind == "illustration":
             illustration += 1
         else:
             compiled += 1
+
+    if _pending:
+        _text = _run_batch(_pending, label)
+        for _i, _src in _pending:
+            _seg = _batch_segment(_text, _i)
+            if _seg is None:
+                # Batch never finished this one — isolate it.
+                _msg = _run_source(_src, label, _i)
+            else:
+                _msg = _classify_batch_error(_seg, _src, label, _i)
+            if _msg is not None:
+                failures.append(_msg)
 
     print(
         _NL + "[readme-examples] " + label + " python blocks: total="

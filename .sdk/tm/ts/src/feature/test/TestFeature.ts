@@ -30,8 +30,19 @@ function ownIdField(config: any, getpath: any, entityName: string): string {
       if (ptterm !== bestterm ? ptterm : pt.parts.length < best.parts.length) best = pt
     }
     const parts: string[] = (best && best.parts) || []
-    const last = [...parts].reverse().find((p: string) => p.startsWith('{'))
-    if (null != last) return last.slice(1, -1)
+    // THE LAST PART, not the last param anywhere in the path. A record route
+    // ENDS in its key: /orgs/{org}/private-registries/{secret_name} does,
+    // /orgs/{org}/private-registries/public-key does not. Reading the last
+    // param wherever it fell returned `{org}` for that second path — a PARENT
+    // reference — and the seeding walk then stamped the record's own key over
+    // org_id, destroying the ORG01 the fixture set and the test looks up from
+    // idmap. github's private_registry failed its update with a 404 that named
+    // nothing to do with orgs.
+    //
+    // A point that does not end in a param says nothing about this entity's
+    // key, so move on to the next op rather than guess from it.
+    const lastPart = 0 < parts.length ? String(parts[parts.length - 1]) : ''
+    if (lastPart.startsWith('{')) return lastPart.slice(1, -1)
   }
   return 'id'
 }

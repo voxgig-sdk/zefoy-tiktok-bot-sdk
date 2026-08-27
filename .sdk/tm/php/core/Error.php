@@ -13,6 +13,17 @@ class ZefoyTiktokBotError extends \Exception
     public mixed $result;
     public mixed $spec;
 
+    // HTTP status of the response that caused this error, or -1 when the
+    // request never got one. Promoted to the top level so a consumer can
+    // branch on `err->status` / `err->notFound()` instead of reaching into
+    // `err->result`.
+    //
+    // DECLARED, not created on assignment. makeError set it on an undeclared
+    // property, which PHP 8.2 deprecates and PHP 9 makes fatal - so every
+    // error path in this SDK was on course to stop working. ts declares the
+    // same field; php needs it spelled out because the class is typed.
+    public int $status;
+
     public function __construct(string $code = '', string $msg = '', mixed $ctx = null)
     {
         parent::__construct($msg);
@@ -23,6 +34,7 @@ class ZefoyTiktokBotError extends \Exception
         $this->ctx = $ctx;
         $this->result = null;
         $this->spec = null;
+        $this->status = -1;
     }
 
     public function error(): string

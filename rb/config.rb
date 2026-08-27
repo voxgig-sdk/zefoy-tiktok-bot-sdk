@@ -28,6 +28,7 @@ module ZefoyTiktokBotConfig
           "options" => {
             "active" => false,
           },
+          "transport" => "base",
         },
       },
       "options" => {

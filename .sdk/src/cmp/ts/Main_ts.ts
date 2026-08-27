@@ -4,7 +4,7 @@ import * as Path from 'node:path'
 import {
   cmp, each, names, cmap,
   List, File, Content, Copy, Folder, Fragment, Line, FeatureHook,
-  entityClassName, entityCollection, srcFeatureExcludes,
+  entityClassName, entityCollection, srcFeatureExcludes, stationLibrary,
 } from '@voxgig/sdkgen'
 
 
@@ -106,6 +106,25 @@ if (fres instanceof Promise) { await fres }
             MainEntity(entprops)
           })
         })
+
+      // Station self-registration (station design §6.2 path 1;
+      // station-declarative-config §11 item 2): emitted ONLY when the model
+      // carries an ACTIVE station feature (installed via
+      // `package add @voxgig/sdkgen-station`). The library package name
+      // comes from the feature model's own `deps.ts` block — the same entry
+      // collectDeps flows into package.json — so the manifest dependency
+      // and the emitted require cannot disagree.
+      const stationPkg = stationLibrary(model, target.name)
+      if (null != stationPkg) {
+        Fragment({
+          from: Path.normalize(
+            __dirname + '/../../../src/cmp/ts/fragment/MainStation.fragment.ts'),
+          replace: {
+            ...props.ctx$.stdrep,
+            "'STATIONPKG'": JSON.stringify(stationPkg),
+          }
+        })
+      }
     })
 
     Config({ target })

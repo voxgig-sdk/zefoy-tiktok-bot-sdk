@@ -1,0 +1,190 @@
+# Cost feature behaviour, as language-neutral cases.
+#
+# Every case is DATA: features are activated by name through the generated
+# config, the options are plain JSON, the transport is scripted by `res`, and
+# the assertion is a subset of the client's cost record. Nothing here needs a
+# function, which is what makes it corpus-expressible where featureAdd /
+# featureHook / featureInit are not (see their PENDING notes).
+#
+# CASE SHAPE
+#   name     label for the runner
+#   feature  activation list, IN ORDER. The array form is the one that fixes
+#            nesting: each transport feature wraps whatever is already
+#            installed, so position IS order. Entries are flat -
+#            { name, active, ...options } - as makeOptions expects.
+#   res      scripted transport responses, consumed in order; the last is
+#            reused once exhausted. `throw: true` makes that attempt reject
+#            at the transport rather than return a response.
+#   op       operations to run, in order. `err` marks an op that must FAIL:
+#            `true` for any failure, a string to pin the error code.
+#   out      expected SUBSET of client._cost - runners match partially, so a
+#            case asserts only what it is about
+#
+# OPERATION TOKENS
+#   The corpus is shared by every generated SDK, and each has its own
+#   entities and operations, so no case may name one. `#OP1` and `#OP2` stand
+#   for two DISTINCT operations this SDK can actually perform; the runner
+#   discovers them from the generated client and substitutes them throughout
+#   the case, keys included. They resolve to the '<entity>.<op>' key the cost
+#   record attributes spend under, which is why a rate table can be keyed on
+#   one. A SDK that offers fewer operations than a case needs skips that case
+#   rather than failing it.
+#
+# Determinism comes from data alone: netsim is counter-driven, and retry runs
+# with `minDelay: 1`, which leaves no room for jitter (it is drawn from
+# [0, minDelay)) and costs no real time.
+
+basic: set: [
+
+  # --- pricing sources ----------------------------------------------------
+
+  {
+    name: 'rate table prices each call and attributes it to the op'
+    feature: [ { name: 'cost', active: true, rates: { '#OP1': 0.25, '*': 0.01 } } ]
+    op: [ { op: '#OP1' }, { op: '#OP1' }, { op: '#OP2' } ]
+    out: {
+      total: { calls: 3, amount: 0.51, estimated: 0.51 }
+      ops: { '#OP1': { calls: 2, amount: 0.5 }, '#OP2': { calls: 1, amount: 0.01 } }
+    }
+  }
+
+  {
+    name: 'flat unit is the fallback when no rate matches'
+    feature: [ { name: 'cost', active: true, unit: 0.002 } ]
+    op: [ { op: '#OP1' } ]
+    out: { total: { calls: 1, amount: 0.002 }, last: { source: 'unit' } }
+  }
+
+  {
+    name: 'a reported header counts as reported, not estimated, and beats the unit'
+    feature: [ { name: 'cost', active: true, header: 'x-request-cost', perUnit: 0.5, unit: 99 } ]
+    res: [ { status: 200, headers: { 'x-request-cost': '4' }, body: { ok: true } } ]
+    op: [ { op: '#OP1' } ]
+    out: { total: { amount: 2, reported: 2, estimated: 0 }, last: { source: 'header' } }
+  }
+
+  {
+    name: 'a plain header map is matched case-insensitively'
+    feature: [ { name: 'cost', active: true, header: 'x-request-cost', perUnit: 0.5, unit: 99 } ]
+    res: [ { status: 200, headers: { 'X-Request-Cost': '4' }, body: { ok: true } } ]
+    out: { total: { amount: 2, reported: 2 }, last: { source: 'header' } }
+    op: [ { op: '#OP1' } ]
+  }
+
+  {
+    name: 'a body usage figure prices the whole call, replacing the per-attempt estimate'
+    feature: [ { name: 'cost', active: true, path: 'usage.total_tokens', perUnit: 0.00001, unit: 5 } ]
+    res: [ { status: 200, body: { usage: { total_tokens: 1000 } } } ]
+    op: [ { op: '#OP1' } ]
+    out: { total: { amount: 0.01, reported: 0.01, estimated: 0 }, last: { source: 'body' } }
+  }
+
+  # --- attempts vs operations ---------------------------------------------
+
+  {
+    name: 'every retry attempt is charged, but attributed as one operation'
+    feature: [
+      { name: 'netsim', active: true, failTimes: 2, failStatus: 503 }
+      { name: 'cost', active: true, unit: 1 }
+      { name: 'retry', active: true, retries: 3, minDelay: 1 }
+    ]
+    op: [ { op: '#OP1' } ]
+    out: { total: { calls: 1, attempts: 3, amount: 3 }, last: { attempts: 3 } }
+  }
+
+  {
+    name: 'reported and estimated stay apart across attempts of one call'
+    feature: [
+      { name: 'netsim', active: true, failTimes: 1, failStatus: 503 }
+      { name: 'cost', active: true, header: 'x-cost', perUnit: 1, rates: { '*': 5 } }
+      { name: 'retry', active: true, retries: 2, minDelay: 1 }
+    ]
+    res: [ { status: 200, headers: { 'x-cost': '2' }, body: { ok: true } } ]
+    op: [ { op: '#OP1' } ]
+    out: { total: { amount: 7, estimated: 5, reported: 2 } }
+  }
+
+  {
+    name: 'a rejecting transport is still charged per attempt'
+    feature: [
+      { name: 'cost', active: true, unit: 1 }
+      { name: 'retry', active: true, retries: 2, minDelay: 1 }
+    ]
+    res: [ { throw: true } ]
+    op: [ { op: '#OP1', err: true } ]
+    out: { total: { calls: 1, attempts: 3, amount: 3 } }
+  }
+
+  {
+    name: 'a failed operation still commits its spend'
+    feature: [ { name: 'cost', active: true, unit: 2 } ]
+    res: [ { status: 500, body: { fail: true } } ]
+    op: [ { op: '#OP1', err: true } ]
+    out: { total: { calls: 1, amount: 2 } }
+  }
+
+  # --- ordering against the cache -----------------------------------------
+
+  {
+    name: 'ordered inside the cache, a hit served from cache costs nothing'
+    feature: [
+      { name: 'cost', active: true, unit: 2 }
+      { name: 'cache', active: true, ttl: 10000 }
+    ]
+    op: [ { op: '#OP1' }, { op: '#OP1' } ]
+    out: { total: { calls: 2, attempts: 1, amount: 2 } }
+  }
+
+  # --- attribution ---------------------------------------------------------
+
+  {
+    name: 'spend is attributed to the per-call actor'
+    feature: [ { name: 'cost', active: true, unit: 1 } ]
+    op: [
+      { op: '#OP1', ctrl: { actor: 'user:42' } }
+      { op: '#OP1', ctrl: { actor: 'user:42' } }
+      { op: '#OP1', ctrl: { actor: 'svc:sync' } }
+    ]
+    out: { actors: { 'user:42': { calls: 2, amount: 2 }, 'svc:sync': { calls: 1, amount: 1 } } }
+  }
+
+  # --- the budget ----------------------------------------------------------
+
+  {
+    name: 'warn records the overrun and lets the call through'
+    feature: [ { name: 'cost', active: true, unit: 1, budget: 2 } ]
+    op: [ { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' } ]
+    out: { total: { calls: 3, amount: 3 }, budget: { exceeded: true, remaining: 0 } }
+  }
+
+  {
+    name: 'deny refuses the call once the budget is spent, before the network'
+    feature: [ { name: 'cost', active: true, unit: 1, budget: 2, onBudget: 'deny' } ]
+    op: [ { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1', err: 'cost_budget' } ]
+    out: { total: { calls: 2, attempts: 2, amount: 2 }, budget: { exceeded: true } }
+  }
+
+  {
+    name: 'an explicit budget of zero means no ceiling'
+    feature: [ { name: 'cost', active: true, unit: 1, budget: 0, onBudget: 'deny' } ]
+    op: [ { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' } ]
+    out: { total: { calls: 5, amount: 5 } }
+  }
+
+  # The case above supplies `budget: 0`; this one omits it. They are separate
+  # cases on purpose. An implementation that reads the option into a
+  # nullable, or treats "supplied" as "set a ceiling", passes one and fails
+  # the other, and a single case cannot tell which path it took.
+  {
+    name: 'an omitted budget means no ceiling either'
+    feature: [ { name: 'cost', active: true, unit: 1, onBudget: 'deny' } ]
+    op: [ { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' }, { op: '#OP1' } ]
+    out: { total: { calls: 5, amount: 5 } }
+  }
+]
+
+# NOT EXPRESSIBLE HERE, and deliberately left to the per-language suites.
+# `partial`, not `basic: pending`: the section RUNS, so the deferral marker
+# that means "this whole section is a hole" would be a lie here (and the
+# corpus guard promotes any deferred section that has gained cases).
+partial: 'the sink callback takes a function, which a JSON fixture cannot carry; covered per-language.'

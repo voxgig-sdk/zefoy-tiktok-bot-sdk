@@ -52,6 +52,9 @@ class ZefoyTiktokBotContext
             if (isset($ctrl_raw['explain']) && is_array($ctrl_raw['explain'])) {
                 $this->ctrl->explain = $ctrl_raw['explain'];
             }
+            if (array_key_exists('actor', $ctrl_raw)) {
+                $this->ctrl->actor = $ctrl_raw['actor'];
+            }
         } elseif ($basectx !== null && $basectx->ctrl !== null) {
             $this->ctrl = $basectx->ctrl;
         }

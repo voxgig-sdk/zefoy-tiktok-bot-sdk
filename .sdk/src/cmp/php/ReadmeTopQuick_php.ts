@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, canonKey, entityIdField, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, envName, canonKey, canonScalarKey, entityIdField, opRequestShape, phpEntityAccessor } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -12,7 +12,7 @@ import {
 // params render a typed literal; strings render the quoted placeholder (the
 // doc test EXECUTES this block, so a comment placeholder would break it).
 function phpLit(type: any, placeholder: string = 'example'): string {
-  const k = canonKey(type)
+  const k = canonScalarKey(type)
   if ('INTEGER' === k || 'NUMBER' === k) return '1'
   if ('BOOLEAN' === k) return 'true'
   if ('ARRAY' === k || 'OBJECT' === k) return '[]'

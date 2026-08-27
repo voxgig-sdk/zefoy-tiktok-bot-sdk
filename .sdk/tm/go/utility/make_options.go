@@ -21,11 +21,17 @@ func makeOptionsUtil(ctx *core.Context) map[string]any {
 
 	// Merge custom utility overrides onto the utility object.
 	// Read from original options before clone, since vs.Clone strips functions.
+	//
+	// A key naming a real utility member REPLACES it (overrideUtil); anything
+	// else is attached as a custom extra. This mirrors ts, where the utility is
+	// an open object and `setprop` does both at once.
 	if customUtils := core.ToMapAny(options["utility"]); customUtils != nil {
 		utility := ctx.Utility
 		if utility != nil {
 			for key, val := range customUtils {
-				utility.Custom[key] = val
+				if !overrideUtil(utility, key, val) {
+					utility.Custom[key] = val
+				}
 			}
 		}
 	}

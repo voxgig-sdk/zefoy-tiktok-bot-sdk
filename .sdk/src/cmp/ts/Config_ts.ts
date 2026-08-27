@@ -142,8 +142,11 @@ const Config = cmp(async function Config(props: any) {
           Line(` ${f.name}: ${nom(f, 'Name')}Feature,`)
         }),
 
+        // Rendered from configDefinition's def, not from f.config, so the
+        // literal carries the feature's `transport` role (station design
+        // §8.4) beside its options and cannot drift from the data rep.
         '// #FeatureConfigs': () => each(feature, (f: any) => {
-          Line(` ${f.name}: ${formatJson(f.config, { margin: 4 })},`)
+          Line(` ${f.name}: ${formatJson(configDef.feature[f.name], { margin: 4 })},`)
         }),
 
 

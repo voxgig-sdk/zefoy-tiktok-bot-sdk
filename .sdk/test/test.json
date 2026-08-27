@@ -1,4 +1,547 @@
 {
+  "feature": {
+    "cost": {
+      "basic": {
+        "set": [
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "rates": {
+                  "#OP1": 0.25,
+                  "*": 0.01
+                }
+              }
+            ],
+            "name": "rate table prices each call and attributes it to the op",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP2"
+              }
+            ],
+            "out": {
+              "ops": {
+                "#OP1": {
+                  "amount": 0.5,
+                  "calls": 2
+                },
+                "#OP2": {
+                  "amount": 0.01,
+                  "calls": 1
+                }
+              },
+              "total": {
+                "amount": 0.51,
+                "calls": 3,
+                "estimated": 0.51
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 0.002
+              }
+            ],
+            "name": "flat unit is the fallback when no rate matches",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "last": {
+                "source": "unit"
+              },
+              "total": {
+                "amount": 0.002,
+                "calls": 1
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "header": "x-request-cost",
+                "name": "cost",
+                "perUnit": 0.5,
+                "unit": 99
+              }
+            ],
+            "name": "a reported header counts as reported, not estimated, and beats the unit",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "last": {
+                "source": "header"
+              },
+              "total": {
+                "amount": 2,
+                "estimated": 0,
+                "reported": 2
+              }
+            },
+            "res": [
+              {
+                "body": {
+                  "ok": true
+                },
+                "headers": {
+                  "x-request-cost": "4"
+                },
+                "status": 200
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "header": "x-request-cost",
+                "name": "cost",
+                "perUnit": 0.5,
+                "unit": 99
+              }
+            ],
+            "name": "a plain header map is matched case-insensitively",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "last": {
+                "source": "header"
+              },
+              "total": {
+                "amount": 2,
+                "reported": 2
+              }
+            },
+            "res": [
+              {
+                "body": {
+                  "ok": true
+                },
+                "headers": {
+                  "X-Request-Cost": "4"
+                },
+                "status": 200
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "path": "usage.total_tokens",
+                "perUnit": 0.00001,
+                "unit": 5
+              }
+            ],
+            "name": "a body usage figure prices the whole call, replacing the per-attempt estimate",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "last": {
+                "source": "body"
+              },
+              "total": {
+                "amount": 0.01,
+                "estimated": 0,
+                "reported": 0.01
+              }
+            },
+            "res": [
+              {
+                "body": {
+                  "usage": {
+                    "total_tokens": 1000
+                  }
+                },
+                "status": 200
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "failStatus": 503,
+                "failTimes": 2,
+                "name": "netsim"
+              },
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 1
+              },
+              {
+                "active": true,
+                "minDelay": 1,
+                "name": "retry",
+                "retries": 3
+              }
+            ],
+            "name": "every retry attempt is charged, but attributed as one operation",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "last": {
+                "attempts": 3
+              },
+              "total": {
+                "amount": 3,
+                "attempts": 3,
+                "calls": 1
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "failStatus": 503,
+                "failTimes": 1,
+                "name": "netsim"
+              },
+              {
+                "active": true,
+                "header": "x-cost",
+                "name": "cost",
+                "perUnit": 1,
+                "rates": {
+                  "*": 5
+                }
+              },
+              {
+                "active": true,
+                "minDelay": 1,
+                "name": "retry",
+                "retries": 2
+              }
+            ],
+            "name": "reported and estimated stay apart across attempts of one call",
+            "op": [
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 7,
+                "estimated": 5,
+                "reported": 2
+              }
+            },
+            "res": [
+              {
+                "body": {
+                  "ok": true
+                },
+                "headers": {
+                  "x-cost": "2"
+                },
+                "status": 200
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 1
+              },
+              {
+                "active": true,
+                "minDelay": 1,
+                "name": "retry",
+                "retries": 2
+              }
+            ],
+            "name": "a rejecting transport is still charged per attempt",
+            "op": [
+              {
+                "err": true,
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 3,
+                "attempts": 3,
+                "calls": 1
+              }
+            },
+            "res": [
+              {
+                "throw": true
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 2
+              }
+            ],
+            "name": "a failed operation still commits its spend",
+            "op": [
+              {
+                "err": true,
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 2,
+                "calls": 1
+              }
+            },
+            "res": [
+              {
+                "body": {
+                  "fail": true
+                },
+                "status": 500
+              }
+            ]
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 2
+              },
+              {
+                "active": true,
+                "name": "cache",
+                "ttl": 10000
+              }
+            ],
+            "name": "ordered inside the cache, a hit served from cache costs nothing",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 2,
+                "attempts": 1,
+                "calls": 2
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "unit": 1
+              }
+            ],
+            "name": "spend is attributed to the per-call actor",
+            "op": [
+              {
+                "ctrl": {
+                  "actor": "user:42"
+                },
+                "op": "#OP1"
+              },
+              {
+                "ctrl": {
+                  "actor": "user:42"
+                },
+                "op": "#OP1"
+              },
+              {
+                "ctrl": {
+                  "actor": "svc:sync"
+                },
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "actors": {
+                "svc:sync": {
+                  "amount": 1,
+                  "calls": 1
+                },
+                "user:42": {
+                  "amount": 2,
+                  "calls": 2
+                }
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "budget": 2,
+                "name": "cost",
+                "unit": 1
+              }
+            ],
+            "name": "warn records the overrun and lets the call through",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "budget": {
+                "exceeded": true,
+                "remaining": 0
+              },
+              "total": {
+                "amount": 3,
+                "calls": 3
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "budget": 2,
+                "name": "cost",
+                "onBudget": "deny",
+                "unit": 1
+              }
+            ],
+            "name": "deny refuses the call once the budget is spent, before the network",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "err": "cost_budget",
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "budget": {
+                "exceeded": true
+              },
+              "total": {
+                "amount": 2,
+                "attempts": 2,
+                "calls": 2
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "budget": 0,
+                "name": "cost",
+                "onBudget": "deny",
+                "unit": 1
+              }
+            ],
+            "name": "an explicit budget of zero means no ceiling",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 5,
+                "calls": 5
+              }
+            }
+          },
+          {
+            "feature": [
+              {
+                "active": true,
+                "name": "cost",
+                "onBudget": "deny",
+                "unit": 1
+              }
+            ],
+            "name": "an omitted budget means no ceiling either",
+            "op": [
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              },
+              {
+                "op": "#OP1"
+              }
+            ],
+            "out": {
+              "total": {
+                "amount": 5,
+                "calls": 5
+              }
+            }
+          }
+        ]
+      },
+      "partial": "the sink callback takes a function, which a JSON fixture cannot carry; covered per-language."
+    }
+  },
   "primary": {
     "check": {
       "DEF": {
