@@ -1,5 +1,5 @@
 
-import { cmp, each, Content, isAuthActive, packageName, envName, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
+import { cmp, each, Content, isAuthActive, isHttpBasicAuth, packageName, envName, opRequestShape, entityIdField, entityDataIdField, entityOps, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -41,7 +41,8 @@ const ReadmeQuick = cmp(function ReadmeQuick(props: any) {
   ) as any
 
   const ctor = isAuthActive(model)
-    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${envName(model)}_APIKEY,\n})`
+    ? `new ${model.const.Name}SDK({\n  apikey: process.env.${envName(model)}_APIKEY,${
+      isHttpBasicAuth(model) ? `\n  secret: process.env.${envName(model)}_SECRET,` : ''}\n})`
     : `new ${model.const.Name}SDK()`
 
   Content(`### 1. Create a client

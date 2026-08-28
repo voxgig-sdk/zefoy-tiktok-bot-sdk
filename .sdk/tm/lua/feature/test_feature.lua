@@ -61,11 +61,21 @@ function TestFeature:init(ctx, options)
       if type(restf) ~= "string" then
         return data
       end
-      local key = string.match(restf, "^`body%.([^`%.]+)`$")
-      if key == nil then
+      local path = string.match(restf, "^`body%.(.+)`$")
+      if path == nil then
         return data
       end
-      return { [key] = data }
+      -- Multi-segment on purpose: GraphQL ops unwrap body.data.<field> (and
+      -- body.data.<field>.<entity> for mutations), not just one level.
+      local segs = {}
+      for seg in string.gmatch(path, "[^.]+") do
+        table.insert(segs, seg)
+      end
+      local out = data
+      for i = #segs, 1, -1 do
+        out = { [segs[i]] = out }
+      end
+      return out
     end
 
     local function respond(status, data, extra)
@@ -309,10 +319,14 @@ function TestFeature:build_args(ctx, op, args)
   local points = vs.getpath(ctx.config, "entity." .. ctx.entity:get_name() .. ".op." .. opname .. ".points")
   local point = vs.getelem(points, -1)
 
-  -- Get required params.
+  -- Path AND query: a path-only read misses a query-addressed record
+  -- (e.g. GET /result?trace_id=), which has no path param at all.
   local params_path = vs.getpath(point, "args.params")
   local reqd_params = vs.select(params_path, { reqd = true })
-  local reqd = vs.transform(reqd_params, { "`$EACH`", "", "`$KEY.name`" })
+  local reqd_from_params = vs.transform(reqd_params, { "`$EACH`", "", "`$KEY.name`" })
+  local query_path = vs.getpath(point, "args.query")
+  local reqd_query = vs.select(query_path, { reqd = true })
+  local reqd_from_query = vs.transform(reqd_query, { "`$EACH`", "", "`$KEY.name`" })
 
   local qand = {}
   local q = { ["`$AND`"] = qand }
@@ -322,8 +336,8 @@ function TestFeature:build_args(ctx, op, args)
     if keys ~= nil then
       for _, key in ipairs(keys) do
         local is_id = (key == "id")
-        local selected = vs.select(reqd, key)
-        local is_reqd = not vs.isempty(selected)
+        local is_reqd = not vs.isempty(vs.select(reqd_from_params, key))
+          or not vs.isempty(vs.select(reqd_from_query, key))
 
         if is_id or is_reqd then
           local v = ctx.utility.param(ctx, key)

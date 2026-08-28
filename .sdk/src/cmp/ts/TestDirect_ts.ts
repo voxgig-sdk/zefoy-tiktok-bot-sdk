@@ -17,6 +17,7 @@ import {
   cmp,
   snakify,
   isAuthActive,
+  isHttpBasicAuth,
   jsProp,
   jsOptProp, envName, envToken, liveStrict
 } from '@voxgig/sdkgen'
@@ -44,12 +45,14 @@ const TestDirect = cmp(function TestDirect(props: any) {
   const entidEnvVar = `${PROJECTNAME}_TEST_${envToken(entity.name)}_ENTID`
 
   const authActive = isAuthActive(model)
+  const authBasic = authActive && isHttpBasicAuth(model)
   const apikeyEnvEntry = authActive
-    ? `\n    '${PROJECTNAME}_APIKEY': 'NONE',`
+    ? `\n    '${PROJECTNAME}_APIKEY': 'NONE',${authBasic ? `\n    '${PROJECTNAME}_SECRET': 'NONE',` : ''}`
     : ''
   const apikeyLiveField = authActive
     ? `
-      apikey: env.${PROJECTNAME}_APIKEY,`
+      apikey: env.${PROJECTNAME}_APIKEY,${authBasic ? `
+      secret: env.${PROJECTNAME}_SECRET,` : ''}`
     : ''
 
   const opnames = Object.keys(entity.op || {})

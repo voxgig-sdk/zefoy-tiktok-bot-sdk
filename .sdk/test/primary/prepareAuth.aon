@@ -1,6 +1,11 @@
 
 DEF: {
-  setup: a: { apikey: 'APIKEY01' }
+  # auth pinned explicitly (not left to a spec's own derived prefix/scheme):
+  # this corpus tests the raw single-token mechanics in isolation, so it
+  # must not silently inherit whatever a given SDK's real spec declares
+  # (e.g. genuine HTTP Basic Auth, a non-empty prefix, two credentials) -
+  # that has its own dedicated coverage elsewhere.
+  setup: a: { apikey: 'APIKEY01', auth: { prefix: '', basic: false } }
 }
 
 

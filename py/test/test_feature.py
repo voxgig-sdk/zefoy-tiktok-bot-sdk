@@ -105,6 +105,10 @@ class TestNetsimFeature:
 @pytest.mark.skipif(not has_feature("retry"), reason="retry not in this SDK")
 class TestRetryFeature:
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_retries_transient_failures_then_succeeds(self):
         clock = make_clock()
         h = make_client([
@@ -115,6 +119,10 @@ class TestRetryFeature:
         assert h.op(op="load")["ok"] is True
         assert h.client._retry["attempts"] == 2
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_gives_up_after_the_budget(self):
         clock = make_clock()
         h = make_client([
@@ -163,6 +171,10 @@ class TestRetryFeature:
         assert h.op(op="load")["ok"] is True
         assert state["n"] == 2
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_honours_a_server_retry_after(self):
         clock = make_clock()
         h = make_client([
@@ -174,6 +186,10 @@ class TestRetryFeature:
         assert h.op(op="load")["ok"] is True
         assert clock.time == 2000
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_default_jitter_path_still_succeeds(self):
         h = make_client([
             {"name": "netsim", "options": {"failTimes": 1}},
@@ -202,6 +218,10 @@ class TestRetryFeature:
 @pytest.mark.skipif(not has_feature("timeout"), reason="timeout not in this SDK")
 class TestTimeoutFeature:
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_a_slow_request_times_out(self):
         clock = make_clock()
         h = make_client([
@@ -438,6 +458,10 @@ class TestRbacFeature:
 @pytest.mark.skipif(not has_feature("metrics"), reason="metrics not in this SDK")
 class TestMetricsFeature:
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_counts_ok_and_err_per_op(self):
         h = make_client([
             {"name": "netsim", "options": {"failTimes": 1, "failStatus": 500}},
@@ -490,6 +514,10 @@ class TestTelemetryFeature:
         assert sent["X-Trace-Id"] == h.client._telemetry["spans"][0]["traceId"]
         assert re.match(r"^00-.+-.+-01$", sent["traceparent"])
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_records_a_failed_span_on_error(self):
         h = make_client([
             {"name": "netsim", "options": {"failTimes": 1, "failStatus": 500}},
@@ -498,6 +526,10 @@ class TestTelemetryFeature:
         h.op(op="load")
         assert h.client._telemetry["spans"][0]["ok"] is False
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_closes_each_span_exactly_once(self):
         h = make_client([
             {"name": "netsim", "options": {"failTimes": 1, "failStatus": 500}},
@@ -542,6 +574,10 @@ class TestDebugFeature:
         assert len(seen) == 2
         assert seen[0]["headers"]["authorization"] == "<redacted>"
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_captures_failures(self):
         h = make_client([
             {"name": "netsim", "options": {"failTimes": 1, "failStatus": 500}},
@@ -571,6 +607,10 @@ class TestDebugFeature:
 @pytest.mark.skipif(not has_feature("audit"), reason="audit not in this SDK")
 class TestAuditFeature:
 
+    # Drives netsim as the simulated network: runnable only when this
+    # SDK was generated with it (the harness skips absent features).
+    @pytest.mark.skipif(not has_feature("netsim"),
+                        reason="netsim not in this SDK")
     def test_one_record_per_op_with_sink_and_actor(self):
         sink = []
         h = make_client([

@@ -27,9 +27,9 @@
     "@voxgig/apidef": ">=8.0",
     "@voxgig/model": ">=10.0",
     "@voxgig/sdkgen": ">=4.0",
-    "@voxgig/util": ">=0.4",
-    "@voxgig/struct": ">=0.1.0",
-    "jostraca": ">=0.29",
-    "aontu": ">=0.44"
+    "@voxgig/util": ">=0.5",
+    "@voxgig/struct": ">=0.2",
+    "jostraca": ">=0.33.1",
+    "aontu": ">=0.52"
   }
 }

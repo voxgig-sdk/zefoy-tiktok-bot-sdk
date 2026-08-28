@@ -1,5 +1,6 @@
 
 import { cmp, each, Content, canonToType, File, isAuthActive, entityIdField, entityOps, opRequestShape } from '@voxgig/sdkgen'
+import { ReadmeRefFeatures } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -407,6 +408,10 @@ client := sdk.New${model.const.Name}SDK(map[string]any{
 \`\`\`
 
 `)
+      // The shared feature reference: options, defaults, usage and the
+      // considerations. Model facts, identical in every target, so they are
+      // written once in cmp/ReadmeRefFeatures.ts rather than here.
+      ReadmeRefFeatures({ target })
     }
 
   })

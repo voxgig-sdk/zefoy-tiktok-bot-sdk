@@ -1,5 +1,6 @@
 
-import { cmp, each, Content, canonToType, File, isAuthActive, entityIdField, entityActions, opRequestShape, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
+import { cmp, each, Content, canonToType, File, isAuthActive, isHttpBasicAuth, entityIdField, entityActions, opRequestShape, safeVarName, exampleVarName, jsKey, matchArg, idLiteral } from '@voxgig/sdkgen'
+import { ReadmeRefFeatures } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -83,7 +84,7 @@ Create a new SDK client instance.
 | Name | Type | Description |
 | --- | --- | --- |
 | \`options\` | \`object\` | SDK configuration options. |
-${isAuthActive(model) ? '| \`options.apikey\` | \`string\` | API key for authentication. |\n' : ''}| \`options.base\` | \`string\` | Base URL for API requests. |
+${isAuthActive(model) ? '| \`options.apikey\` | \`string\` | API key for authentication. |\n' : ''}${isAuthActive(model) && isHttpBasicAuth(model) ? '| \`options.secret\` | \`string\` | API secret for authentication. |\n' : ''}| \`options.base\` | \`string\` | Base URL for API requests. |
 | \`options.prefix\` | \`string\` | URL prefix appended after base. |
 | \`options.suffix\` | \`string\` | URL suffix appended after path. |
 | \`options.headers\` | \`object\` | Custom headers for all requests. |
@@ -454,6 +455,10 @@ const client = new ${model.Name}SDK({
 \`\`\`
 
 `)
+      // The shared feature reference: options, defaults, usage and the
+      // considerations. Model facts, identical in every target, so they are
+      // written once in cmp/ReadmeRefFeatures.ts rather than here.
+      ReadmeRefFeatures({ target })
     }
 
   })

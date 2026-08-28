@@ -1,5 +1,5 @@
 
-import { cmp, Content, isAuthActive, envName, entityIdField, entityDataIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName, jsKey } from '@voxgig/sdkgen'
+import { cmp, Content, isAuthActive, isHttpBasicAuth, envName, entityIdField, entityDataIdField, pickExampleEntity, opRequestShape, safeVarName, exampleVarName, jsKey } from '@voxgig/sdkgen'
 
 import {
   KIT,
@@ -92,11 +92,16 @@ ${stateDataLine}
     : ''
 
   const authActive = isAuthActive(model)
+  const authBasic = authActive && isHttpBasicAuth(model)
   const apikeyTesterCtor = authActive
-    ? `new ${model.const.Name}SDK({ apikey: '...' })`
+    ? `new ${model.const.Name}SDK({ apikey: '...'${authBasic ? `, secret: '...'` : ''} })`
     : `new ${model.const.Name}SDK()`
-  const apikeyExtendField = authActive ? `\n  apikey: '...',` : ''
-  const apikeyEnvLine = authActive ? `\n${envName(model)}_APIKEY=<your-key>` : ''
+  const apikeyExtendField = authActive
+    ? `\n  apikey: '...',${authBasic ? `\n  secret: '...',` : ''}`
+    : ''
+  const apikeyEnvLine = authActive
+    ? `\n${envName(model)}_APIKEY=<your-key>${authBasic ? `\n${envName(model)}_SECRET=<your-secret>` : ''}`
+    : ''
 
   Content(`### Make a direct HTTP request
 

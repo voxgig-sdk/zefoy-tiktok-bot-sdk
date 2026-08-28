@@ -13,7 +13,7 @@ import (
 
 // The `body.<key>` form of an op's response transform: the mock wraps its
 // payload in <key> so the transform can unwrap it again.
-var envelopeResRe = regexp.MustCompile("^`body\\.([^`.]+)`$")
+var envelopeResRe = regexp.MustCompile("^`body\\.(.+)`$")
 
 type TestFeature struct {
 	BaseFeature
@@ -78,7 +78,14 @@ func (f *TestFeature) Init(ctx *core.Context, options map[string]any) {
 			if m == nil {
 				return data
 			}
-			return map[string]any{m[1]: data}
+			// Multi-segment on purpose: GraphQL ops unwrap body.data.<field>
+			// (and body.data.<field>.<entity> for mutations), not just one level.
+			segs := strings.Split(m[1], ".")
+			out := data
+			for i := len(segs) - 1; 0 <= i; i-- {
+				out = map[string]any{segs[i]: out}
+			}
+			return out
 		}
 
 		respond := func(status int, data any, extra map[string]any) map[string]any {
@@ -346,10 +353,14 @@ func (f *TestFeature) buildArgs(ctx *core.Context, op *core.Operation, args map[
 		}
 	}
 
-	// Get required params.
+	// Path AND query: a path-only read misses a query-addressed record
+	// (e.g. GET /result?trace_id=), which has no path param at all.
 	paramsPath := vs.GetPath([]any{"args", "params"}, point)
 	reqdParams := vs.Select(paramsPath, map[string]any{"reqd": true})
-	reqd := vs.Transform(reqdParams, []any{"`$EACH`", "", "`$KEY.name`"})
+	reqdFromParams := vs.Transform(reqdParams, []any{"`$EACH`", "", "`$KEY.name`"})
+	queryPath := vs.GetPath([]any{"args", "query"}, point)
+	reqdQuery := vs.Select(queryPath, map[string]any{"reqd": true})
+	reqdFromQuery := vs.Transform(reqdQuery, []any{"`$EACH`", "", "`$KEY.name`"})
 
 	qand := []any{}
 	q := map[string]any{"`$AND`": &qand}
@@ -357,8 +368,8 @@ func (f *TestFeature) buildArgs(ctx *core.Context, op *core.Operation, args map[
 	if args != nil {
 		for _, key := range vs.KeysOf(args) {
 			isId := key == "id"
-			selected := vs.Select(reqd, key)
-			isReqd := !vs.IsEmpty(selected)
+			isReqd := !vs.IsEmpty(vs.Select(reqdFromParams, key)) ||
+				!vs.IsEmpty(vs.Select(reqdFromQuery, key))
 
 			if isId || isReqd {
 				v := ctx.Utility.Param(ctx, key)

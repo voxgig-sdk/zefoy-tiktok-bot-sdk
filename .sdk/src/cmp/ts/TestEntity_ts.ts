@@ -30,6 +30,7 @@ import {
   cmp,
   each,
   isAuthActive,
+  isHttpBasicAuth,
   entityDataIdField, envName, envToken
 } from '@voxgig/sdkgen'
 
@@ -64,12 +65,14 @@ const TestEntity = cmp(function TestEntity(props: any) {
   const PROJENVNAME = envName(model)
   const ENTENVNAME = envToken(entity.name)
   const authActive = isAuthActive(model)
+  const authBasic = authActive && isHttpBasicAuth(model)
   const apikeyEnvEntry = authActive
-    ? `\n    '${PROJENVNAME}_APIKEY': 'NONE',`
+    ? `\n    '${PROJENVNAME}_APIKEY': 'NONE',${authBasic ? `\n    '${PROJENVNAME}_SECRET': 'NONE',` : ''}`
     : ''
   const apikeyLiveField = authActive
     ? `
-        apikey: env.${PROJENVNAME}_APIKEY,`
+        apikey: env.${PROJENVNAME}_APIKEY,${authBasic ? `
+        secret: env.${PROJENVNAME}_SECRET,` : ''}`
     : ''
 
   // TODO: should be a utility function

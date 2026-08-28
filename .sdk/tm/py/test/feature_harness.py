@@ -165,6 +165,12 @@ class _Ctx:
         self.meta = {}
         self.op = op
         self.entity = entity
+        # The pipeline always resolves a point before a feature sees the ctx,
+        # so features read ctx.point freely — paging checks `point.kind` for
+        # graphql. This stub had no such attribute, so every paging test died
+        # with AttributeError before reaching the transport. Those tests were
+        # SKIPPED until an SDK activated paging, which is why it went unseen.
+        self.point = {}
         self.spec = None
         self.response = None
         self.result = None

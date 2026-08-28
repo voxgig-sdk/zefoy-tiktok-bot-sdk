@@ -92,6 +92,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
 
   // Get load point info
   const loadPoint = loadOp?.points?.[0]
+  const loadIsGraphql = 'graphql' === (loadPoint as any)?.kind
   const loadPath = loadPoint ? normalizePathParams(loadPoint.parts || [], loadPoint?.args?.params || [], loadPoint?.rename?.param) : ''
   const allLoadParams = loadPoint?.args?.params || []
   // Some upstream OpenAPI specs declare a parameter as `in: path` even when
@@ -118,6 +119,7 @@ const TestDirect = cmp(function TestDirect(props: any) {
 
   // Get list point info
   const listPoint = listOp?.points?.[0]
+  const listIsGraphql = 'graphql' === (listPoint as any)?.kind
   const listPath = listPoint ? normalizePathParams(listPoint.parts || [], listPoint?.args?.params || [], listPoint?.rename?.param) : ''
   const listParams = listPoint?.args?.params || []
 
@@ -170,7 +172,11 @@ func Test${entity.Name}Direct(t *testing.T) {
 `)
 
     // Generate list test first (load needs list results in live mode)
-    if (hasList && listPoint) {
+    if (hasList && listPoint && listIsGraphql) {
+      generateDirectGraphqlGo('list', entity, listPoint, liveFail)
+    }
+
+    if (hasList && listPoint && !listIsGraphql) {
       const listParamStr = listParams.length > 0
         ? listParams.map((p: any, i: number) =>
           `"${p.name}": "direct0${i + 1}"`).join(', ')
@@ -323,8 +329,12 @@ ${listSkipBlock}		client := setup.client
 `)
     }
 
+    if (hasLoad && loadPoint && loadIsGraphql) {
+      generateDirectGraphqlGo('load', entity, loadPoint, liveFail)
+    }
+
     // Generate load test - in live mode, first list to get a real entity ID
-    if (hasLoad && loadPoint) {
+    if (hasLoad && loadPoint && !loadIsGraphql) {
       const loadParamStr = loadParams.length > 0
         ? loadParams.map((p: any, i: number) =>
           `"${p.name}": "direct0${i + 1}"`).join(', ')
@@ -604,6 +614,117 @@ var _ = json.Unmarshal
 `)
   })
 })
+
+
+// GraphQL-backed op needs POST+body, not a REST-shaped GET+params Direct()
+// call — reuse apidef's own point.graphql.doc via the SDK's Graphql() hatch.
+// Mirrors TestDirect_ts.ts's generateDirectGraphql.
+function generateDirectGraphqlGo(
+  opname: 'load' | 'list',
+  entity: ModelEntity,
+  point: any,
+  liveFail: string,
+) {
+  const doc: string = point.graphql.doc
+  const vars: any[] = point.graphql.vars || []
+
+  const mockVarLines = vars.map((v: any, i: number) =>
+    `\t\tvariables["${v.name}"] = "direct0${i + 1}"`).join('\n')
+
+  const liveVarLines = vars.map((v: any) => {
+    const from = v.from || v.name
+    const key = ('id' === from ? entity.name : from.replace(/_id$/, '')) + '01'
+    return `\t\tvariables["${v.name}"] = setup.idmap["${key}"]`
+  }).join('\n')
+
+  const liveIdKeys = vars.map((v: any) => {
+    const from = v.from || v.name
+    return ('id' === from ? entity.name : from.replace(/_id$/, '')) + '01'
+  })
+
+  const skipBlock = liveIdKeys.length > 0
+    ? `\t\tif setup.live {
+\t\t\tfor _, _liveKey := range []string{${liveIdKeys.map(k => `"${k}"`).join(', ')}} {
+\t\t\t\tif v := setup.idmap[_liveKey]; v == nil {
+\t\t\t\t\tt.Skipf("live test needs %s via *_ENTID env var (synthetic IDs only)", _liveKey)
+\t\t\t\t\treturn
+\t\t\t\t}
+\t\t\t}
+\t\t}
+`
+    : ''
+
+  // Asserted against the OUTGOING request body, not the mocked response —
+  // response-shape correctness is the entity-level tests' job. The mock
+  // JSON-encodes a map body to a string (see makeFetchDefUtil), so this
+  // is a substring check, same as the ts/js mocks.
+  const varAsserts = vars.map((_v: any, i: number) =>
+    `\t\t\tif !strings.Contains(bodyStr, "direct0${i + 1}") {\n` +
+    `\t\t\t\tt.Fatalf("expected body to contain direct0${i + 1}, got %v", bodyStr)\n` +
+    `\t\t\t}`).join('\n')
+
+  Content(`	t.Run("direct-${opname}-${entity.name}", func(t *testing.T) {
+		setup := ${entity.name}DirectSetup(map[string]any{"id": "direct01"})
+		_mode := "unit"
+		if setup.live {
+			_mode = "live"
+		}
+		if _shouldSkip, _reason := isControlSkipped("direct", "direct-${opname}-${entity.name}", _mode); _shouldSkip {
+			if _reason == "" {
+				_reason = "skipped via sdk-test-control.json"
+			}
+			t.Skip(_reason)
+			return
+		}
+${skipBlock}		client := setup.client
+
+		variables := map[string]any{}
+		if setup.live {
+${liveVarLines || '\t\t// no variables'}
+		} else {
+${mockVarLines || '\t\t// no variables'}
+		}
+
+		result, err := client.Graphql(${JSON.stringify(doc)}, variables, nil)
+
+		if setup.live {
+			// Live mode is lenient: synthetic ids frequently fail server-side
+			// validation. Skip rather than fail when the call doesn't come
+			// back clean.
+			if err != nil {
+				t.${liveFail}("graphql call failed (likely synthetic IDs against live API): %v", err)
+			}
+			if result["ok"] != true {
+				t.${liveFail}("graphql call not ok (likely synthetic IDs against live API): %v", result)
+			}
+		} else {
+			if err != nil {
+				t.Fatalf("direct failed: %v", err)
+			}
+			if result["ok"] != true {
+				t.Fatalf("expected ok to be true, got %v", result["ok"])
+			}
+			if core.ToInt(result["status"]) != 200 {
+				t.Fatalf("expected status 200, got %v", result["status"])
+			}
+			if result["data"] == nil {
+				t.Fatal("expected data to be non-nil")
+			}
+			if len(*setup.calls) != 1 {
+				t.Fatalf("expected 1 call, got %d", len(*setup.calls))
+			}
+			call := (*setup.calls)[0]
+			initMap, _ := call["init"].(map[string]any)
+			if initMap["method"] != "POST" {
+				t.Fatalf("expected method POST, got %v", initMap["method"])
+			}
+			bodyStr, _ := initMap["body"].(string)
+${varAsserts}
+		}
+	})
+
+`)
+}
 
 
 export {

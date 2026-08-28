@@ -23,9 +23,20 @@ from projectname_sdk import ZefoyTiktokBotSDK
 
 _TEST_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Features with a corpus section. A name here with no section is a skip, not
-# a failure: an SDK generated without the feature has nothing to run.
-FEATURE_CORPUS_NAMES = ["cost"]
+# Features with a corpus section — read from the corpus itself, so a
+# project-authored section (a custom feature added under
+# .sdk/test/feature/) runs without editing this file. Read eagerly:
+# parametrize needs the names at collection time. An SDK generated
+# without a listed feature still skips, not fails.
+def _corpus_feature_names():
+    try:
+        with open(os.path.join(_TEST_DIR, "../../.sdk/test/test.json"), "r") as f:
+            return sorted((json.loads(f.read()).get("feature") or {}).keys())
+    except OSError:
+        return []
+
+
+FEATURE_CORPUS_NAMES = _corpus_feature_names()
 
 # The standard operation names, in the order the runner prefers them.
 FEATURE_CORPUS_OPS = ["load", "list", "create", "update", "remove"]
@@ -129,6 +140,12 @@ def _candidates(client):
                     "accessor": accessor,
                     "op": opname,
                 })
+
+    # SAFE OPS FIRST - see the ts harness for the reasoning: the cache stores
+    # only successful GETs, so an SDK whose first usable op is a `create`
+    # (POST) can never satisfy "a hit served from cache costs nothing".
+    safe = {"list": 0, "load": 1}
+    out.sort(key=lambda o: (safe.get(o["op"], 2), o["key"]))
     return out
 
 

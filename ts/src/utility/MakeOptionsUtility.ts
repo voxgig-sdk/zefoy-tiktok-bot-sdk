@@ -44,11 +44,13 @@ function makeOptions(ctx: Context) {
   // Standard SDK option values.
   const optspec = {
     apikey: '',
+    secret: '',
     base: 'http://localhost:8000',
     prefix: '',
     suffix: '',
     auth: {
-      prefix: ''
+      prefix: '',
+      basic: false
     },
     headers: {
       '`$CHILD`': '`$STRING`'

@@ -97,11 +97,13 @@ def make_options_util(ctx):
 
     optspec = {
         "apikey": "",
+        "secret": "",
         "base": "http://localhost:8000",
         "prefix": "",
         "suffix": "",
         "auth": {
             "prefix": "",
+            "basic": False,
         },
         "headers": {
             "`$CHILD`": "`$STRING`",

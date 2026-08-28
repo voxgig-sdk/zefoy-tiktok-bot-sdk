@@ -21,6 +21,16 @@ function recordingServer(reply?: (n: number, fetchdef: any) => any) {
 }
 
 
+// A subtest that drives a second feature (netsim as the simulated network)
+// can only run when this SDK was generated with it: the harness skips
+// absent features, which would leave the scenario unsimulated and the
+// assertions meaningless. Same convention as the other targets.
+function skipWithout(name: string): string | boolean {
+  return hasFeature(name) ? false
+    : ('this SDK was generated without the ' + name + ' feature')
+}
+
+
 describe('feature', () => {
 
   test('at least the test feature is present', () => {
@@ -95,7 +105,7 @@ describe('feature', () => {
   // --- retry ----------------------------------------------------------------
   if (hasFeature('retry')) describe('retry', () => {
 
-    test('retries transient failures then succeeds', async () => {
+    test('retries transient failures then succeeds', { skip: skipWithout('netsim') }, async () => {
       const clock = makeClock()
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 2, failStatus: 503 } },
@@ -105,7 +115,7 @@ describe('feature', () => {
       strictEqual(h.client._retry.attempts, 2)
     })
 
-    test('gives up after the budget', async () => {
+    test('gives up after the budget', { skip: skipWithout('netsim') }, async () => {
       const clock = makeClock()
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 9, failStatus: 500 } },
@@ -131,7 +141,7 @@ describe('feature', () => {
       strictEqual(n, 3)
     })
 
-    test('honours a server Retry-After', async () => {
+    test('honours a server Retry-After', { skip: skipWithout('netsim') }, async () => {
       const clock = makeClock()
       const h = makeClient({ features: [
         { name: 'netsim', options: { rateLimitTimes: 1, retryAfter: 2 } },
@@ -141,7 +151,7 @@ describe('feature', () => {
       strictEqual(clock.time, 2000)
     })
 
-    test('default jitter path still succeeds', async () => {
+    test('default jitter path still succeeds', { skip: skipWithout('netsim') }, async () => {
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 1 } },
         { name: 'retry', options: { retries: 2, minDelay: 0 } },
@@ -154,7 +164,7 @@ describe('feature', () => {
   // --- timeout --------------------------------------------------------------
   if (hasFeature('timeout')) describe('timeout', () => {
 
-    test('a slow request times out', async () => {
+    test('a slow request times out', { skip: skipWithout('netsim') }, async () => {
       const h = makeClient({ features: [
         { name: 'netsim', options: { latency: 80 } },
         { name: 'timeout', options: { ms: 10 } },
@@ -319,7 +329,7 @@ describe('feature', () => {
   // --- metrics --------------------------------------------------------------
   if (hasFeature('metrics')) describe('metrics', () => {
 
-    test('counts ok and err per op', async () => {
+    test('counts ok and err per op', { skip: skipWithout('netsim') }, async () => {
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 1, failStatus: 500 } },
         { name: 'metrics', options: {} },
@@ -352,7 +362,7 @@ describe('feature', () => {
       ok(/^00-.+-.+-01$/.test(sent['traceparent']))
     })
 
-    test('records a failed span on error', async () => {
+    test('records a failed span on error', { skip: skipWithout('netsim') }, async () => {
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 1, failStatus: 500 } },
         { name: 'telemetry', options: {} },
@@ -377,7 +387,7 @@ describe('feature', () => {
       strictEqual(seen[0].headers.authorization, '<redacted>')
     })
 
-    test('captures failures', async () => {
+    test('captures failures', { skip: skipWithout('netsim') }, async () => {
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 1, failStatus: 500 } },
         { name: 'debug', options: {} },
@@ -391,7 +401,7 @@ describe('feature', () => {
   // --- audit ----------------------------------------------------------------
   if (hasFeature('audit')) describe('audit', () => {
 
-    test('one record per op with sink + actor', async () => {
+    test('one record per op with sink + actor', { skip: skipWithout('netsim') }, async () => {
       const sink: any[] = []
       const h = makeClient({ features: [
         { name: 'netsim', options: { failTimes: 1, failStatus: 500 } },

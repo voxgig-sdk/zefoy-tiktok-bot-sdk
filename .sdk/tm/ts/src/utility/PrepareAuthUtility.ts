@@ -5,6 +5,7 @@ import { Context, Spec } from '../types'
 const HEADER_auth = 'authorization'
 
 const OPTION_apikey = 'apikey'
+const OPTION_secret = 'secret'
 
 const NOTFOUND = '__NOTFOUND__'
 
@@ -39,6 +40,25 @@ function prepareAuth(ctx: Context): Spec | Error {
   const prefix = options.auth.prefix
 
   const apikey = getprop(options, OPTION_apikey, NOTFOUND)
+
+  // True HTTP Basic Auth needs TWO credentials, base64-joined - a single
+  // token in the header (the branch below) can never authenticate against
+  // an API that actually checks `Authorization: Basic base64(user:pass)`.
+  if (true === options.auth.basic) {
+    const secret = getprop(options, OPTION_secret, NOTFOUND)
+    const noApikey = NOTFOUND === apikey || null == apikey || '' === apikey
+    const noSecret = NOTFOUND === secret || null == secret || '' === secret
+
+    if (noApikey || noSecret) {
+      delprop(headers, HEADER_auth)
+    }
+    else {
+      const b64 = Buffer.from(apikey + ':' + secret).toString('base64')
+      setprop(headers, HEADER_auth, prefix ? prefix + ' ' + b64 : b64)
+    }
+
+    return spec
+  }
 
   if (NOTFOUND === apikey || null == apikey || '' === apikey) {
     delprop(headers, HEADER_auth)

@@ -75,11 +75,13 @@ local function make_options_util(ctx)
 
   local optspec = {
     apikey = "",
+    secret = "",
     base = "http://localhost:8000",
     prefix = "",
     suffix = "",
     auth = {
       prefix = "",
+      basic = false,
     },
     headers = {
       ["`$CHILD`"] = "`$STRING`",

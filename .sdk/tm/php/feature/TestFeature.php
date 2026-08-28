@@ -69,10 +69,16 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
                 if (!is_string($restf)) {
                     return $data;
                 }
-                if (!preg_match('/^`body\.([^`.]+)`$/', $restf, $m)) {
+                if (!preg_match('/^`body\.(.+)`$/', $restf, $m)) {
                     return $data;
                 }
-                return [$m[1] => $data];
+                // Multi-segment on purpose: GraphQL ops unwrap body.data.<field>
+                // (and body.data.<field>.<entity> for mutations), not just one level.
+                $out = $data;
+                foreach (array_reverse(explode('.', $m[1])) as $seg) {
+                    $out = [$seg => $out];
+                }
+                return $out;
             };
 
             $respond = function (int $status, mixed $data, ?array $extra = null) use ($envelope): array {
@@ -433,13 +439,18 @@ class ZefoyTiktokBotTestFeature extends ZefoyTiktokBotBaseFeature
                     }
                 }
             }
+            // Path AND query: a path-only read misses a query-addressed
+            // record (e.g. GET /result?trace_id=), which has no path param.
             $params = is_array($point) ? ($point['args']['params'] ?? null) : null;
-            if (is_array($params)) {
-                foreach ($params as $p) {
-                    if (is_array($p) && (($p['reqd'] ?? false) === true)) {
-                        $n = $p['name'] ?? null;
-                        if ($n !== null) {
-                            $reqd_names[] = $n;
+            $query = is_array($point) ? ($point['args']['query'] ?? null) : null;
+            foreach ([$params, $query] as $arglist) {
+                if (is_array($arglist)) {
+                    foreach ($arglist as $p) {
+                        if (is_array($p) && (($p['reqd'] ?? false) === true)) {
+                            $n = $p['name'] ?? null;
+                            if ($n !== null) {
+                                $reqd_names[] = $n;
+                            }
                         }
                     }
                 }
